@@ -2,10 +2,6 @@
 draft: false
 title: "LinkMeal"
 snippet: "second best app ever"
-image:
-  {
-    src: "https://images.unsplash.com/photo-1593720213428-28a5b9e94613?&fit=crop&w=430&h=240",
-    alt: "full stack web development",
-  }
+image: { src: "/images/display/linkmeal-display.png", alt: "Linkmeal showcase" }
 technos: ["symfony", "php", "git"]
 ---
