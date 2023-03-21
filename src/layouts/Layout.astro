@@ -57,6 +57,42 @@ const makeTitle = title
   </head>
   <body>
     <Navbar />
+    <div
+      class="fixed bottom-0 w-10 flex items-center justify-center flex-col right-10 left-auto after:h-20 after:w-px after:bg-slate-500">
+      <div class="email-sidelink my-5">
+        <a
+          class="relative no-underline tracking-widest"
+          href="mailto:contact@hadouin.com"
+          >contact@hadouin.com
+        </a>
+      </div>
+    </div>
+    <div
+      class="fixed bottom-0 w-10 flex items-center justify-center flex-col left-10 right-auto after:h-20 after:w-px after:bg-slate-500">
+      <ul
+        class="socials-side flex flex-col justify-center items-center list-none text-slate-700">
+        <li class="mb-3">
+          <a
+            class="flex p-2 transition"
+            href="https://github.com/hadouin"
+            target="_blank"
+            rel="noopener noreferrer">
+            <svg class="feather">
+              <use href="feather-sprite.svg#github"></use>
+            </svg>
+          </a>
+          <a
+            class="flex p-2 transition"
+            href="https://www.linkedin.com/in/hadouin-leroy"
+            target="_blank"
+            rel="noopener noreferrer">
+            <svg class="feather">
+              <use href="feather-sprite.svg#linkedin"></use>
+            </svg>
+          </a>
+        </li>
+      </ul>
+    </div>
     <slot />
     <Footer />
     <style is:global>
@@ -64,6 +100,45 @@ const makeTitle = title
       /* https://css-tricks.com/almanac/properties/c/content-visibility/ */
       img {
         content-visibility: auto;
+      }
+    </style>
+    <style>
+      .email-sidelink {
+        writing-mode: vertical-lr;
+      }
+
+      .email-sidelink a::after {
+        content: "";
+        height: 100%;
+        position: absolute;
+        transform: scaleY(0);
+        width: 2px;
+        top: 0;
+        left: 0;
+        transform-origin: bottom left;
+        transition: transform 0.25s ease-out;
+      }
+
+      .email-sidelink a:hover::after {
+        transform: scaleX(1);
+        transform-origin: top left;
+      }
+      .socials-side {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        list-style: none;
+      }
+
+      .socials-side li {
+        margin-bottom: 12px;
+      }
+
+      .socials-side li a:hover {
+        transform: scale(1.1);
       }
     </style>
   </body>
