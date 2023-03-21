@@ -1,0 +1,35 @@
+---
+import { getCollection } from "astro:content";
+
+// Filter blog entries with 'draft: false' & date before current date
+const activeProjectsShowcase = await getCollection("portfolio", ({ data }) => {
+  return !data.draft;
+});
+---
+
+<h2 class="text-4xl font-bold">My projects</h2>
+<h3 class="text-lg text-slate-700 mb-8">things i've done during my life</h3>
+<ul class="mb-24">
+  {
+    activeProjectsShowcase.map((entry, index) => (
+      <li class="group grid lg:grid-cols-2 gap-8 items-center my-24 first:mt-0 last:mb-0">
+        <div class="lg:group-odd:order-1">
+          <img
+            class="w-full h-full object-cover drop-shadow"
+            src={entry.data.image.src}
+            alt={entry.data.image.alt}
+          />
+        </div>
+        <div class="lg:group-odd:text-right">
+          <h3 class="text-3xl font-bold">{entry.data.title}</h3>
+          <p class="font-inter">{entry.data.snippet}</p>
+          <ul class="flex gap-4 lg:group-odd:justify-end">
+            {entry.data.technos.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </div>
+      </li>
+    ))
+  }
+</ul>
