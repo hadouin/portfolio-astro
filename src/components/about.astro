@@ -1,0 +1,54 @@
+---
+import hadouinImage from "assets/hadouin-hello.jpg";
+import { Image } from "@astrojs/image/components";
+
+const paragraphs = [
+  "Hello! My name is Hadouin LEROY, I’m a french guy who enjoys coding. I built a strong interest in programming scince highschool by creating my own arcade game in python — turns out hacking together my Geometrydash clone introduced me the wonderful path of becoming a developper!",
+  "Today, I’m studying computer science at ISEP in Paris. There I had the opportunity to do an internship as a devolopper for association-enoria. I followed the mission as a freelance in my freetime, i love it, i have hands-on the tangible, the real job.",
+  "My goal is to find an apprenticeship for the next two years before my graduation. I’m seeking for a position as software dev I’m also keen on exploring the world of cybersecurity.",
+];
+---
+
+<div class="mb-16">
+  <h2 class="text-2xl font-bold">About me</h2>
+  <div class="grid grid-cols-5 gap-12">
+    <div class="text col-span-3">
+      {paragraphs.map((item) => <p class="font-inter my-2">{item}</p>)}
+    </div>
+    <div class="col-span-2">
+      <Image
+        class="w-full"
+        src={hadouinImage}
+        alt="hadouin waving"
+        aspectRatio="1:1"
+        fit="cover"
+      />
+    </div>
+  </div>
+</div>
+
+<style>
+  ul.tech-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(140px, 200px));
+    gap: 0px 10px;
+    padding: 0px;
+    margin: 20px 0px 0px;
+    overflow: hidden;
+    list-style: none;
+  }
+  .tech-list li {
+    position: relative;
+    margin-bottom: 10px;
+    padding-left: 20px;
+    font-family: monospace;
+  }
+
+  .tech-list li::before {
+    content: "▹";
+    position: absolute;
+    left: 0px;
+    bottom: 0;
+    line-height: 12px;
+  }
+</style>
