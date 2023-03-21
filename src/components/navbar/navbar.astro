@@ -36,7 +36,7 @@ const menuitems = [
 ---
 
 <header
-  class="fixed top-0 left-0 right-0 flex flex-col lg:flex-row justify-between items-center bg-white">
+  class="fixed top-0 left-0 right-0 flex flex-col lg:flex-row justify-between items-center bg-white z-10">
   <Astronav>
     <div class="flex w-full lg:w-auto items-center justify-between p-5">
       <a href="/" class="text-lg">
@@ -70,7 +70,7 @@ const menuitems = [
                 <li>
                   <a
                     href={item.path}
-                    class="flex lg:px-3 py-2 text-gray-600 hover:text-gray-900">
+                    class="font-bold flex lg:px-3 py-2 text-gray-600 hover:text-gray-900">
                     {item.title}
                   </a>
                 </li>
