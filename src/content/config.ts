@@ -28,6 +28,8 @@ const portfolioCollection = defineCollection({
       alt: z.string(),
     }),
     technos: z.array(z.string()),
+    startDate: z.string().transform((str) => new Date(str)),
+    endDate: z.string().transform((str) => new Date(str)),
   }),
 });
 

@@ -5,6 +5,11 @@ import { getCollection } from "astro:content";
 const activeProjectsShowcase = await getCollection("portfolio", ({ data }) => {
   return !data.draft;
 });
+
+// Sort content entries by publication date
+activeProjectsShowcase.sort(function (a, b) {
+  return b.data.endDate.valueOf() - a.data.endDate.valueOf();
+});
 ---
 
 <h2 class="text-4xl font-bold mt-52">My projects</h2>
