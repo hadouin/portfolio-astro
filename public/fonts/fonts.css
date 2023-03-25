@@ -2,40 +2,35 @@
   font-family: "archia";
   font-style: normal;
   font-weight: 400;
-  src: url(fonts/03.Archia-Regular-webfont/archia-regular-webfont.woff2);
+  src: url(./03.Archia-Regular-webfont/archia-regular-webfont.woff2);
 }
-
 @font-face {
   font-family: "archia";
   font-style: normal;
   font-weight: 200;
-  src: url(fonts/01.Archia-Thin-webfont/archia-thin-webfont.woff2);
+  src: url(./01.Archia-Thin-webfont/archia-thin-webfont.woff2);
 }
-
 @font-face {
   font-family: "archia";
   font-style: normal;
   font-weight: 300;
-  src: url(fonts/02.Archia-Light-webfont/archia-light-webfont.woff2);
+  src: url(./02.Archia-Light-webfont/archia-light-webfont.woff2);
 }
-
 @font-face {
   font-family: "archia";
   font-style: normal;
   font-weight: 500;
-  src: url(fonts/04.Archia-Medium-webfont/archia-medium-webfont.woff2);
+  src: url(./04.Archia-Medium-webfont/archia-medium-webfont.woff2);
 }
-
 @font-face {
   font-family: "archia";
   font-style: normal;
   font-weight: 600;
-  src: url(fonts/05.Archia-Semibold-webfont/archia-semibold-webfont.woff2);
+  src: url(./05.Archia-Semibold-webfont/archia-semibold-webfont.woff2);
 }
-
 @font-face {
   font-family: "archia";
   font-style: normal;
   font-weight: 700;
-  src: url(fonts/06.Archia-Bold-webfont/archia-bold-webfont.woff2);
+  src: url(./06.Archia-Bold-webfont/archia-bold-webfont.woff2);
 }
