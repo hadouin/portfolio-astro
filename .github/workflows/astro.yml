@@ -44,14 +44,12 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: website-dist
-      - name: multiple command
-        uses: appleboy/ssh-action@v0.1.10
+      - name: copy file via ssh key
+        uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          script: |
-            cd /var/www/html/
-            rm -rf *
-            cp -R ./dist/ .
+          key: ${{ secrets.KEY }}
+          source: "./dist/"
+          target: /var/www/html/
