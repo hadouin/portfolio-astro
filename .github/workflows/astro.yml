@@ -48,4 +48,4 @@ jobs:
           script: |
             cd /var/www/html/
             rm -rf *
-            cp -R ./dist
+            cp -R ./dist/
