@@ -36,6 +36,7 @@ jobs:
           name: website-dist
           path: ./dist/
   deploy:
+    needs: build
     name: Deploy
     runs-on: ubuntu-latest
     steps:
