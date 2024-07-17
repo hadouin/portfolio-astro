@@ -3,16 +3,159 @@ import Link from "@components/ui/link.astro";
 ---
 
 <div class="h-screen flex flex-col justify-center">
-  <h2 class="text-lg font-semibold">Hi, my name is</h2>
-  <h1 class="text-5xl lg:text-6xl xl:text-7xl font-bold tracking-wide">
-    Hadouin
+  <h2 class="text-lg font-semibold z-20">Hi, my name is</h2>
+  <h1
+    class="whitespace-pre flex flex-col text-5xl lg:text-6xl xl:text-7xl font-bold tracking-wide hacker-effect h-[48px] lg:h-[60px] xl:h-[72px]">
   </h1>
-  <h3 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-600">
+  <h3 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-600 z-20">
     I build things for the web
   </h3>
-  <p class="my-4 max-w-lg font-inter leading-tight">
+  <p class="my-4 max-w-lg font-inter leading-tight z-20">
     I’m a computer science student in Paris ISEP engineering school. I like to
     code for people in my free time.
   </p>
-  <Link class="hire-me w-fit" href="/contact">Hire me!</Link>
+  <Link class="hire-me w-fit wiggle" href="/contact">Hire me!</Link>
 </div>
+
+<style>
+  h1.hacker-effect {
+    transform: translateY(-700%);
+  }
+</style>
+
+<script>
+  const letters = "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&?@:/}{()*+-#$&";
+  function getRandomLetter() {
+    return letters[Math.floor(Math.random() * letters.length)];
+  }
+
+  class Column {
+    private startIndex: number = 0;
+    private endIndex: number = 9;
+    private length: number = 5;
+    private targetIndex: number = 7;
+    private targetChar: string = "H";
+    private columnHeight: number = 10;
+
+    constructor(
+      startIndex: number,
+      endIndex: number,
+      length: number,
+      targetIndex: number,
+      targetChar: string,
+      columnHeight: number
+    ) {
+      this.startIndex = startIndex;
+      this.endIndex = endIndex;
+      this.length = length;
+      this.targetIndex = targetIndex;
+      this.targetChar = targetChar;
+      this.columnHeight = columnHeight;
+    }
+
+    public getString(currentIteration: number) {
+      let result = "";
+
+      for (let i = 0; i < this.columnHeight; i++) {
+        const currentPosition = this.startIndex + currentIteration;
+
+        if (i >= this.endIndex) {
+          result += " ";
+        } else if (
+          currentPosition >= this.targetIndex &&
+          i === this.targetIndex &&
+          currentPosition + 1 - this.length >= i
+        ) {
+          result += this.targetChar;
+        } else if (i <= currentPosition && i >= currentPosition - this.length) {
+          result += getRandomLetter();
+        } else {
+          result += " ";
+        }
+      }
+      return result;
+    }
+  }
+  const colHeight = 10;
+  const targetIndex = 7;
+
+  function getHackerGrid(string: string): Column[] {
+    const columns: Column[] = [];
+    for (let i = 0; i < string.length; i++) {
+      const start = Math.floor(Math.random() * 5);
+      const end = 10 - Math.floor(Math.random() * 3);
+      columns.push(
+        new Column(start, end, 5, targetIndex, string[i], colHeight)
+      );
+    }
+    return columns;
+  }
+
+  let iteration = 0;
+  let interval;
+
+  const columns = getHackerGrid("Hadouin");
+  const element = document.querySelector(".hacker-effect") as HTMLElement;
+  interval = setInterval(() => {
+    // get each line
+    const rows: string[] = [];
+    for (let i: number = 0; i < colHeight; i++) {
+      let row = "";
+      for (let j = 0; j < columns.length; j++) {
+        row += columns[j].getString(iteration)[i];
+      }
+      rows.push(row);
+    }
+
+    element.innerHTML = rows
+      .map((row, index) => {
+        if (index === targetIndex)
+          return `<h1 class="flex min-h-[48px] lg:min-h-[60px] xl:min-h-[72px] target-row z-20" data-value="Hadouin" >${row}</h1>`;
+        return `<h1 class="flex min-h-[48px] lg:min-h-[60px] xl:min-h-[72px] text-slate-200 -z-20">${row}</h1>`;
+      })
+      .join("\n");
+
+    iteration += 1;
+    if (iteration >= 20) {
+      clearInterval(interval);
+      setHoverEffect();
+    }
+  }, 50);
+
+  function setHoverEffect() {
+    let hoverInterval: number | undefined = undefined;
+
+    const hoverElement = document.querySelector(".target-row");
+    console.log(hoverElement);
+
+    hoverElement?.addEventListener("mouseover", (event) => {
+      console.log("hover");
+      let iteration = 0;
+
+      if (hoverInterval) clearInterval(hoverInterval);
+
+      hoverInterval = setInterval(() => {
+        const targetRow = document.querySelector(".target-row");
+        // @ts-ignore
+        targetRow.innerText = targetRow.innerText
+          .split("")
+          .map((letter, index) => {
+            if (index < iteration) {
+              // @ts-ignore
+              return targetRow.dataset.value[index];
+            }
+
+            return letters[Math.floor(Math.random() * 26)];
+          })
+          .join("");
+
+        //@ts-ignore
+        if (iteration >= targetRow.dataset.value.length) {
+          clearInterval(interval);
+        }
+
+        iteration += 1 / 3;
+      }, 30);
+    });
+  }
+</script>
