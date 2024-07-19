@@ -15,41 +15,41 @@ importers:
         specifier: ^0.16.2
         version: 0.16.2(astro@2.10.15(@types/node@17.0.45)(sharp@0.31.3))(rollup@3.29.4)
       '@astrojs/sitemap':
-        specifier: ^1.2.1
+        specifier: ^1.4.0
         version: 1.4.0
       '@astrojs/tailwind':
-        specifier: ^3.1.1
+        specifier: ^3.1.3
         version: 3.1.3(astro@2.10.15(@types/node@17.0.45)(sharp@0.31.3))(tailwindcss@3.4.6)
       '@fontsource/inter':
         specifier: ^4.5.15
         version: 4.5.15
       astro:
-        specifier: ^2.1.3
+        specifier: ^2.10.15
         version: 2.10.15(@types/node@17.0.45)(sharp@0.31.3)
       astro-feather-icons:
         specifier: ^1.0.2
         version: 1.0.2
       astro-icon:
-        specifier: ^0.8.0
+        specifier: ^0.8.2
         version: 0.8.2
       astro-navbar:
-        specifier: ^1.1.5
+        specifier: ^1.2.3
         version: 1.2.3
       astro-seo:
-        specifier: ^0.7.1
+        specifier: ^0.7.6
         version: 0.7.6
       feather-icons:
-        specifier: ^4.29.0
+        specifier: ^4.29.2
         version: 4.29.2
       rollup:
-        specifier: ^3.20.0
+        specifier: ^3.29.4
         version: 3.29.4
       tailwindcss:
-        specifier: ^3.2.7
+        specifier: ^3.4.6
         version: 3.4.6
     devDependencies:
       '@tailwindcss/typography':
-        specifier: ^0.5.9
+        specifier: ^0.5.13
         version: 0.5.13(tailwindcss@3.4.6)
       sharp:
         specifier: ^0.31.3
@@ -983,8 +983,8 @@ packages:
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
 
-  electron-to-chromium@1.4.829:
-    resolution: {integrity: sha512-5qp1N2POAfW0u1qGAxXEtz6P7bO1m6gpZr5hdf5ve6lxpLM7MpiM4jIPz7xcrNlClQMafbyUDDWjlIQZ1Mw0Rw==}
+  electron-to-chromium@1.4.830:
+    resolution: {integrity: sha512-TrPKKH20HeN0J1LHzsYLs2qwXrp8TF4nHdu4sq61ozGbzMpWhI7iIOPYPPkxeq1azMT9PZ8enPFcftbs/Npcjg==}
 
   emmet@2.4.7:
     resolution: {integrity: sha512-O5O5QNqtdlnQM2bmKHtJgyChcrFMgQuulI+WdiOw2NArzprUqqxUW6bgYtKvzKgrsYpuLWalOkdhNP+1jluhCA==}
@@ -1253,8 +1253,8 @@ packages:
     resolution: {integrity: sha512-i2R6zNFDwgEHJyQUtJEk0XFi1i0dPFn/oqjK3/vPCcDeJvW5NQ83V8QbicfF1SupOaB0h8ntgBC2YiE7dfyctQ==}
     engines: {node: '>=4'}
 
-  is-core-module@2.14.0:
-    resolution: {integrity: sha512-a5dFJih5ZLYlRtDc0dZWP7RiKr6xIKzmn/oAYCDvdLThadVgyJwlaoQPmRtMSpz+rk0OGAgIu+TcM9HUF0fk1A==}
+  is-core-module@2.15.0:
+    resolution: {integrity: sha512-Dd+Lb2/zvk9SKy1TGCt1wFJFo/MWBPMX5x7KcvLajWTGuomczdQX61PvY5yK6SVACwpoexWo81IfFyoKY2QnTA==}
     engines: {node: '>= 0.4'}
 
   is-decimal@2.0.1:
@@ -3191,7 +3191,7 @@ snapshots:
   browserslist@4.23.2:
     dependencies:
       caniuse-lite: 1.0.30001642
-      electron-to-chromium: 1.4.829
+      electron-to-chromium: 1.4.830
       node-releases: 2.0.17
       update-browserslist-db: 1.1.0(browserslist@4.23.2)
 
@@ -3379,7 +3379,7 @@ snapshots:
 
   eastasianwidth@0.2.0: {}
 
-  electron-to-chromium@1.4.829: {}
+  electron-to-chromium@1.4.830: {}
 
   emmet@2.4.7:
     dependencies:
@@ -3731,7 +3731,7 @@ snapshots:
 
   is-buffer@2.0.5: {}
 
-  is-core-module@2.14.0:
+  is-core-module@2.15.0:
     dependencies:
       hasown: 2.0.2
 
@@ -4656,7 +4656,7 @@ snapshots:
 
   resolve@1.22.8:
     dependencies:
-      is-core-module: 2.14.0
+      is-core-module: 2.15.0
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
