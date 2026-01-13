@@ -9,7 +9,7 @@ image:
   }
 publishDate: "2022-11-07 15:39"
 category: "Tutorials"
-author: "Connor Lopez"
+author: "Hadouin"
 tags: [astro, tailwindcss, frontend]
 ---
 
