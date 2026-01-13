@@ -1,6 +1,6 @@
 ---
 import hadouinImage from "assets/hadouin-hello.jpg";
-import { Image } from "@astrojs/image/components";
+import { Image } from "astro:assets";
 
 const paragraphs = [
   "Hello! My name is Hadouin LEROY, I’m a french guy who enjoys coding. I built a strong interest in programming since highschool by creating my own arcade game in python — turns out hacking together my Geometrydash clone introduced me the wonderful path of becoming a developper!",
@@ -20,8 +20,8 @@ const paragraphs = [
         class="w-full"
         src={hadouinImage}
         alt="hadouin waving"
-        aspectRatio="1:1"
-        fit="cover"
+        width={400}
+        height={400}
       />
     </div>
   </div>
