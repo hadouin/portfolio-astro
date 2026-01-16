@@ -6,7 +6,7 @@ image:
   { src: "/images/display/enoria-display-full.jpg", alt: "Enoria showcase" }
 technos: ["PHP", "Symfony", "Bootstrap", "twig", "git"]
 startDate: "2022-05-03 08:00"
-endDate: ""
+endDate: "2099-01-01 00:00"
 demo: "https://enoria.com"
 ---
 

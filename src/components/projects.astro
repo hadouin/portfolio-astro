@@ -1,9 +1,9 @@
 ---
 import { getCollection } from "astro:content";
 
-// Filter blog entries with 'draft: false' & date before current date
+// Filter entries with 'draft: false' and 'show: true'
 const activeProjectsShowcase = await getCollection("portfolio", ({ data }) => {
-  return !data.draft;
+  return !data.draft && data.show !== false;
 });
 
 // Sort content entries by endDate (null = ongoing, sorts first)
@@ -19,18 +19,32 @@ activeProjectsShowcase.sort(function (a, b) {
 <ul class="mb-24">
   {
     activeProjectsShowcase.map((entry, index) => (
-      <li class="group grid lg:grid-cols-2 gap-8 items-center my-24 first:mt-0 last:mb-0">
-        <a href={`/projects/${entry.id}`} class="lg:group-odd:order-1 block overflow-hidden rounded-lg transition-transform hover:scale-[1.02]">
-          <img
-            class="w-full h-full object-cover drop-shadow"
-            src={entry.data.image.src}
-            alt={entry.data.image.alt}
-          />
-        </a>
-        <div class="lg:group-odd:text-right">
-          <a href={`/projects/${entry.id}`} class="hover:text-gray-600 transition">
-            <h3 class="text-3xl font-bold">{entry.data.title}</h3>
+      <li class:list={["group grid lg:grid-cols-2 gap-8 items-center my-24 first:mt-0 last:mb-0", { "opacity-60": entry.data.disabled }]}>
+        {entry.data.disabled ? (
+          <div class="lg:group-odd:order-1 block overflow-hidden rounded-lg cursor-not-allowed">
+            <img
+              class="w-full h-full object-cover drop-shadow"
+              src={entry.data.image.src}
+              alt={entry.data.image.alt}
+            />
+          </div>
+        ) : (
+          <a href={`/projects/${entry.id}`} class="lg:group-odd:order-1 block overflow-hidden rounded-lg transition-transform hover:scale-[1.02]">
+            <img
+              class="w-full h-full object-cover drop-shadow"
+              src={entry.data.image.src}
+              alt={entry.data.image.alt}
+            />
           </a>
+        )}
+        <div class="lg:group-odd:text-right">
+          {entry.data.disabled ? (
+            <h3 class="text-3xl font-bold">{entry.data.title}</h3>
+          ) : (
+            <a href={`/projects/${entry.id}`} class="hover:text-gray-600 transition">
+              <h3 class="text-3xl font-bold">{entry.data.title}</h3>
+            </a>
+          )}
           <p class="font-inter">{entry.data.snippet}</p>
           <ul class="flex gap-4 lg:group-odd:justify-end">
             {entry.data.technos.map((item) => (

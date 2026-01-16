@@ -36,6 +36,8 @@ const portfolioCollection = defineCollection({
       .transform((str) => (str ? new Date(str) : null)),
     github: z.string().url().optional(),
     demo: z.string().url().optional(),
+    disabled: z.boolean().default(false),
+    show: z.boolean().default(true),
   }),
 });
 
