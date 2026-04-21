@@ -39,11 +39,12 @@ const CARD_SIZES = "(min-width: 1024px) 50vw, 100vw";
   {
     activeProjectsShowcase.map((entry, index) => {
       const img = entry.data.image;
-      const imgClass = "w-full h-full object-cover drop-shadow";
+      const imgClass = "w-full h-full object-cover drop-shadow rounded-lg";
       const loading = index < 2 ? "eager" : "lazy";
       const meta = imagesByName[img.src];
       const isAnimated = /\.gif$/i.test(img.src);
       let mediaNode;
+      const heroName = `hero-${entry.id}`;
       if (meta && !isAnimated) {
         mediaNode = (
           <Image
@@ -61,13 +62,13 @@ const CARD_SIZES = "(min-width: 1024px) 50vw, 100vw";
         mediaNode = <img class={imgClass} src={rawSrc} alt={img.alt} loading={loading} data-parallax="0.05" />;
       }
       return (
-        <li class:list={["group grid lg:grid-cols-2 gap-8 items-center my-24 first:mt-0 last:mb-0", { "opacity-60": entry.data.disabled }]}>
+        <li id={`project-${entry.id}`} class:list={["group grid lg:grid-cols-2 gap-8 items-center my-24 first:mt-0 last:mb-0 scroll-mt-[90px]", { "opacity-60": entry.data.disabled }]}>
           {entry.data.disabled ? (
             <div class="watermark-hover lg:group-odd:order-1 block overflow-hidden rounded-lg cursor-not-allowed">
               {mediaNode}
             </div>
           ) : (
-            <a href={`/projects/${entry.id}`} class="watermark-hover lg:group-odd:order-1 block overflow-hidden rounded-lg transition-transform hover:scale-[1.02]">
+            <a href={`/projects/${entry.id}`} class="watermark-hover lg:group-odd:order-1 block overflow-hidden rounded-lg" transition:name={heroName}>
               {mediaNode}
             </a>
           )}

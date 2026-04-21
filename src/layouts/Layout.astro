@@ -1,5 +1,6 @@
 ---
 import { SEO } from "astro-seo";
+import { ClientRouter } from "astro:transitions";
 import Footer from "@components/footer.astro";
 import Navbar from "@components/navbar/navbar.astro";
 import "@fontsource/inter/variable.css";
@@ -41,6 +42,7 @@ const makeTitle = title
     <meta name="generator" content={Astro.generator} />
 
     <!-- <link rel="preload" as="image" href={src} alt="Hero" /> -->
+    <ClientRouter />
     <SEO
       title={makeTitle}
       description="I'm a computer science student in Paris. I like to code."
@@ -110,24 +112,75 @@ const makeTitle = title
         anchors: true,
       });
 
-      document.querySelectorAll<HTMLElement>(".watermark-hover").forEach((el) => {
-        el.addEventListener("mouseenter", () => {
-          el.classList.remove("is-scan-out");
-          el.classList.add("is-scan-in");
-        });
-        el.addEventListener("mouseleave", () => {
-          el.classList.remove("is-scan-in");
-          el.classList.add("is-scan-out");
-        });
-      });
+      let parallaxIO: IntersectionObserver | null = null;
+      let scrollHandler: (() => void) | null = null;
 
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!reduceMotion) {
+      const scrambleLetters =
+        "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&";
+      const randomScrambleChar = () =>
+        scrambleLetters[Math.floor(Math.random() * scrambleLetters.length)];
+
+      function bindPage() {
+        document.querySelectorAll<HTMLElement>(".watermark-hover").forEach((el) => {
+          if ((el as any).__watermarkBound) return;
+          (el as any).__watermarkBound = true;
+          el.addEventListener("mouseenter", () => {
+            el.classList.remove("is-scan-out");
+            el.classList.add("is-scan-in");
+          });
+          el.addEventListener("mouseleave", () => {
+            el.classList.remove("is-scan-in");
+            el.classList.add("is-scan-out");
+          });
+        });
+
+        document
+          .querySelectorAll<HTMLElement>(".scramble-hover")
+          .forEach((el) => {
+            if ((el as any).__scrambleBound) return;
+            (el as any).__scrambleBound = true;
+            const target = (el.dataset.scrambleText ?? el.textContent ?? "").trim();
+            if (!target) return;
+            el.dataset.scrambleText = target;
+            let interval: ReturnType<typeof setInterval> | undefined;
+
+            el.addEventListener("mouseenter", () => {
+              if (interval) clearInterval(interval);
+              let iteration = 0;
+              const tickMs = 30;
+              const durationMs = 300;
+              const step = target.length / (durationMs / tickMs);
+
+              interval = setInterval(() => {
+                el.textContent = target
+                  .split("")
+                  .map((ch, index) => {
+                    if (ch === " ") return " ";
+                    if (index < iteration) return target[index];
+                    return randomScrambleChar();
+                  })
+                  .join("");
+
+                if (iteration >= target.length) {
+                  if (interval) clearInterval(interval);
+                  el.textContent = target;
+                }
+                iteration += step;
+              }, tickMs);
+            });
+          });
+
+        if (parallaxIO) parallaxIO.disconnect();
+        if (scrollHandler) lenis.off("scroll", scrollHandler);
+
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (reduceMotion) return;
+
         const parallaxEls = Array.from(
           document.querySelectorAll<HTMLElement>("[data-parallax]")
         );
         const visible = new Set<HTMLElement>();
-        const io = new IntersectionObserver(
+        parallaxIO = new IntersectionObserver(
           (entries) => {
             for (const e of entries) {
               const t = e.target as HTMLElement;
@@ -142,7 +195,18 @@ const makeTitle = title
         );
         parallaxEls.forEach((el) => {
           el.style.willChange = "transform";
-          io.observe(el);
+          // Seed with the scroll-accurate transform so the element does not
+          // flash at baseline between bindPage() and the first IO callback.
+          {
+            const vh = window.innerHeight;
+            const speed = parseFloat(el.dataset.parallax || "0.05");
+            const scale = parseFloat(el.dataset.parallaxScale || "1.08");
+            const rect = el.getBoundingClientRect();
+            const ec = rect.top + rect.height / 2;
+            const offset = (vh / 2 - ec) * speed;
+            el.style.transform = `translate3d(0, ${offset.toFixed(2)}px, 0) scale(${scale})`;
+          }
+          parallaxIO!.observe(el);
         });
 
         const update = () => {
@@ -157,52 +221,127 @@ const makeTitle = title
             el.style.transform = `translate3d(0, ${offset.toFixed(2)}px, 0) scale(${scale})`;
           });
         };
-        parallaxEls.forEach((el) => {
-          const scale = parseFloat(el.dataset.parallaxScale || "1.08");
-          el.style.transform = `translate3d(0, 0, 0) scale(${scale})`;
-        });
+        scrollHandler = update;
         lenis.on("scroll", update);
-        update();
+        // IO populates `visible` async; flush on the next frame so the first
+        // update() sees the real set instead of running empty.
+        requestAnimationFrame(() => {
+          update();
+          requestAnimationFrame(update);
+        });
       }
 
-      const scrambleLetters =
-        "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&";
-      const randomScrambleChar = () =>
-        scrambleLetters[Math.floor(Math.random() * scrambleLetters.length)];
+      // Force lenis' animated scroll + internal state to match a target Y
+      // instantly. scrollTo({immediate,force}) already does this, but calling
+      // resize()+emit nudges its scroll listeners so downstream effects
+      // (parallax update) see the new position on the next tick.
+      function syncScroll(y: number) {
+        lenis.scrollTo(y, { immediate: true, force: true });
+        window.scrollTo(0, y);
+        lenis.resize();
+      }
 
-      document
-        .querySelectorAll<HTMLElement>(".scramble-hover")
-        .forEach((el) => {
-          const target = (el.dataset.scrambleText ?? el.textContent ?? "").trim();
-          if (!target) return;
-          el.dataset.scrambleText = target;
-          let interval: ReturnType<typeof setInterval> | undefined;
-
-          el.addEventListener("mouseenter", () => {
-            if (interval) clearInterval(interval);
-            let iteration = 0;
-            const tickMs = 30;
-            const durationMs = 300;
-            const step = target.length / (durationMs / tickMs);
-
-            interval = setInterval(() => {
-              el.textContent = target
-                .split("")
-                .map((ch, index) => {
-                  if (ch === " ") return " ";
-                  if (index < iteration) return target[index];
-                  return randomScrambleChar();
-                })
-                .join("");
-
-              if (iteration >= target.length) {
-                if (interval) clearInterval(interval);
-                el.textContent = target;
-              }
-              iteration += step;
-            }, tickMs);
-          });
+      // Paint the *real* parallax transform (matching the scroll-driven
+      // update loop) so that the view-transition snapshot matches the state
+      // the element will settle into after VT ends — no post-morph snap.
+      function paintParallax() {
+        const vh = window.innerHeight;
+        const vc = vh / 2;
+        document.querySelectorAll<HTMLElement>("[data-parallax]").forEach((el) => {
+          const speed = parseFloat(el.dataset.parallax || "0.05");
+          const scale = parseFloat(el.dataset.parallaxScale || "1.08");
+          const rect = el.getBoundingClientRect();
+          const ec = rect.top + rect.height / 2;
+          const offset = (vc - ec) * speed;
+          el.style.willChange = "transform";
+          el.style.transform = `translate3d(0, ${offset.toFixed(2)}px, 0) scale(${scale})`;
         });
+      }
+
+      const SCROLL_KEY_PREFIX = "hadouin:scroll:";
+
+      // Persist scroll position before leaving so the destination page can
+      // snap back to the matching section during the morph.
+      document.addEventListener("astro:before-preparation", () => {
+        sessionStorage.setItem(
+          SCROLL_KEY_PREFIX + location.pathname,
+          String(window.scrollY)
+        );
+        // Leaving a project detail page: scroll the outgoing doc to top so
+        // the hero sits at its natural position in the old snapshot, then
+        // recompute parallax so the old snapshot reflects scroll=0 state.
+        if (location.pathname.startsWith("/projects/")) {
+          syncScroll(0);
+          paintParallax();
+        }
+      });
+
+      // Set the incoming document's scroll and parallax transforms
+      // synchronously (before the new snapshot paints) so both the morph
+      // target rect and the post-VT real DOM match frame-for-frame.
+      document.addEventListener("astro:after-swap", () => {
+        if (location.pathname.startsWith("/projects/")) {
+          // Forward nav into detail: hero always at top.
+          syncScroll(0);
+        } else {
+          // Priority: URL hash (explicit "back to this project") > saved
+          // scroll (user landed here before) > top.
+          let y = 0;
+          if (location.hash) {
+            try {
+              const target = document.querySelector(location.hash) as HTMLElement | null;
+              if (target) {
+                const rect = target.getBoundingClientRect();
+                const navOffset = 90;
+                y = Math.max(0, Math.round(window.scrollY + rect.top - navOffset));
+              }
+            } catch {
+              /* malformed hash — ignore */
+            }
+          }
+          if (!y) {
+            const saved = sessionStorage.getItem(SCROLL_KEY_PREFIX + location.pathname);
+            y = saved ? parseInt(saved, 10) : 0;
+          }
+          syncScroll(y);
+        }
+        paintParallax();
+      });
+
+      function bindContinueReading() {
+        const btn = document.getElementById("continue-reading");
+        if (!btn) return;
+        if (!location.pathname.startsWith("/projects/")) return;
+        const key = SCROLL_KEY_PREFIX + location.pathname;
+        const saved = sessionStorage.getItem(key);
+        const y = saved ? parseInt(saved, 10) : 0;
+        if (y <= 120) return;
+
+        // Reveal button after the morph finishes so it does not compete
+        // visually with the hero animation.
+        setTimeout(() => btn.classList.add("is-visible"), 720);
+
+        const hide = () => btn.classList.remove("is-visible");
+        btn.addEventListener("click", () => {
+          hide();
+          lenis.scrollTo(y, { duration: 1.0 });
+          sessionStorage.removeItem(key);
+        }, { once: true });
+
+        // Dismiss if the user scrolls themselves.
+        const onScroll = () => {
+          if (Math.abs(window.scrollY) > 40) {
+            hide();
+            window.removeEventListener("scroll", onScroll);
+          }
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+      }
+
+      document.addEventListener("astro:page-load", () => {
+        bindPage();
+        bindContinueReading();
+      });
     </script>
     <style is:global>
       /* Improve Page speed */
@@ -212,6 +351,56 @@ const makeTitle = title
       }
       html {
         scroll-padding-top: 70px; /* height of sticky header */
+        background-color: #ffffff;
+      }
+
+      /* View Transitions: whiteout fade + smooth hero-image morph */
+      @keyframes vt-fade-out {
+        to { opacity: 0; }
+      }
+      @keyframes vt-fade-in {
+        from { opacity: 0; }
+      }
+
+      ::view-transition-old(root) {
+        animation: 320ms cubic-bezier(0.4, 0, 1, 1) both vt-fade-out;
+      }
+      ::view-transition-new(root) {
+        animation: 320ms 280ms cubic-bezier(0, 0, 0.2, 1) both vt-fade-in;
+      }
+
+      /* Shared-element morph rides on top of the whiteout */
+      ::view-transition-group(*) {
+        animation-duration: 620ms;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        border-radius: 0.5rem; /* preserve rounded-lg frame during morph */
+        overflow: clip;
+      }
+      ::view-transition-image-pair(*) {
+        isolation: auto;
+        border-radius: 0.5rem;
+      }
+      ::view-transition-old(*),
+      ::view-transition-new(*) {
+        animation-duration: 620ms;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        mix-blend-mode: normal;
+        border-radius: 0.5rem;
+      }
+      /* Root pair is full-viewport — undo rounding so the page does not clip */
+      ::view-transition-group(root),
+      ::view-transition-image-pair(root),
+      ::view-transition-old(root),
+      ::view-transition-new(root) {
+        border-radius: 0;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        ::view-transition-group(*),
+        ::view-transition-old(*),
+        ::view-transition-new(*) {
+          animation-duration: 1ms !important;
+        }
       }
     </style>
     <style>

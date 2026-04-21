@@ -28,6 +28,7 @@ const imagesByName = Object.fromEntries(
 );
 const heroMeta = imagesByName[entry.data.image.src];
 const heroIsAnimated = /\.gif$/i.test(entry.data.image.src);
+const heroName = `hero-${entry.id}`;
 
 const formatDate = (date: Date) => {
   return date.toLocaleDateString("en-US", {
@@ -41,7 +42,7 @@ const formatDate = (date: Date) => {
   <Container>
     <div class="mx-auto max-w-4xl mt-8">
       <a
-        href="/#projects"
+        href={`/#project-${entry.id}`}
         class="text-gray-500 hover:text-gray-700 transition inline-flex items-center gap-2 mb-8"
       >
         <svg
@@ -60,7 +61,7 @@ const formatDate = (date: Date) => {
         Back to projects
       </a>
 
-      <div class="watermark-hover rounded-lg shadow-lg mb-8">
+      <div class="watermark-hover rounded-lg shadow-lg mb-8 overflow-hidden" transition:name={heroName}>
         {heroMeta && !heroIsAnimated ? (
           <Image
             src={heroMeta}
@@ -68,14 +69,14 @@ const formatDate = (date: Date) => {
             widths={[400, 800, 1200, 1600]}
             sizes="(min-width: 896px) 896px, 100vw"
             loading="eager"
-            class="w-full"
+            class="w-full rounded-lg"
             data-parallax="0.05"
           />
         ) : (
           <img
             src={heroMeta ? heroMeta.src : entry.data.image.src}
             alt={entry.data.image.alt}
-            class="w-full"
+            class="w-full rounded-lg"
             data-parallax="0.05"
           />
         )}
@@ -154,7 +155,7 @@ const formatDate = (date: Date) => {
 
       <div class="text-center mt-12 mb-8">
         <a
-          href="/#projects"
+          href={`/#project-${entry.id}`}
           class="bg-gray-100 px-5 py-3 rounded-md hover:bg-gray-200 transition"
         >
           ← Back to Projects
@@ -162,4 +163,40 @@ const formatDate = (date: Date) => {
       </div>
     </div>
   </Container>
+
+  <button
+    id="continue-reading"
+    type="button"
+    class="continue-reading-btn fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 bg-gray-900 text-white px-5 py-3 rounded-full shadow-lg hover:bg-gray-700"
+  >
+    Continue reading
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M12 5v14" />
+      <path d="m19 12-7 7-7-7" />
+    </svg>
+  </button>
 </Layout>
+
+<style>
+  .continue-reading-btn {
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 280ms ease, transform 280ms ease, background-color 200ms ease;
+  }
+  .continue-reading-btn.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+</style>
