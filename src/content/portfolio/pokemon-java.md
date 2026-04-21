@@ -4,7 +4,7 @@ title: "Pokemon Java"
 snippet: "A pokemon battle simulator in Java"
 image:
   {
-    src: "/images/display/pokemonJava-display.png",
+    src: "pokemonJava-display.png",
     alt: "Pokemon Java showcase",
   }
 technos: ["Java", "JavaFX"]

@@ -51,7 +51,7 @@ jobs:
           name: website-dist
           path: dist
       - name: copy file via ssh key
-        uses: appleboy/scp-action@v0.1.4
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
@@ -61,5 +61,5 @@ jobs:
           target: /var/www/html
           strip_components: 1
           overwrite: true
-          timeout: 120s
+          timeout: 10m
           command_timeout: 20m

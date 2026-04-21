@@ -3,7 +3,7 @@ draft: false
 title: "FreeRoom • Edelweiss"
 snippet: "Real-time free classroom finder for ISEP students. SvelteKit full-stack app with Prisma, PostgreSQL and scheduled event ingestion, built with the Edelweiss student association."
 image:
-  { src: "/images/display/freeroom-edelweiss-banner.png", alt: "Edelweiss FreeRoom banner" }
+  { src: "freeroom-edelweiss-banner.png", alt: "Edelweiss FreeRoom banner" }
 technos: ["Svelte", "SvelteKit", "TypeScript", "Prisma", "PostgreSQL", "TailwindCSS", "Docker"]
 startDate: "2023-09-01 08:00"
 endDate: "2024-06-30 00:00"

@@ -1,5 +1,6 @@
 ---
 import { getCollection, render } from "astro:content";
+import { Image } from "astro:assets";
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/container.astro";
 import TechnoBadges from "@components/techno-badges.astro";
@@ -14,6 +15,19 @@ export async function getStaticPaths() {
 
 const { entry } = Astro.props;
 const { Content } = await render(entry);
+
+const portfolioImages = import.meta.glob<{ default: ImageMetadata }>(
+  "/src/assets/portfolio/*.{png,jpg,jpeg,webp,avif,gif}",
+  { eager: true },
+);
+const imagesByName = Object.fromEntries(
+  Object.entries(portfolioImages).map(([path, mod]) => [
+    path.split("/").pop()!,
+    mod.default,
+  ]),
+);
+const heroMeta = imagesByName[entry.data.image.src];
+const heroIsAnimated = /\.gif$/i.test(entry.data.image.src);
 
 const formatDate = (date: Date) => {
   return date.toLocaleDateString("en-US", {
@@ -46,11 +60,22 @@ const formatDate = (date: Date) => {
         Back to projects
       </a>
 
-      <img
-        src={entry.data.image.src}
-        alt={entry.data.image.alt}
-        class="w-full rounded-lg shadow-lg mb-8"
-      />
+      {heroMeta && !heroIsAnimated ? (
+        <Image
+          src={heroMeta}
+          alt={entry.data.image.alt}
+          widths={[400, 800, 1200, 1600]}
+          sizes="(min-width: 896px) 896px, 100vw"
+          loading="eager"
+          class="w-full rounded-lg shadow-lg mb-8"
+        />
+      ) : (
+        <img
+          src={heroMeta ? heroMeta.src : entry.data.image.src}
+          alt={entry.data.image.alt}
+          class="w-full rounded-lg shadow-lg mb-8"
+        />
+      )}
 
       <h1 class="text-4xl lg:text-5xl font-bold lg:tracking-tight mt-1 lg:leading-tight">
         {entry.data.title}

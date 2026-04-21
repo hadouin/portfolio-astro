@@ -3,7 +3,7 @@ draft: false
 title: "Midgard"
 snippet: "Factory/challenge game system built on Starknet. SvelteKit 5 application where players create factories, stake GARD tokens, and compete through challenges"
 image:
-  { src: "/images/display/midgard-display-full.jpg", alt: "Midgard showcase" }
+  { src: "midgard-display-full.jpg", alt: "Midgard showcase" }
 technos: ["SvelteKit", "Svelte 5", "TypeScript", "PostgreSQL", "Drizzle", "Starknet", "TailwindCSS"]
 startDate: "2025-01-01 08:00"
 endDate: "2099-03-01 00:00"

@@ -3,7 +3,7 @@ draft: false
 title: "Centime"
 snippet: "Logo and brand identity design for Centime."
 image:
-  { src: "/images/display/centime-banner.png", alt: "Centime logo and brand banner" }
+  { src: "centime-banner.png", alt: "Centime logo and brand banner" }
 technos: ["Logo Design", "Branding", "Visual Identity"]
 startDate: "2024-01-01 00:00"
 ---

@@ -3,7 +3,7 @@ draft: false
 title: "Monquiro"
 snippet: "Brand identity and logo design for Monquiro, an AI accounting SaaS that automatically imports Gmail invoices and syncs them to Pennylane."
 image:
-  { src: "/images/display/monquiro-banner.png", alt: "Monquiro logo and brand banner" }
+  { src: "monquiro-banner.png", alt: "Monquiro logo and brand banner" }
 technos: ["Logo Design", "Branding", "Visual Identity"]
 startDate: "2025-01-01 00:00"
 demo: "https://monquiro.com/"

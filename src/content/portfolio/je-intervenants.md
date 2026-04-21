@@ -3,7 +3,7 @@ draft: false
 title: "JE Intervenants"
 snippet: "Platform for Junior ISEP to connect alumni and industry experts with student project teams through a browsable expert directory."
 image:
-  { src: "/images/display/je-intervenants-banner.png", alt: "JE Intervenants platform banner" }
+  { src: "je-intervenants-banner.png", alt: "JE Intervenants platform banner" }
 technos: ["Design Thinking", "UX Research", "Product Design", "Scrum", "Figma", "Notion", "CI/CD"]
 startDate: "2024-01-01 00:00"
 demo: "https://je-intervenants.juniorisep.com/"
@@ -19,7 +19,7 @@ Junior ISEP runs dozens of client projects each year. Teams often hit moments wh
 
 ## Design Thinking Process
 
-![Design thinking illustration](/images/display/je-intervenants-design-thinking.png)
+![Design thinking illustration](../../assets/portfolio/je-intervenants-design-thinking.png)
 
 The project started with a full design thinking pass:
 
@@ -45,7 +45,7 @@ Shipping with a student team meant process mattered as much as design quality. W
 
 Client comms was the biggest bottleneck early on — scattered email threads, missed handoffs, unclear onboarding. Fixed by centralizing everything in Notion: one CRM database for intervenants and project contacts, onboarding automations that fire templated tasks and emails when a new expert signs up, and shared status views so the whole team sees where each relationship stands.
 
-![Notion CRM illustration](/images/display/je-intervenants-notion-crm.png)
+![Notion CRM illustration](../../assets/portfolio/je-intervenants-notion-crm.png)
 
 ## Automated Releases
 
@@ -53,7 +53,7 @@ App releases used to be manual and skipped. Built a CI/CD pipeline that tags ver
 
 ## Launch
 
-![JE Intervenants coming soon banner](/images/display/je-intervenants-coming-soon.png)
+![JE Intervenants coming soon banner](../../assets/portfolio/je-intervenants-coming-soon.png)
 
 A coming-soon landing page was used to build anticipation inside the Junior ISEP community and collect early expert signups before the public launch.
 

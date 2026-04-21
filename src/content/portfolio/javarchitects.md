@@ -4,7 +4,7 @@ title: "Javarchitects"
 snippet: "Making the famous board game into a JavaFX application"
 image:
   {
-    src: "/images/display/javarchitects-display.png",
+    src: "javarchitects-display.png",
     alt: "JavArchitects showcase",
   }
 technos: ["Java", "JavaFX", "Git"]

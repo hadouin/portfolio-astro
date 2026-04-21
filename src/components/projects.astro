@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
 import TechnoBadges from "./techno-badges.astro";
 
 // Filter entries with 'draft: false' and 'show: true'
@@ -13,43 +14,72 @@ activeProjectsShowcase.sort(function (a, b) {
   const bDate = b.data.endDate?.valueOf() ?? Infinity;
   return bDate - aDate;
 });
+
+const portfolioImages = import.meta.glob<{ default: ImageMetadata }>(
+  "/src/assets/portfolio/*.{png,jpg,jpeg,webp,avif,gif}",
+  { eager: true },
+);
+const imagesByName = Object.fromEntries(
+  Object.entries(portfolioImages).map(([path, mod]) => [
+    path.split("/").pop()!,
+    mod.default,
+  ]),
+);
+
+const CARD_WIDTHS = [400, 600, 800, 1200];
+const CARD_SIZES = "(min-width: 1024px) 50vw, 100vw";
 ---
 
 <h2 id="projects" class="text-4xl font-bold mt-52">My projects</h2>
 <h3 class="text-lg text-slate-700 mb-8">things i've done during my life</h3>
 <ul class="mb-24">
   {
-    activeProjectsShowcase.map((entry, index) => (
-      <li class:list={["group grid lg:grid-cols-2 gap-8 items-center my-24 first:mt-0 last:mb-0", { "opacity-60": entry.data.disabled }]}>
-        {entry.data.disabled ? (
-          <div class="lg:group-odd:order-1 block overflow-hidden rounded-lg cursor-not-allowed">
-            <img
-              class="w-full h-full object-cover drop-shadow"
-              src={entry.data.image.src}
-              alt={entry.data.image.alt}
-            />
-          </div>
-        ) : (
-          <a href={`/projects/${entry.id}`} class="lg:group-odd:order-1 block overflow-hidden rounded-lg transition-transform hover:scale-[1.02]">
-            <img
-              class="w-full h-full object-cover drop-shadow"
-              src={entry.data.image.src}
-              alt={entry.data.image.alt}
-            />
-          </a>
-        )}
-        <div class="lg:group-odd:text-right">
+    activeProjectsShowcase.map((entry, index) => {
+      const img = entry.data.image;
+      const imgClass = "w-full h-full object-cover drop-shadow";
+      const loading = index < 2 ? "eager" : "lazy";
+      const meta = imagesByName[img.src];
+      const isAnimated = /\.gif$/i.test(img.src);
+      let mediaNode;
+      if (meta && !isAnimated) {
+        mediaNode = (
+          <Image
+            class={imgClass}
+            src={meta}
+            alt={img.alt}
+            widths={CARD_WIDTHS}
+            sizes={CARD_SIZES}
+            loading={loading}
+          />
+        );
+      } else {
+        const rawSrc = meta ? meta.src : img.src;
+        mediaNode = <img class={imgClass} src={rawSrc} alt={img.alt} loading={loading} />;
+      }
+      return (
+        <li class:list={["group grid lg:grid-cols-2 gap-8 items-center my-24 first:mt-0 last:mb-0", { "opacity-60": entry.data.disabled }]}>
           {entry.data.disabled ? (
-            <h3 class="text-3xl font-bold">{entry.data.title}</h3>
+            <div class="lg:group-odd:order-1 block overflow-hidden rounded-lg cursor-not-allowed">
+              {mediaNode}
+            </div>
           ) : (
-            <a href={`/projects/${entry.id}`} class="hover:text-gray-600 transition">
-              <h3 class="text-3xl font-bold">{entry.data.title}</h3>
+            <a href={`/projects/${entry.id}`} class="lg:group-odd:order-1 block overflow-hidden rounded-lg transition-transform hover:scale-[1.02]">
+              {mediaNode}
             </a>
           )}
-          <p class="font-inter">{entry.data.snippet}</p>
-          <TechnoBadges technos={entry.data.technos} class="mt-3 lg:group-odd:justify-end" />
-        </div>
-      </li>
-    ))
+          <div class="lg:group-odd:text-right">
+            {entry.data.disabled ? (
+              <h3 class="text-3xl font-bold">{entry.data.title}</h3>
+            ) : (
+              <a href={`/projects/${entry.id}`} class="hover:text-gray-600 transition">
+                <h3 class="text-3xl font-bold">{entry.data.title}</h3>
+              </a>
+            )}
+            <p class="font-inter">{entry.data.snippet}</p>
+            <TechnoBadges technos={entry.data.technos} class="mt-3 lg:group-odd:justify-end" />
+          </div>
+        </li>
+      );
+    })
   }
 </ul>
