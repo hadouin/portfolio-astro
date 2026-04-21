@@ -1,28 +1,28 @@
 ---
-import hadouinImage from "assets/hadouin-hello.jpg";
+import hadouinImage from "assets/hadouin-isep.jpg";
 import { Image } from "astro:assets";
 
 const paragraphs = [
-  "Hello! My name is Hadouin LEROY, I’m a french guy who enjoys coding. I built a strong interest in programming since highschool by creating my own arcade game in python — turns out hacking together my Geometrydash clone introduced me the wonderful path of becoming a developper!",
-  "Today, I’m studying computer science at ISEP in Paris. There I had the opportunity to do an internship as a devolopper for association-enoria. I followed the mission as a freelance in my freetime, i love it, i have hands-on the tangible, the real job.",
-  "My goal is to find an apprenticeship for the next two years before my graduation. I’m seeking for a position as software dev.",
+  "Hello! My name is Hadouin LEROY, a creative developer with a strong technical background, shaped by hands-on experience designing and building applications from scratch. I like turning raw ideas into polished, tangible products.",
+  "I graduated from ISEP engineering school in Paris (2025), with exchanges at Glyndwr University in Wales (UX design, mobile apps) and Presidency University in Bangalore (management, blockchain). Along the way I worked at Dassault Systèmes, Enoria, JuniorISEP, and now Runelabs.",
+  "Today I’m heading towards gaming and 3D animation, wearing hats as a creative dev, UX designer, and certified scrum master. Fluent in English, native in French.",
 ];
 ---
 
 <div class="mb-16" id="about">
-  <h2 class="text-2xl font-bold">About me</h2>
   <div class="grid lg:grid-cols-5 place-items-center gap-12">
-    <div class="text col-span-3">
-      {paragraphs.map((item) => <p class="font-inter my-2">{item}</p>)}
-    </div>
-    <div class="col-span-2">
+    <div class="col-span-2 w-full">
       <Image
-        class="w-full"
+        class="w-full rounded-lg"
         src={hadouinImage}
-        alt="hadouin waving"
-        width={400}
-        height={400}
+        alt="Hadouin Leroy portrait"
+        width={600}
+        height={800}
       />
+    </div>
+    <div class="text col-span-3">
+      <h2 class="text-2xl font-bold">About me</h2>
+      {paragraphs.map((item) => <p class="font-inter my-2">{item}</p>)}
     </div>
   </div>
 </div>

@@ -4,6 +4,7 @@ import Layout from "@layouts/Layout.astro";
 import Container from "@components/container.astro";
 import Sectionhead from "@components/sectionhead.astro";
 import Contactform from "@components/contactform.astro";
+import Link from "@components/ui/link.astro";
 ---
 
 <Layout title="Contact">
@@ -29,6 +30,28 @@ import Contactform from "@components/contactform.astro";
               href="mailto:contact@hadouin.com">contact@hadouin.com</a
             >
           </div>
+        </div>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/hadouin_leroy-cv-en.pdf"
+            size="md"
+            style="outline"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center gap-2 w-fit">
+            <Icon class="w-4 h-4" name="uil:file-alt" />
+            CV — English
+          </Link>
+          <Link
+            href="/hadouin_leroy-cv-fr.pdf"
+            size="md"
+            style="outline"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center gap-2 w-fit">
+            <Icon class="w-4 h-4" name="uil:file-alt" />
+            CV — Français
+          </Link>
         </div>
       </div>
       <div>

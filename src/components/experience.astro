@@ -1,0 +1,87 @@
+---
+const experiences = [
+  {
+    company: "Runelabs",
+    role: "Game Developer",
+    context: "Web3 Game Studio",
+    period: "Jan 2025 → Now · 1.5 years",
+    bullets: [
+      "Designed Midgard from the ground up, crafting its full UX/UI, logo, brand and 3D assets with a strong gaming identity and mobile-first responsive approach. Helped shape a platform enabling decentralized monetization for indie studios.",
+      "Led the full frontend development of PonziLand, crafting a polished on-chain game experience at the intersection of gaming and crypto. Partnered closely with the Game Designer to turn gameplay into intuitive, immersive user flows.",
+      "Built animated landing page experiences, Three.js 3D scenes and Blender assets, then led major rendering optimizations.",
+    ],
+    skills: ["Svelte", "Three.js", "Blender", "Figma", "UX/UI", "Branding"],
+  },
+  {
+    company: "Dassault Systèmes",
+    role: "Software Engineer · R&D Delmia",
+    context: "3D software for industry",
+    period: "Sept 2023 → Jan 2025 · 2 years",
+    bullets: [
+      "Led the end-to-end architecture and redesign of a documentation engine, taking it from requirements gathering to production deployment. Defined user needs, selected the technical stack, developed custom plugins, and set up Docker + GitLab CI/CD infrastructure.",
+      "Owned the integration of a code demo tool in a Product Owner role, coordinating with an international team and applying a user-centered approach across product, UX and technical implementation.",
+    ],
+    skills: ["Docker", "GitLab CI/CD", "Plugins", "Product Owner", "UX"],
+  },
+  {
+    company: "JuniorISEP",
+    role: "Tech Lead",
+    context: "Junior Dev Shop",
+    period: "Feb 2023 → Sept 2024 · 1.5 years",
+    bullets: [
+      "Created JE Intervenants, a full Angular PWA combining a user-facing mobile app and an admin dashboard. Designed both mobile and desktop interfaces, led frontend development and structured the project with several collaborators.",
+      "Technical qualification of bespoke client apps, including projects for Ampère-Renault, assessing feasibility and defining appropriate technical approaches.",
+    ],
+    skills: ["Angular", "PWA", "Frontend", "Scrum Master", "Prototyping"],
+  },
+  {
+    company: "Enoria",
+    role: "Frontend Dev",
+    context: "ERP / CRM Software",
+    period: "Sept 2022 · 6 months",
+    bullets: [
+      "Delivered a full UI redesign and UX improvements for a CRM-like management application, making the product clearer, more modern and easier to use. Bootstrap, SCSS and JavaScript in an agile environment.",
+    ],
+    skills: ["Bootstrap", "SCSS", "JavaScript", "Agile"],
+  },
+];
+---
+
+<section id="experience" class="mb-24 mt-16">
+  <h2 class="text-4xl font-bold">My experience</h2>
+  <h3 class="text-lg text-slate-700 mb-8">stuff i've shipped along the way</h3>
+
+  <ol class="space-y-12">
+    {
+      experiences.map((exp) => (
+        <li class="grid lg:grid-cols-12 gap-x-4 lg:gap-8 gap-y-1">
+          <div class="lg:col-span-3">
+            <p class="font-inter text-sm text-slate-500">{exp.period}</p>
+          </div>
+          <div class="lg:col-span-9">
+            <h3 class="text-2xl font-bold">
+              {exp.role}
+              <span class="text-slate-500"> @ {exp.company}</span>
+            </h3>
+            <p class="font-inter text-sm text-slate-500 mb-3">{exp.context}</p>
+            <ul class="space-y-2">
+              {exp.bullets.map((b) => (
+                <li class="font-inter leading-relaxed flex gap-3">
+                  <span class="text-slate-400 shrink-0">▹</span>
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+            <ul class="flex flex-wrap gap-2 mt-4">
+              {exp.skills.map((s) => (
+                <li class="font-inter text-xs border border-slate-300 rounded-full px-3 py-1">
+                  {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+</section>
