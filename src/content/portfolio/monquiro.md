@@ -17,10 +17,10 @@ Monquiro is an AI-powered accounting tool that eliminates manual invoice entry b
 
 Monquiro targets solo operators, small teams, and growing businesses that are tired of manual bookkeeping. The brand needed to feel:
 
-- **Trustworthy** — it handles financial data and accounting workflows
-- **Efficient** — the product's entire promise is "stop manual data entry"
-- **Modern** — AI-first, purpose-built for the Gmail + Pennylane stack
-- **Approachable** — not a cold enterprise accounting tool
+- **Trustworthy**: it handles financial data and accounting workflows
+- **Efficient**: the product's entire promise is "stop manual data entry"
+- **Modern**: AI-first, purpose-built for the Gmail + Pennylane stack
+- **Approachable**: not a cold enterprise accounting tool
 
 ## Logo System
 
@@ -46,4 +46,4 @@ Monquiro's feature set that the brand supports:
 
 ## What I Learned
 
-Designing for a focused B2B SaaS product reinforced how much restraint matters. The logo doesn't need to explain the whole product — it needs to earn trust quickly and stay out of the way while the software does the work.
+Designing for a focused B2B SaaS product reinforced how much restraint matters. The logo doesn't need to explain the whole product; it needs to earn trust quickly and stay out of the way while the software does the work.

@@ -8,6 +8,7 @@ technos: ["PHP", "Symfony", "Bootstrap", "twig", "git"]
 startDate: "2022-05-03 08:00"
 endDate: "2099-01-01 00:00"
 demo: "https://enoria.com"
+priority: 4
 ---
 
 ## Overview

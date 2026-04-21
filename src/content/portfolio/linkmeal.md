@@ -7,6 +7,7 @@ technos: ["ReactNative", "Symfony", "UI/UX", "JavaScript"]
 startDate: "2020-02-01 00:00"
 endDate: "2020-06-08 00:00"
 github: "https://github.com/hadouin/LinkMeal"
+priority: 6
 ---
 
 ## The Problem

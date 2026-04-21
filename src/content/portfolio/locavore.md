@@ -6,6 +6,7 @@ image: { src: "locavore-display.png", alt: "Locavore app screens showcase" }
 technos: ["UI/UX", "Branding", "Figma", "Business Plan"]
 startDate: "2024-09-01 00:00"
 endDate: "2024-12-15 00:00"
+priority: 5
 ---
 
 ## Overview
@@ -41,11 +42,11 @@ As the technical and design lead of the founding team, I was in charge of:
 
 ### The media
 
-A content layer published on Instagram, podcasts, and longer-form documentaries, designed to humanize merchants and educate the public on local consumption — both as a brand-awareness lever and a standalone editorial product.
+A content layer published on Instagram, podcasts, and longer-form documentaries, designed to humanize merchants and educate the public on local consumption, both as a brand-awareness lever and a standalone editorial product.
 
 ## Positioning
 
-The competitive analysis placed Locavore in the **local + highly digitalized** quadrant — distinct from Too Good To Go (anti-waste only), La Ruche Qui Dit Oui (subscription baskets), Phenix, and generic mapping tools — by combining geolocation, communication, stock management, and a fluid UX in a single platform.
+The competitive analysis placed Locavore in the **local + highly digitalized** quadrant (distinct from Too Good To Go (anti-waste only), La Ruche Qui Dit Oui (subscription baskets), Phenix, and generic mapping tools) by combining geolocation, communication, stock management, and a fluid UX in a single platform.
 
 ## Vision
 

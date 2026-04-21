@@ -8,8 +8,11 @@ const activeProjectsShowcase = await getCollection("portfolio", ({ data }) => {
   return !data.draft && data.show !== false;
 });
 
-// Sort content entries by endDate (null = ongoing, sorts first)
+// Sort by priority asc (lower first), then endDate desc (null = ongoing, sorts first)
 activeProjectsShowcase.sort(function (a, b) {
+  if (a.data.priority !== b.data.priority) {
+    return a.data.priority - b.data.priority;
+  }
   const aDate = a.data.endDate?.valueOf() ?? Infinity;
   const bDate = b.data.endDate?.valueOf() ?? Infinity;
   return bDate - aDate;

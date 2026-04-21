@@ -11,20 +11,20 @@ demo: "https://lejockeytricolore.fr/"
 
 ## Overview
 
-Le Jockey Tricolore is a French DJ collective offering musical animation across weddings, corporate events, and private parties. The original logo — a detailed vinyl record with curved script and a small turntable arm — didn't hold up at small sizes and felt dated against modern event-industry branding. I led a full rebrand of the mark while keeping the name and tricolore identity intact.
+Le Jockey Tricolore is a French DJ collective offering musical animation across weddings, corporate events, and private parties. The original logo, a detailed vinyl record with curved script and a small turntable arm, didn't hold up at small sizes and felt dated against modern event-industry branding. I led a full rebrand of the mark while keeping the name and tricolore identity intact.
 
 ## Before & After
 
 ![Before and after comparison of the Jockey Tricolore logo](../../assets/portfolio/jockey-tricolore-before-after.png)
 
-The old mark was a flat circular badge with thin script lettering that became unreadable below ~80px. The redesigned mark is a monogram — a stylized "d" fused with a vinyl record and a headphones arc — paired with a clean sans-serif wordmark that stacks or sits inline.
+The old mark was a flat circular badge with thin script lettering that became unreadable below ~80px. The redesigned mark is a monogram, a stylized "d" fused with a vinyl record and a headphones arc, paired with a clean sans-serif wordmark that stacks or sits inline.
 
 ## Design Goals
 
-- **Scalable** — mark must read clearly from favicon up to signage
-- **Recognizable** — retain the French navy + red tricolore palette
-- **Modern** — drop the script and ornate vinyl detail for bold geometric shapes
-- **Flexible** — symbol works standalone on dark or light backgrounds
+- **Scalable**: mark must read clearly from favicon up to signage
+- **Recognizable**: retain the French navy + red tricolore palette
+- **Modern**: drop the script and ornate vinyl detail for bold geometric shapes
+- **Flexible**: symbol works standalone on dark or light backgrounds
 
 ## The Mark
 
@@ -50,4 +50,4 @@ The old script was replaced with a modern geometric sans-serif wordmark set in t
 
 ## What I Learned
 
-Rebranding an established local business means respecting what customers already recognize. The tricolore palette and the vinyl cue stayed — everything ornamental went. The result is a mark that survives at 16px and still feels premium on a stage backdrop.
+Rebranding an established local business means respecting what customers already recognize. The tricolore palette and the vinyl cue stayed; everything ornamental went. The result is a mark that survives at 16px and still feels premium on a stage backdrop.

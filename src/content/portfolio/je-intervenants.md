@@ -7,6 +7,7 @@ image:
 technos: ["Design Thinking", "UX Research", "Product Design", "Scrum", "Figma", "Notion", "CI/CD"]
 startDate: "2024-01-01 00:00"
 demo: "https://je-intervenants.juniorisep.com/"
+priority: 3
 ---
 
 ## Overview
@@ -15,7 +16,7 @@ JE Intervenants is a platform built for Junior ISEP to make it easy for project 
 
 ## The Problem
 
-Junior ISEP runs dozens of client projects each year. Teams often hit moments where they need domain expertise — a lawyer, a senior engineer, a marketing specialist — to unblock a deliverable or validate an approach. The existing process was informal: ask around, hope someone knows someone, waste days.
+Junior ISEP runs dozens of client projects each year. Teams often hit moments where they need domain expertise (a lawyer, a senior engineer, a marketing specialist) to unblock a deliverable or validate an approach. The existing process was informal: ask around, hope someone knows someone, waste days.
 
 ## Design Thinking Process
 
@@ -23,11 +24,11 @@ Junior ISEP runs dozens of client projects each year. Teams often hit moments wh
 
 The project started with a full design thinking pass:
 
-- **Empathize** — interviews with project managers and former intervenants to understand friction on both sides
-- **Define** — framed the core problem as a discovery and trust gap, not a contact database gap
-- **Ideate** — explored directory, matching, and request-based flows before converging on a browsable directory with direct outreach
-- **Prototype** — low-fi wireframes, then a hi-fi clickable prototype tested with real project teams
-- **Test** — iteration based on feedback around filtering, expert profile depth, and contact flow
+- **Empathize**: interviews with project managers and former intervenants to understand friction on both sides
+- **Define**: framed the core problem as a discovery and trust gap, not a contact database gap
+- **Ideate**: explored directory, matching, and request-based flows before converging on a browsable directory with direct outreach
+- **Prototype**: low-fi wireframes, then a hi-fi clickable prototype tested with real project teams
+- **Test**: iteration based on feedback around filtering, expert profile depth, and contact flow
 
 ## Deliverables
 
@@ -43,7 +44,7 @@ Shipping with a student team meant process mattered as much as design quality. W
 
 ## Client Relationship Management
 
-Client comms was the biggest bottleneck early on — scattered email threads, missed handoffs, unclear onboarding. Fixed by centralizing everything in Notion: one CRM database for intervenants and project contacts, onboarding automations that fire templated tasks and emails when a new expert signs up, and shared status views so the whole team sees where each relationship stands.
+Client comms was the biggest bottleneck early on: scattered email threads, missed handoffs, unclear onboarding. Fixed by centralizing everything in Notion: one CRM database for intervenants and project contacts, onboarding automations that fire templated tasks and emails when a new expert signs up, and shared status views so the whole team sees where each relationship stands.
 
 ![Notion CRM illustration](../../assets/portfolio/je-intervenants-notion-crm.png)
 
@@ -59,4 +60,4 @@ A coming-soon landing page was used to build anticipation inside the Junior ISEP
 
 ## What I Learned
 
-Design thinking pays off most when the obvious solution is wrong. The first instinct was "build a contact list." The real problem was trust and discoverability — which changed every downstream design decision, from profile fields to how outreach is framed.
+Design thinking pays off most when the obvious solution is wrong. The first instinct was "build a contact list." The real problem was trust and discoverability, which changed every downstream design decision, from profile fields to how outreach is framed.

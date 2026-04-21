@@ -38,6 +38,7 @@ const portfolioCollection = defineCollection({
     demo: z.string().url().optional(),
     disabled: z.boolean().default(false),
     show: z.boolean().default(true),
+    priority: z.number().default(999),
   }),
 });
 

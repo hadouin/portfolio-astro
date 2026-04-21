@@ -3,17 +3,21 @@ draft: false
 title: "PonziLand"
 snippet: "Fully onchain, token-agnostic DeFi metagame built on Starknet. A multi-language project with SvelteKit frontend, Cairo smart contracts using Dojo framework, and Rust-based indexer services"
 image:
-  { src: "ponziland-display-full.jpg", alt: "PonziLand showcase" }
+  { src: "ponziland-display-full.png", alt: "PonziLand showcase" }
 technos: ["Svelte", "TypeScript", "Cairo", "Dojo", "Rust", "Starknet", "PostgreSQL"]
 startDate: "2024-06-01 08:00"
 endDate: "2099-02-01 00:00"
-demo: "https://ponzi.land"
-show: false
+github: "https://github.com/RuneLabsxyz/PonziLand"
+demo: "https://play.ponzi.land"
+show: true
+priority: 2
 ---
 
 ## Overview
 
 PonziLand is a fully onchain, token-agnostic DeFi metagame built on Starknet. Players buy, sell, and manage virtual land parcels while competing in economic strategies. All game logic lives entirely on the blockchain through Cairo smart contracts using the Dojo framework.
+
+Landing page: [ponzi.land](https://ponzi.land). Play the game: [play.ponzi.land](https://play.ponzi.land).
 
 ## My Role
 
@@ -44,6 +48,12 @@ The frontend uses a modular widget architecture allowing easy extension. Each wi
 - **Auction System**: Automated auctions for abandoned or nuked lands
 - **Meta-Indexer**: Enriches blockchain data for fast queries with PostgreSQL caching
 - **Real-time Updates**: Live game state synchronized from blockchain events
+
+## Merch
+
+I also designed merchandise for the project: hoodies and tees featuring original illustrations and the in-game land tiles.
+
+![PonziLand merch lineup I designed](../../assets/portfolio/ponziland-merch.png)
 
 ## What I Learned
 
