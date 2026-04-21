@@ -60,22 +60,24 @@ const formatDate = (date: Date) => {
         Back to projects
       </a>
 
-      {heroMeta && !heroIsAnimated ? (
-        <Image
-          src={heroMeta}
-          alt={entry.data.image.alt}
-          widths={[400, 800, 1200, 1600]}
-          sizes="(min-width: 896px) 896px, 100vw"
-          loading="eager"
-          class="w-full rounded-lg shadow-lg mb-8"
-        />
-      ) : (
-        <img
-          src={heroMeta ? heroMeta.src : entry.data.image.src}
-          alt={entry.data.image.alt}
-          class="w-full rounded-lg shadow-lg mb-8"
-        />
-      )}
+      <div class="watermark-hover rounded-lg shadow-lg mb-8">
+        {heroMeta && !heroIsAnimated ? (
+          <Image
+            src={heroMeta}
+            alt={entry.data.image.alt}
+            widths={[400, 800, 1200, 1600]}
+            sizes="(min-width: 896px) 896px, 100vw"
+            loading="eager"
+            class="w-full"
+          />
+        ) : (
+          <img
+            src={heroMeta ? heroMeta.src : entry.data.image.src}
+            alt={entry.data.image.alt}
+            class="w-full"
+          />
+        )}
+      </div>
 
       <h1 class="text-4xl lg:text-5xl font-bold lg:tracking-tight mt-1 lg:leading-tight">
         {entry.data.title}

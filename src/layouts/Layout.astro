@@ -109,6 +109,17 @@ const makeTitle = title
         autoRaf: true,
         anchors: true,
       });
+
+      document.querySelectorAll<HTMLElement>(".watermark-hover").forEach((el) => {
+        el.addEventListener("mouseenter", () => {
+          el.classList.remove("is-scan-out");
+          el.classList.add("is-scan-in");
+        });
+        el.addEventListener("mouseleave", () => {
+          el.classList.remove("is-scan-in");
+          el.classList.add("is-scan-out");
+        });
+      });
     </script>
     <style is:global>
       /* Improve Page speed */

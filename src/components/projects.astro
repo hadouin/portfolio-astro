@@ -62,11 +62,11 @@ const CARD_SIZES = "(min-width: 1024px) 50vw, 100vw";
       return (
         <li class:list={["group grid lg:grid-cols-2 gap-8 items-center my-24 first:mt-0 last:mb-0", { "opacity-60": entry.data.disabled }]}>
           {entry.data.disabled ? (
-            <div class="lg:group-odd:order-1 block overflow-hidden rounded-lg cursor-not-allowed">
+            <div class="watermark-hover lg:group-odd:order-1 block overflow-hidden rounded-lg cursor-not-allowed">
               {mediaNode}
             </div>
           ) : (
-            <a href={`/projects/${entry.id}`} class="lg:group-odd:order-1 block overflow-hidden rounded-lg transition-transform hover:scale-[1.02]">
+            <a href={`/projects/${entry.id}`} class="watermark-hover lg:group-odd:order-1 block overflow-hidden rounded-lg transition-transform hover:scale-[1.02]">
               {mediaNode}
             </a>
           )}

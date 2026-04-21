@@ -13,3 +13,39 @@
   stroke-linejoin: round;
   fill: none;
 }
+
+.watermark-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.watermark-hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/logo-watermark.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  opacity: 0.28;
+  pointer-events: none;
+  clip-path: inset(0 0 0 100%);
+}
+
+.watermark-hover.is-scan-in::after {
+  animation: watermarkScanIn 260ms ease-out forwards;
+}
+
+.watermark-hover.is-scan-out::after {
+  animation: watermarkScanOut 260ms ease-in forwards;
+}
+
+@keyframes watermarkScanIn {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes watermarkScanOut {
+  from { clip-path: inset(0 0 0 0); }
+  to   { clip-path: inset(0 0 0 100%); }
+}
