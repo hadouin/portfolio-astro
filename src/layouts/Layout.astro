@@ -120,6 +120,50 @@ const makeTitle = title
           el.classList.add("is-scan-out");
         });
       });
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduceMotion) {
+        const parallaxEls = Array.from(
+          document.querySelectorAll<HTMLElement>("[data-parallax]")
+        );
+        const visible = new Set<HTMLElement>();
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              const t = e.target as HTMLElement;
+              if (e.isIntersecting) visible.add(t);
+              else {
+                visible.delete(t);
+                t.style.transform = "";
+              }
+            }
+          },
+          { rootMargin: "20% 0px 20% 0px" }
+        );
+        parallaxEls.forEach((el) => {
+          el.style.willChange = "transform";
+          io.observe(el);
+        });
+
+        const update = () => {
+          const vh = window.innerHeight;
+          const vc = vh / 2;
+          visible.forEach((el) => {
+            const speed = parseFloat(el.dataset.parallax || "0.05");
+            const scale = parseFloat(el.dataset.parallaxScale || "1.08");
+            const rect = el.getBoundingClientRect();
+            const ec = rect.top + rect.height / 2;
+            const offset = (vc - ec) * speed;
+            el.style.transform = `translate3d(0, ${offset.toFixed(2)}px, 0) scale(${scale})`;
+          });
+        };
+        parallaxEls.forEach((el) => {
+          const scale = parseFloat(el.dataset.parallaxScale || "1.08");
+          el.style.transform = `translate3d(0, 0, 0) scale(${scale})`;
+        });
+        lenis.on("scroll", update);
+        update();
+      }
     </script>
     <style is:global>
       /* Improve Page speed */

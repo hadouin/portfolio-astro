@@ -53,11 +53,12 @@ const CARD_SIZES = "(min-width: 1024px) 50vw, 100vw";
             widths={CARD_WIDTHS}
             sizes={CARD_SIZES}
             loading={loading}
+            data-parallax="0.05"
           />
         );
       } else {
         const rawSrc = meta ? meta.src : img.src;
-        mediaNode = <img class={imgClass} src={rawSrc} alt={img.alt} loading={loading} />;
+        mediaNode = <img class={imgClass} src={rawSrc} alt={img.alt} loading={loading} data-parallax="0.05" />;
       }
       return (
         <li class:list={["group grid lg:grid-cols-2 gap-8 items-center my-24 first:mt-0 last:mb-0", { "opacity-60": entry.data.disabled }]}>

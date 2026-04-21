@@ -69,12 +69,14 @@ const formatDate = (date: Date) => {
             sizes="(min-width: 896px) 896px, 100vw"
             loading="eager"
             class="w-full"
+            data-parallax="0.05"
           />
         ) : (
           <img
             src={heroMeta ? heroMeta.src : entry.data.image.src}
             alt={entry.data.image.alt}
             class="w-full"
+            data-parallax="0.05"
           />
         )}
       </div>

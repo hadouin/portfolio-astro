@@ -30,23 +30,27 @@ publishedBlogEntries.sort(function (a, b) {
             <li>
               <a href={`/blog/${blogPostEntry.id}`}>
                 <div class="grid md:grid-cols-2 gap-5 md:gap-10 items-center">
-                  {blogPostEntry.data.image.src.endsWith(".mp4") ? (
-                    <video
-                      src={blogPostEntry.data.image.src}
-                      autoplay
-                      muted
-                      playsinline
-                      class="w-full rounded-md aspect-video object-cover"
-                    />
-                  ) : (
-                    <img
-                      src={blogPostEntry.data.image.src}
-                      alt={blogPostEntry.data.image.alt}
-                      loading={index <= 2 ? "eager" : "lazy"}
-                      decoding={index <= 2 ? "sync" : "async"}
-                      class="w-full rounded-md aspect-video object-cover"
-                    />
-                  )}
+                  <div class="overflow-hidden rounded-md">
+                    {blogPostEntry.data.image.src.endsWith(".mp4") ? (
+                      <video
+                        src={blogPostEntry.data.image.src}
+                        autoplay
+                        muted
+                        playsinline
+                        class="w-full aspect-video object-cover"
+                        data-parallax="0.05"
+                      />
+                    ) : (
+                      <img
+                        src={blogPostEntry.data.image.src}
+                        alt={blogPostEntry.data.image.alt}
+                        loading={index <= 2 ? "eager" : "lazy"}
+                        decoding={index <= 2 ? "sync" : "async"}
+                        class="w-full aspect-video object-cover"
+                        data-parallax="0.05"
+                      />
+                    )}
+                  </div>
                   <div>
                     <span class="text-blue-400 uppercase tracking-wider text-sm font-medium">
                       {blogPostEntry.data.category}
