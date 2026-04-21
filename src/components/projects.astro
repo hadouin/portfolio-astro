@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import TechnoBadges from "./techno-badges.astro";
 
 // Filter entries with 'draft: false' and 'show: true'
 const activeProjectsShowcase = await getCollection("portfolio", ({ data }) => {
@@ -46,11 +47,7 @@ activeProjectsShowcase.sort(function (a, b) {
             </a>
           )}
           <p class="font-inter">{entry.data.snippet}</p>
-          <ul class="flex gap-4 lg:group-odd:justify-end">
-            {entry.data.technos.map((item) => (
-              <li>{item}</li>
-            ))}
-          </ul>
+          <TechnoBadges technos={entry.data.technos} class="mt-3 lg:group-odd:justify-end" />
         </div>
       </li>
     ))

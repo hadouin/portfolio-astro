@@ -1,0 +1,18 @@
+---
+interface Props {
+  technos: string[];
+  class?: string;
+}
+
+const { technos, class: className = "" } = Astro.props;
+---
+
+<ul class:list={["flex flex-wrap gap-2", className]}>
+  {
+    technos.map((tech) => (
+      <li class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+        {tech}
+      </li>
+    ))
+  }
+</ul>
