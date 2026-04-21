@@ -3,6 +3,7 @@ import { SEO } from "astro-seo";
 import Footer from "@components/footer.astro";
 import Navbar from "@components/navbar/navbar.astro";
 import "@fontsource/inter/variable.css";
+import "lenis/dist/lenis.css";
 
 import "assets/styles/base.css";
 
@@ -101,6 +102,14 @@ const makeTitle = title
       <slot />
     </div>
     <Footer />
+    <script>
+      import Lenis from "lenis";
+
+      const lenis = new Lenis({
+        autoRaf: true,
+        anchors: true,
+      });
+    </script>
     <style is:global>
       /* Improve Page speed */
       /* https://css-tricks.com/almanac/properties/c/content-visibility/ */
