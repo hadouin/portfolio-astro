@@ -164,6 +164,45 @@ const makeTitle = title
         lenis.on("scroll", update);
         update();
       }
+
+      const scrambleLetters =
+        "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&";
+      const randomScrambleChar = () =>
+        scrambleLetters[Math.floor(Math.random() * scrambleLetters.length)];
+
+      document
+        .querySelectorAll<HTMLElement>(".scramble-hover")
+        .forEach((el) => {
+          const target = (el.dataset.scrambleText ?? el.textContent ?? "").trim();
+          if (!target) return;
+          el.dataset.scrambleText = target;
+          let interval: ReturnType<typeof setInterval> | undefined;
+
+          el.addEventListener("mouseenter", () => {
+            if (interval) clearInterval(interval);
+            let iteration = 0;
+            const tickMs = 30;
+            const durationMs = 300;
+            const step = target.length / (durationMs / tickMs);
+
+            interval = setInterval(() => {
+              el.textContent = target
+                .split("")
+                .map((ch, index) => {
+                  if (ch === " ") return " ";
+                  if (index < iteration) return target[index];
+                  return randomScrambleChar();
+                })
+                .join("");
+
+              if (iteration >= target.length) {
+                if (interval) clearInterval(interval);
+                el.textContent = target;
+              }
+              iteration += step;
+            }, tickMs);
+          });
+        });
     </script>
     <style is:global>
       /* Improve Page speed */
