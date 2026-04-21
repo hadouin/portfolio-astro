@@ -13,7 +13,7 @@ export interface Props {
 const canonicalURL = new URL(Astro.url.pathname, Astro.site).toString();
 
 const resolvedImageWithDomain = new URL(
-  "/opengraph.jpg",
+  "/opengraph.png",
   Astro.site
 ).toString();
 
@@ -83,6 +83,8 @@ const makeTitle = title
               <use href="/feather-sprite.svg#github"></use>
             </svg>
           </a>
+        </li>
+        <li class="mb-3">
           <a
             class="flex p-2 transition"
             href="https://www.linkedin.com/in/hadouin"
