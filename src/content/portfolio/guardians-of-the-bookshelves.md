@@ -6,6 +6,7 @@ image: { src: "/images/display/gb-display.png", alt: "GB showcase" }
 technos: ["Git", "python"]
 startDate: "2020-04-01 00:00"
 endDate: "2020-06-01 00:00"
+github: "https://github.com/HipppB/Guardian_of_the_BookShelves"
 ---
 
 ## Project Overview

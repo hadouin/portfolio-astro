@@ -10,6 +10,7 @@ image:
 technos: ["Java", "JavaFX", "Git"]
 startDate: "2022-11-01 00:00"
 endDate: "2023-01-01 00:00"
+github: "https://github.com/hadouin/JavArchitects"
 ---
 
 ## About the Game

@@ -7,6 +7,7 @@ image:
 technos: ["SvelteKit", "Svelte 5", "TypeScript", "PostgreSQL", "Drizzle", "Starknet", "TailwindCSS"]
 startDate: "2025-01-01 08:00"
 endDate: "2099-03-01 00:00"
+github: "https://github.com/hadouin/midgard-website-svelte"
 show: false
 ---
 

@@ -10,6 +10,7 @@ image:
 technos: ["Java", "JavaFX"]
 startDate: "2022-10-01 00:00"
 endDate: "2022-11-01 00:00"
+github: "https://github.com/hadouin/PokemonJava"
 ---
 
 ## Overview
