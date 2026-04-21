@@ -56,7 +56,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           port: ${{ secrets.PORT }}
-          key: ${{ secrets.KEY }}
+          password: ${{ secrets.PASSWORD }}
           source: dist/*
           target: /var/www/html
           strip_components: 1
