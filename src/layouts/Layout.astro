@@ -174,7 +174,8 @@ const makeTitle = title
         if (scrollHandler) lenis.off("scroll", scrollHandler);
 
         const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        if (reduceMotion) return;
+        const isMobile = window.matchMedia("(max-width: 767px)").matches;
+        if (reduceMotion || isMobile) return;
 
         const parallaxEls = Array.from(
           document.querySelectorAll<HTMLElement>("[data-parallax]")
@@ -245,6 +246,7 @@ const makeTitle = title
       // update loop) so that the view-transition snapshot matches the state
       // the element will settle into after VT ends — no post-morph snap.
       function paintParallax() {
+        if (window.matchMedia("(max-width: 767px)").matches) return;
         const vh = window.innerHeight;
         const vc = vh / 2;
         document.querySelectorAll<HTMLElement>("[data-parallax]").forEach((el) => {
