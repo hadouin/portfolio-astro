@@ -159,27 +159,7 @@ import Link from "@components/ui/link.astro";
       });
     }
 
-    const rect = element.getBoundingClientRect();
-    const inViewNow =
-      rect.top < window.innerHeight && rect.bottom > 0;
-
-    if (inViewNow || typeof IntersectionObserver === "undefined") {
-      startScramble();
-    } else {
-      const io = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              startScramble();
-              io.disconnect();
-              break;
-            }
-          }
-        },
-        { threshold: 0.1 }
-      );
-      io.observe(element);
-    }
+    startScramble();
   }
 
   initHero();
