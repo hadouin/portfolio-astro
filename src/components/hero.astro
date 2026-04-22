@@ -91,71 +91,97 @@ import Link from "@components/ui/link.astro";
     return columns;
   }
 
-  let iteration = 0;
-  let interval;
+  function initHero() {
+    const element = document.querySelector(".hacker-effect") as HTMLElement | null;
+    if (!element) return;
+    if ((element as any).__heroBound) return;
+    (element as any).__heroBound = true;
 
-  const columns = getHackerGrid("Hadouin");
-  const element = document.querySelector(".hacker-effect") as HTMLElement;
-  interval = setInterval(() => {
-    // get each line
-    const rows: string[] = [];
-    for (let i: number = 0; i < colHeight; i++) {
-      let row = "";
-      for (let j = 0; j < columns.length; j++) {
-        row += columns[j].getString(iteration)[i];
-      }
-      rows.push(row);
-    }
+    let iteration = 0;
+    let interval: ReturnType<typeof setInterval> | undefined;
+    let started = false;
+    const columns = getHackerGrid("Hadouin");
 
-    element.innerHTML = rows
-      .map((row, index) => {
-        if (index === targetIndex)
-          return `<h1 class="flex min-h-[48px] lg:min-h-[60px] xl:min-h-[72px] target-row z-20" data-value="Hadouin" >${row}</h1>`;
-        return `<h1 class="flex min-h-[48px] lg:min-h-[60px] xl:min-h-[72px] text-slate-200 -z-20">${row}</h1>`;
-      })
-      .join("\n");
-
-    iteration += 1;
-    if (iteration >= 20) {
-      clearInterval(interval);
-      setHoverEffect();
-    }
-  }, 50);
-
-  function setHoverEffect() {
-    let hoverInterval: number | undefined = undefined;
-
-    const hoverElement = document.querySelector(".target-row");
-    console.log(hoverElement);
-
-    hoverElement?.addEventListener("mouseover", (event) => {
-      console.log("hover");
-      let iteration = 0;
-
-      if (hoverInterval) clearInterval(hoverInterval);
-
-      hoverInterval = setInterval(() => {
-        const targetRow = document.querySelector(".target-row");
-        // @ts-ignore
-        targetRow.innerText = targetRow.innerText
-          .split("")
-          .map((letter, index) => {
-            if (index < iteration) {
-              // @ts-ignore
-              return targetRow.dataset.value[index];
-            }
-
-            return letters[Math.floor(Math.random() * 26)];
-          })
-          .join("");
-
-        //@ts-ignore
-        if (iteration >= targetRow.dataset.value.length) {
-          clearInterval(interval);
+    function startScramble() {
+      if (started) return;
+      started = true;
+      interval = setInterval(() => {
+        const rows: string[] = [];
+        for (let i: number = 0; i < colHeight; i++) {
+          let row = "";
+          for (let j = 0; j < columns.length; j++) {
+            row += columns[j].getString(iteration)[i];
+          }
+          rows.push(row);
         }
 
-        iteration += 1 / 3;
-      }, 30);
-    });
+        element!.innerHTML = rows
+          .map((row, index) => {
+            if (index === targetIndex)
+              return `<h1 class="flex min-h-[48px] lg:min-h-[60px] xl:min-h-[72px] target-row z-20" data-value="Hadouin" >${row}</h1>`;
+            return `<h1 class="flex min-h-[48px] lg:min-h-[60px] xl:min-h-[72px] text-slate-200 -z-20">${row}</h1>`;
+          })
+          .join("\n");
+
+        iteration += 1;
+        if (iteration >= 20) {
+          clearInterval(interval);
+          setHoverEffect();
+        }
+      }, 50);
+    }
+
+    function setHoverEffect() {
+      let hoverInterval: ReturnType<typeof setInterval> | undefined;
+      const hoverElement = element!.querySelector(".target-row");
+      hoverElement?.addEventListener("mouseover", () => {
+        let iteration = 0;
+        if (hoverInterval) clearInterval(hoverInterval);
+        hoverInterval = setInterval(() => {
+          const targetRow = element!.querySelector(".target-row") as HTMLElement | null;
+          if (!targetRow) return;
+          targetRow.innerText = targetRow.innerText
+            .split("")
+            .map((_letter, index) => {
+              if (index < iteration) {
+                return (targetRow.dataset.value as string)[index];
+              }
+              return letters[Math.floor(Math.random() * 26)];
+            })
+            .join("");
+
+          if (iteration >= (targetRow.dataset.value as string).length) {
+            if (hoverInterval) clearInterval(hoverInterval);
+          }
+
+          iteration += 1 / 3;
+        }, 30);
+      });
+    }
+
+    const rect = element.getBoundingClientRect();
+    const inViewNow =
+      rect.top < window.innerHeight && rect.bottom > 0;
+
+    if (inViewNow || typeof IntersectionObserver === "undefined") {
+      startScramble();
+    } else {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              startScramble();
+              io.disconnect();
+              break;
+            }
+          }
+        },
+        { threshold: 0.1 }
+      );
+      io.observe(element);
+    }
   }
+
+  initHero();
+  document.addEventListener("astro:page-load", initHero);
 </script>
