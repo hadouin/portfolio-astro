@@ -1,0 +1,138 @@
+---
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/container.astro";
+import Sectionhead from "@components/sectionhead.astro";
+
+const SITE = "https://hadouin.com";
+const LOGO_URL = `${SITE}/email-signature-logo.png`;
+
+const signatureHtml = `<table cellpadding="0" cellspacing="0" border="0" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1f2937; font-size: 14px; line-height: 1.5;">
+  <tr>
+    <td style="padding: 0 18px 0 0; vertical-align: top; border-right: 1px solid #e5e7eb;">
+      <a href="${SITE}" style="text-decoration: none; border: 0;">
+        <img src="${LOGO_URL}" alt="Hadouin Leroy" width="120" height="25" style="display: block; border: 0; outline: none; -ms-interpolation-mode: bicubic;" />
+      </a>
+    </td>
+    <td style="padding: 0 0 0 18px; vertical-align: top;">
+      <div style="font-size: 16px; font-weight: 600; color: #111827; line-height: 1.2;">Hadouin Leroy</div>
+      <div style="font-size: 13px; color: #6b7280; margin-top: 2px;">Creative Developer &middot; Paris, France</div>
+      <div style="margin-top: 10px; font-size: 13px; color: #1f2937;">
+        <a href="mailto:contact@hadouin.com" style="color: #1f2937; text-decoration: none;">contact@hadouin.com</a>
+        <span style="color: #d1d5db;"> &nbsp;|&nbsp; </span>
+        <a href="${SITE}" style="color: #1f2937; text-decoration: none;">hadouin.com</a>
+      </div>
+      <div style="margin-top: 4px; font-size: 13px;">
+        <a href="https://www.linkedin.com/in/hadouin" style="color: #6b7280; text-decoration: none;">LinkedIn</a>
+        <span style="color: #d1d5db;"> &nbsp;&middot;&nbsp; </span>
+        <a href="https://github.com/hadouin" style="color: #6b7280; text-decoration: none;">GitHub</a>
+      </div>
+    </td>
+  </tr>
+</table>`;
+---
+
+<Layout
+  title="Email Signature"
+  description="Email signature for Hadouin Leroy."
+  noindex={true}
+>
+  <Container>
+    <Sectionhead>
+      <Fragment slot="title">Email Signature</Fragment>
+      <Fragment slot="desc">Preview, then copy the HTML into your mail client.</Fragment>
+    </Sectionhead>
+
+    <div class="max-w-3xl mx-auto mt-12">
+      <h2 class="text-sm uppercase tracking-widest text-slate-500 mb-3">Preview</h2>
+      <div class="rounded-lg border border-slate-200 bg-white p-6">
+        <div set:html={signatureHtml} />
+      </div>
+
+      <div class="flex items-center justify-between mt-10 mb-3">
+        <h2 class="text-sm uppercase tracking-widest text-slate-500">HTML</h2>
+        <button
+          id="copy-signature"
+          type="button"
+          class="text-sm px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-100 transition"
+        >
+          Copy HTML
+        </button>
+      </div>
+      <pre
+        id="signature-source"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700 overflow-x-auto whitespace-pre-wrap"
+      >{signatureHtml}</pre>
+
+      <div class="flex items-center justify-between mt-10 mb-3">
+        <h2 class="text-sm uppercase tracking-widest text-slate-500">Rich text (Gmail / Apple Mail)</h2>
+        <button
+          id="copy-rendered"
+          type="button"
+          class="text-sm px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-100 transition"
+        >
+          Copy formatted
+        </button>
+      </div>
+      <p class="text-sm text-slate-500 mb-3">
+        Copies the rendered signature so you can paste it directly into a mail client's signature field.
+      </p>
+      <div id="signature-rendered" class="rounded-lg border border-slate-200 bg-white p-6">
+        <div set:html={signatureHtml} />
+      </div>
+    </div>
+  </Container>
+
+  <script>
+    function bind() {
+      const copyHtmlBtn = document.getElementById("copy-signature");
+      const source = document.getElementById("signature-source");
+      if (copyHtmlBtn && source && !(copyHtmlBtn as any).__bound) {
+        (copyHtmlBtn as any).__bound = true;
+        copyHtmlBtn.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(source.textContent ?? "");
+            const label = copyHtmlBtn.textContent;
+            copyHtmlBtn.textContent = "Copied!";
+            setTimeout(() => (copyHtmlBtn.textContent = label), 1500);
+          } catch {
+            /* clipboard blocked — ignore */
+          }
+        });
+      }
+
+      const copyRichBtn = document.getElementById("copy-rendered");
+      const rendered = document.getElementById("signature-rendered");
+      if (copyRichBtn && rendered && !(copyRichBtn as any).__bound) {
+        (copyRichBtn as any).__bound = true;
+        copyRichBtn.addEventListener("click", async () => {
+          try {
+            const html = rendered.innerHTML;
+            const text = rendered.innerText;
+            if ((window as any).ClipboardItem) {
+              const item = new (window as any).ClipboardItem({
+                "text/html": new Blob([html], { type: "text/html" }),
+                "text/plain": new Blob([text], { type: "text/plain" }),
+              });
+              await (navigator.clipboard as any).write([item]);
+            } else {
+              const range = document.createRange();
+              range.selectNodeContents(rendered);
+              const sel = window.getSelection();
+              sel?.removeAllRanges();
+              sel?.addRange(range);
+              document.execCommand("copy");
+              sel?.removeAllRanges();
+            }
+            const label = copyRichBtn.textContent;
+            copyRichBtn.textContent = "Copied!";
+            setTimeout(() => (copyRichBtn.textContent = label), 1500);
+          } catch {
+            /* clipboard blocked — ignore */
+          }
+        });
+      }
+    }
+
+    document.addEventListener("astro:page-load", bind);
+  </script>
+</Layout>
