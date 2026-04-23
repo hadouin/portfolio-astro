@@ -5,19 +5,70 @@ import Container from "@components/container.astro";
 
 // Generate a new path for every collection entry
 export async function getStaticPaths() {
-  const blogEntries = await getCollection("blog");
+  const blogEntries = await getCollection("blog", ({ data }) => !data.draft);
   return blogEntries.map((entry) => ({
     params: { slug: entry.id },
     props: { entry },
   }));
 }
 
-// Get the entry directly from the prop on render
 const { entry } = Astro.props;
 const { Content } = await render(entry);
+
+const siteUrl = Astro.site?.toString() ?? "https://hadouin.com";
+const canonical = new URL(`/blog/${entry.id}`, siteUrl).toString();
+const rawOgImage = entry.data.ogImage ?? entry.data.image.src;
+const ogImage = rawOgImage.startsWith("http")
+  ? rawOgImage
+  : new URL(rawOgImage, siteUrl).toString();
+const publishedISO = entry.data.publishDate.toISOString();
+const modifiedISO = entry.data.updatedDate?.toISOString();
+const pageDescription = entry.data.description ?? entry.data.snippet;
+
+const blogPostingJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  headline: entry.data.title,
+  description: pageDescription,
+  image: ogImage,
+  datePublished: publishedISO,
+  ...(modifiedISO && { dateModified: modifiedISO }),
+  author: {
+    "@type": "Person",
+    name: entry.data.author,
+    url: siteUrl,
+  },
+  publisher: {
+    "@type": "Person",
+    name: "Hadouin Leroy",
+    url: siteUrl,
+  },
+  mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+  keywords: entry.data.tags.join(", "),
+  articleSection: entry.data.category,
+};
 ---
 
-<Layout title={entry.data.title}>
+<Layout
+  title={entry.data.title}
+  description={pageDescription}
+  image={ogImage}
+  imageAlt={entry.data.image.alt}
+  keywords={entry.data.tags}
+  article={{
+    publishedTime: publishedISO,
+    modifiedTime: modifiedISO,
+    author: entry.data.author,
+    section: entry.data.category,
+    tags: entry.data.tags,
+  }}
+>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(blogPostingJsonLd)}
+  />
   <Container>
     <div class="mx-auto max-w-[735px] mt-14">
       <span class="text-blue-400 uppercase tracking-wider text-sm font-medium">

@@ -9,21 +9,70 @@ import "lenis/dist/lenis.css";
 import "assets/styles/base.css";
 
 export interface Props {
-  title: string;
+  title?: string;
+  description?: string;
+  image?: string;
+  imageAlt?: string;
+  keywords?: string[];
+  noindex?: boolean;
+  article?: {
+    publishedTime?: string;
+    modifiedTime?: string;
+    author?: string;
+    section?: string;
+    tags?: string[];
+  };
 }
+
+const DEFAULT_DESCRIPTION =
+  "Hadouin Leroy — creative developer in Paris. I build things for the web, turning raw ideas into polished products. Heading towards gaming and 3D animation.";
+const SITE_NAME = "Hadouin Leroy";
+const TWITTER_HANDLE = "@hadouin";
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site).toString();
 
-const resolvedImageWithDomain = new URL(
-  "/opengraph.png",
-  Astro.site
-).toString();
+const {
+  title,
+  description = DEFAULT_DESCRIPTION,
+  image = "/opengraph.png",
+  imageAlt = "Hadouin Leroy — creative developer building things for the web",
+  keywords,
+  noindex = false,
+  article,
+} = Astro.props;
 
-const { title } = Astro.props;
+const resolvedImageWithDomain = new URL(image, Astro.site).toString();
 
 const makeTitle = title
-  ? title + " | " + "Hadouin"
-  : "Hadouin - Web Developper";
+  ? title + " | " + SITE_NAME
+  : "Hadouin Leroy — Creative Developer";
+
+const openGraph = article
+  ? {
+      basic: {
+        url: canonicalURL,
+        type: "article",
+        title: makeTitle,
+        image: resolvedImageWithDomain,
+      },
+      image: { alt: imageAlt },
+      article: {
+        publishedTime: article.publishedTime,
+        modifiedTime: article.modifiedTime,
+        authors: article.author ? [article.author] : undefined,
+        section: article.section,
+        tags: article.tags,
+      },
+    }
+  : {
+      basic: {
+        url: canonicalURL,
+        type: "website",
+        title: makeTitle,
+        image: resolvedImageWithDomain,
+      },
+      image: { alt: imageAlt },
+    };
 ---
 
 <!DOCTYPE html>
@@ -40,25 +89,44 @@ const makeTitle = title
     <meta name="msapplication-TileColor" content="#ffc40d" />
     <meta name="theme-color" content="#ffffff" />
     <meta name="generator" content={Astro.generator} />
+    <meta name="author" content="Hadouin Leroy" />
+    {keywords && keywords.length > 0 && (
+      <meta name="keywords" content={keywords.join(", ")} />
+    )}
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={`${SITE_NAME} — Blog`}
+      href="/rss.xml"
+    />
 
-    <!-- <link rel="preload" as="image" href={src} alt="Hero" /> -->
     <ClientRouter />
     <SEO
       title={makeTitle}
-      description="I'm a computer science student in Paris. I like to code."
+      description={description}
       canonical={canonicalURL}
-      openGraph={{
-        basic: {
-          url: canonicalURL,
-          type: "website",
-          title: `Hadouin - Web developper`,
-          image: resolvedImageWithDomain,
-        },
-        image: {
-          alt: "Hadouin HomePage screenshot",
-        },
+      noindex={noindex}
+      nofollow={noindex}
+      openGraph={openGraph}
+      twitter={{
+        card: "summary_large_image",
+        creator: TWITTER_HANDLE,
+        site: TWITTER_HANDLE,
+        title: makeTitle,
+        description,
+        image: resolvedImageWithDomain,
+        imageAlt,
+      }}
+      extend={{
+        meta: [
+          { name: "robots", content: noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large" },
+          { property: "og:site_name", content: SITE_NAME },
+          { property: "og:locale", content: "en_US" },
+        ],
       }}
     />
+    <slot name="head" />
   </head>
   <body>
     <Navbar />

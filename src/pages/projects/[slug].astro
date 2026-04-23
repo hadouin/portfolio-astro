@@ -6,7 +6,7 @@ import Container from "@components/container.astro";
 import TechnoBadges from "@components/techno-badges.astro";
 
 export async function getStaticPaths() {
-  const portfolioEntries = await getCollection("portfolio");
+  const portfolioEntries = await getCollection("portfolio", ({ data }) => !data.draft);
   return portfolioEntries.map((entry) => ({
     params: { slug: entry.id },
     props: { entry },
@@ -30,6 +30,32 @@ const heroMeta = imagesByName[entry.data.image.src];
 const heroIsAnimated = /\.gif$/i.test(entry.data.image.src);
 const heroName = `hero-${entry.id}`;
 
+const siteUrl = Astro.site?.toString() ?? "https://hadouin.com";
+const canonical = new URL(`/projects/${entry.id}`, siteUrl).toString();
+const rawOgImage = entry.data.ogImage ?? heroMeta?.src ?? entry.data.image.src;
+const ogImage = rawOgImage.startsWith("http")
+  ? rawOgImage
+  : new URL(rawOgImage, siteUrl).toString();
+const pageDescription = entry.data.description ?? entry.data.snippet;
+
+const creativeWorkJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "CreativeWork",
+  name: entry.data.title,
+  description: pageDescription,
+  url: canonical,
+  image: ogImage,
+  dateCreated: entry.data.startDate.toISOString(),
+  ...(entry.data.endDate && { dateModified: entry.data.endDate.toISOString() }),
+  keywords: entry.data.technos.join(", "),
+  creator: {
+    "@type": "Person",
+    name: "Hadouin Leroy",
+    url: siteUrl,
+  },
+  ...(entry.data.github && { codeRepository: entry.data.github }),
+};
+
 const formatDate = (date: Date) => {
   return date.toLocaleDateString("en-US", {
     month: "short",
@@ -38,7 +64,26 @@ const formatDate = (date: Date) => {
 };
 ---
 
-<Layout title={entry.data.title}>
+<Layout
+  title={entry.data.title}
+  description={pageDescription}
+  image={ogImage}
+  imageAlt={entry.data.image.alt}
+  keywords={entry.data.technos}
+  article={{
+    publishedTime: entry.data.startDate.toISOString(),
+    modifiedTime: entry.data.endDate?.toISOString(),
+    author: "Hadouin Leroy",
+    section: "Projects",
+    tags: entry.data.technos,
+  }}
+>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(creativeWorkJsonLd)}
+  />
   <Container>
     <div class="mx-auto max-w-4xl mt-8">
       <a

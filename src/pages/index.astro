@@ -9,9 +9,113 @@ import Footer from "@components/footer.astro";
 import Hero from "@components/hero.astro";
 import Projects from "@components/projects.astro";
 import Layout from "@layouts/Layout.astro";
+
+const siteUrl = Astro.site?.toString() ?? "https://hadouin.com";
+
+const personJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Hadouin Leroy",
+  givenName: "Hadouin",
+  familyName: "Leroy",
+  url: siteUrl,
+  image: new URL("/opengraph.png", siteUrl).toString(),
+  jobTitle: "Founding Engineer",
+  description:
+    "Creative developer with a strong technical background. I turn raw ideas into polished, tangible products — now heading towards gaming and 3D animation. Creative dev, UX designer and certified Scrum Master.",
+  email: "mailto:contact@hadouin.com",
+  nationality: { "@type": "Country", name: "France" },
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Paris",
+    addressCountry: "FR",
+  },
+  worksFor: {
+    "@type": "Organization",
+    name: "Runelabs",
+  },
+  alumniOf: [
+    {
+      "@type": "CollegeOrUniversity",
+      name: "ISEP — Institut Supérieur d'Électronique de Paris",
+    },
+    {
+      "@type": "CollegeOrUniversity",
+      name: "Wrexham Glyndwr University",
+    },
+    {
+      "@type": "CollegeOrUniversity",
+      name: "Presidency University, Bangalore",
+    },
+  ],
+  knowsAbout: [
+    "Creative development",
+    "Web development",
+    "3D animation",
+    "Game development",
+    "Blender",
+    "Three.js",
+    "React",
+    "Astro",
+    "Dojo",
+    "Starknet",
+    "UX design",
+    "Scrum",
+  ],
+  knowsLanguage: [
+    { "@type": "Language", name: "French", alternateName: "fr" },
+    { "@type": "Language", name: "English", alternateName: "en" },
+  ],
+  sameAs: [
+    "https://github.com/hadouin",
+    "https://www.linkedin.com/in/hadouin",
+  ],
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  url: siteUrl,
+  name: "Hadouin Leroy",
+  description:
+    "Portfolio of Hadouin Leroy — creative developer in Paris, building things for the web and heading towards gaming and 3D animation.",
+  author: { "@type": "Person", name: "Hadouin Leroy" },
+  inLanguage: "en-US",
+};
 ---
 
-<Layout title="">
+<Layout
+  description="Hi, I'm Hadouin — creative developer in Paris. I build things for the web, turning raw ideas into polished products. Heading towards gaming and 3D animation."
+  keywords={[
+    "Hadouin Leroy",
+    "creative developer",
+    "portfolio",
+    "Paris",
+    "3D animation",
+    "game developer",
+    "Blender",
+    "Three.js",
+    "Astro",
+    "React",
+    "Dojo",
+    "Starknet",
+    "UX designer",
+    "Scrum Master",
+    "Runelabs",
+  ]}
+>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(personJsonLd)}
+  />
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(websiteJsonLd)}
+  />
   <Container>
     <Hero />
     <About />

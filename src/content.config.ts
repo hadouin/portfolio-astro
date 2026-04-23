@@ -7,12 +7,18 @@ const blogCollection = defineCollection({
     draft: z.boolean(),
     title: z.string(),
     snippet: z.string(),
+    description: z.string().optional(),
     image: z.object({
       src: z.string(),
       alt: z.string(),
     }),
+    ogImage: z.string().optional(),
     publishDate: z.string().transform((str) => new Date(str)),
-    author: z.string().default("Astroship"),
+    updatedDate: z
+      .string()
+      .optional()
+      .transform((str) => (str ? new Date(str) : null)),
+    author: z.string().default("Hadouin Leroy"),
     category: z.string(),
     tags: z.array(z.string()),
   }),
@@ -24,10 +30,12 @@ const portfolioCollection = defineCollection({
     draft: z.boolean().default(true),
     title: z.string(),
     snippet: z.string(),
+    description: z.string().optional(),
     image: z.object({
       src: z.string(),
       alt: z.string(),
     }),
+    ogImage: z.string().optional(),
     technos: z.array(z.string()),
     startDate: z.string().transform((str) => new Date(str)),
     endDate: z
