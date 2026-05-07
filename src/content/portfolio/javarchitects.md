@@ -19,6 +19,8 @@ Javarchitects is a digital adaptation of the popular board game "7 Wonders: Arch
 
 ## Gameplay
 
+<video src="/portfolio/javarchitects-gameplay.mp4" autoplay muted loop playsinline class="w-full rounded-md"></video>
+
 In Javarchitects, players compete to build one of the seven wonders of the ancient world. Each turn, players:
 
 1. Draw cards from shared decks
