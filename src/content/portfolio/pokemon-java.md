@@ -17,6 +17,8 @@ github: "https://github.com/hadouin/PokemonJava"
 
 Pokemon Java is a battle simulator that recreates the classic Pokemon battle mechanics in a JavaFX application. This project was built to explore game development concepts and practice object-oriented programming in Java.
 
+<video src="/portfolio/pokemon-java-combat.mp4" autoplay muted loop playsinline class="w-full rounded-md"></video>
+
 ## Game Mechanics
 
 The simulator faithfully recreates core Pokemon battle mechanics:
