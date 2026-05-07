@@ -1,18 +1,25 @@
 ---
 import Link from "./ui/link.astro";
+import { localizedPath, useTranslations, type Locale } from "@i18n/utils";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
 ---
 
 <div
   class="bg-black p-8 md:px-20 md:py-20 mt-20 mx-auto max-w-5xl rounded-lg flex flex-col items-center text-center">
   <h2 class="text-white text-4xl md:text-6xl tracking-tight">
-    Build things with me.
+    {t("cta.title")}
   </h2>
   <p class="text-slate-400 mt-4 text-lg md:text-xl">
-    I'm very flexible both in learning quickly different subjects but also in
-    adapting and being empathic to my fellow teammates.
+    {t("cta.body")}
   </p>
   <div class="flex flex-wrap justify-center gap-3 mt-5">
-    <Link href="/contact" style="inverted">Get In Touch</Link>
-    <Link href="/blog" style="outline">Check out my blog !</Link>
+    <Link href={localizedPath("/contact", locale)} style="inverted">{t("cta.contact")}</Link>
+    <Link href={localizedPath("/blog", locale)} style="outline">{t("cta.blog")}</Link>
   </div>
 </div>

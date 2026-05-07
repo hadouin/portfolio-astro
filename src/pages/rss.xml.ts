@@ -15,7 +15,12 @@ const escapeXml = (value: string) =>
 
 export async function GET({ site }: APIContext) {
   const siteUrl = site?.toString() ?? "https://hadouin.com/";
-  const posts = (await getCollection("blog", ({ data }) => !data.draft))
+  const posts = (
+    await getCollection(
+      "blog",
+      ({ id, data }) => id.startsWith("en/") && !data.draft,
+    )
+  )
     .filter((p) => p.data.publishDate < new Date())
     .sort(
       (a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf(),
@@ -23,7 +28,8 @@ export async function GET({ site }: APIContext) {
 
   const items = posts
     .map((post) => {
-      const link = new URL(`/blog/${post.id}`, siteUrl).toString();
+      const slug = post.id.slice(3);
+      const link = new URL(`/blog/${slug}`, siteUrl).toString();
       const pubDate = post.data.publishDate.toUTCString();
       const description = post.data.description ?? post.data.snippet;
       const categories = post.data.tags

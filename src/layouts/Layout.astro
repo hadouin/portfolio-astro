@@ -3,6 +3,15 @@ import { SEO } from "astro-seo";
 import { ClientRouter } from "astro:transitions";
 import Footer from "@components/footer.astro";
 import Navbar from "@components/navbar/navbar.astro";
+import {
+  defaultLocale,
+  getLocaleFromUrl,
+  localizedPath,
+  stripLocaleFromPath,
+  useTranslations,
+  type Locale,
+} from "@i18n/utils";
+import { htmlLangTag, locales, ogLocaleTag } from "@i18n/ui";
 import "@fontsource/inter/variable.css";
 import "lenis/dist/lenis.css";
 
@@ -15,6 +24,9 @@ export interface Props {
   imageAlt?: string;
   keywords?: string[];
   noindex?: boolean;
+  locale?: Locale;
+  /** Disable hreflang alternates emission. Used by single-locale pages (e.g. /signature). */
+  noAlternates?: boolean;
   article?: {
     publishedTime?: string;
     modifiedTime?: string;
@@ -24,28 +36,44 @@ export interface Props {
   };
 }
 
-const DEFAULT_DESCRIPTION =
-  "Hadouin Leroy — creative developer in Paris. I build things for the web, turning raw ideas into polished products. Heading towards gaming and 3D animation.";
 const SITE_NAME = "Hadouin Leroy";
 const TWITTER_HANDLE = "@hadouin";
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site).toString();
-
 const {
   title,
-  description = DEFAULT_DESCRIPTION,
+  description,
   image = "/opengraph.png",
-  imageAlt = "Hadouin Leroy — creative developer building things for the web",
+  imageAlt,
   keywords,
   noindex = false,
+  locale: localeProp,
+  noAlternates = false,
   article,
 } = Astro.props;
+
+const locale: Locale = localeProp ?? getLocaleFromUrl(Astro.url);
+const t = useTranslations(locale);
+
+const resolvedDescription = description ?? t("site.description");
+const resolvedImageAlt = imageAlt ?? t("site.image.alt");
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site).toString();
+const basePath = stripLocaleFromPath(Astro.url.pathname);
+const alternates = noAlternates
+  ? []
+  : locales.map((loc) => ({
+      hreflang: loc,
+      href: new URL(localizedPath(basePath, loc), Astro.site).toString(),
+    }));
+const xDefaultHref = noAlternates
+  ? null
+  : new URL(localizedPath(basePath, defaultLocale), Astro.site).toString();
 
 const resolvedImageWithDomain = new URL(image, Astro.site).toString();
 
 const makeTitle = title
   ? title + " | " + SITE_NAME
-  : "Hadouin Leroy — Creative Developer";
+  : t("site.title.fallback");
 
 const openGraph = article
   ? {
@@ -55,7 +83,7 @@ const openGraph = article
         title: makeTitle,
         image: resolvedImageWithDomain,
       },
-      image: { alt: imageAlt },
+      image: { alt: resolvedImageAlt },
       article: {
         publishedTime: article.publishedTime,
         modifiedTime: article.modifiedTime,
@@ -71,12 +99,12 @@ const openGraph = article
         title: makeTitle,
         image: resolvedImageWithDomain,
       },
-      image: { alt: imageAlt },
+      image: { alt: resolvedImageAlt },
     };
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang={htmlLangTag[locale]}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
@@ -100,11 +128,17 @@ const openGraph = article
       title={`${SITE_NAME} — Blog`}
       href="/rss.xml"
     />
+    {alternates.map((alt) => (
+      <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />
+    ))}
+    {xDefaultHref && (
+      <link rel="alternate" hreflang="x-default" href={xDefaultHref} />
+    )}
 
     <ClientRouter />
     <SEO
       title={makeTitle}
-      description={description}
+      description={resolvedDescription}
       canonical={canonicalURL}
       noindex={noindex}
       nofollow={noindex}
@@ -114,22 +148,22 @@ const openGraph = article
         creator: TWITTER_HANDLE,
         site: TWITTER_HANDLE,
         title: makeTitle,
-        description,
+        description: resolvedDescription,
         image: resolvedImageWithDomain,
-        imageAlt,
+        imageAlt: resolvedImageAlt,
       }}
       extend={{
         meta: [
           { name: "robots", content: noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large" },
           { property: "og:site_name", content: SITE_NAME },
-          { property: "og:locale", content: "en_US" },
+          { property: "og:locale", content: ogLocaleTag[locale] },
         ],
       }}
     />
     <slot name="head" />
   </head>
   <body>
-    <Navbar />
+    <Navbar locale={locale} />
     <div
       class="hidden xl:flex fixed bottom-0 w-10 items-center justify-center flex-col right-10 left-auto after:h-20 after:w-px after:bg-slate-500">
       <div class="email-sidelink my-5">
@@ -171,7 +205,7 @@ const openGraph = article
     <div class="pt-[70px]">
       <slot />
     </div>
-    <Footer />
+    <Footer locale={locale} />
     <script>
       import Lenis from "lenis";
 

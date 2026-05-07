@@ -1,32 +1,19 @@
 ---
-const education = [
-  {
-    school: "ISEP",
-    degree: "Engineering Degree",
-    location: "Paris, France",
-    duration: "5 years",
-    note: "School coding projects, game dev and hackathons.",
-  },
-  {
-    school: "Glyndwr University",
-    degree: "Exchange",
-    location: "Wrexham, Wales",
-    duration: "6 months",
-    note: "UX design courses, mobile app development.",
-  },
-  {
-    school: "Presidency University",
-    degree: "Exchange",
-    location: "Bangalore, India",
-    duration: "3 months",
-    note: "Management class, blockchain group project.",
-  },
-];
+import { useTranslations, type Locale } from "@i18n/utils";
+import { getEducation } from "@i18n/data";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const education = getEducation(locale);
 ---
 
 <section id="education" class="mb-24">
-  <h2 class="text-4xl font-bold">Education</h2>
-  <h3 class="text-lg text-slate-700 mb-8">where i trained</h3>
+  <h2 class="text-4xl font-bold">{t("education.title")}</h2>
+  <h3 class="text-lg text-slate-700 mb-8">{t("education.subtitle")}</h3>
 
   <ul class="space-y-6">
     {

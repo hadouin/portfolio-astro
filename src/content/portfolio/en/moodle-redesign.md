@@ -29,7 +29,7 @@ The redesign stayed grounded in real student workflows rather than chasing visua
 
 ## Key Screens
 
-![Moodle redesign mockups](../../assets/portfolio/moodle-redesign-banner.png)
+![Moodle redesign mockups](../../../assets/portfolio/moodle-redesign-banner.png)
 
 - **Home** — upcoming assignments, recent courses, and recently accessed files surfaced on a single scrollable view
 - **Course detail** — description, updates, assignments, and docs grouped under a clear hero

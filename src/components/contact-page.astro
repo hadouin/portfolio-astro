@@ -1,0 +1,73 @@
+---
+import { Icon } from "astro-icon";
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/container.astro";
+import Sectionhead from "@components/sectionhead.astro";
+import Contactform from "@components/contactform.astro";
+import Link from "@components/ui/link.astro";
+import { useTranslations, type Locale } from "@i18n/utils";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<Layout
+  locale={locale}
+  title={t("contact.page.title")}
+  description={t("contact.meta.description")}
+>
+  <Container>
+    <Sectionhead>
+      <Fragment slot="title">{t("contact.page.title")}</Fragment>
+      <Fragment slot="desc">{t("contact.page.desc")}</Fragment>
+    </Sectionhead>
+
+    <div class="grid md:grid-cols-2 gap-10 mx-auto max-w-4xl mt-16">
+      <div>
+        <h2 class="font-medium text-2xl text-gray-800">{t("contact.page.headline")}</h2>
+        <p class="text-lg leading-relaxed text-slate-500 mt-3">
+          {t("contact.page.body")}
+        </p>
+        <div class="mt-5">
+          <div class="flex items-center mt-2 space-x-2 text-gray-600">
+            <Icon class="text-gray-400 w-4 h-4" name="uil:map-marker" />
+            <span>{t("contact.page.location")}</span>
+          </div><div class="flex items-center mt-2 space-x-2 text-gray-600">
+            <Icon class="text-gray-400 w-4 h-4" name="uil:envelope" /><a
+              href="mailto:contact@hadouin.com">contact@hadouin.com</a
+            >
+          </div>
+        </div>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/hadouin_leroy-cv-en.pdf"
+            size="md"
+            style="outline"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center gap-2 w-fit">
+            <Icon class="w-4 h-4" name="uil:file-alt" />
+            {t("contact.page.cv.en")}
+          </Link>
+          <Link
+            href="/hadouin_leroy-cv-fr.pdf"
+            size="md"
+            style="outline"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center gap-2 w-fit">
+            <Icon class="w-4 h-4" name="uil:file-alt" />
+            {t("contact.page.cv.fr")}
+          </Link>
+        </div>
+      </div>
+      <div>
+        <Contactform locale={locale} />
+      </div>
+    </div>
+  </Container>
+</Layout>

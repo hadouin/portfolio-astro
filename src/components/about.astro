@@ -1,12 +1,16 @@
 ---
 import hadouinImage from "assets/hadouin-isep.jpg";
 import { Image } from "astro:assets";
+import { useTranslations, type Locale } from "@i18n/utils";
 
-const paragraphs = [
-  "Hello! My name is Hadouin LEROY, a creative developer with a strong technical background, shaped by hands-on experience designing and building applications from scratch. I like turning raw ideas into polished, tangible products.",
-  "I graduated from ISEP engineering school in Paris (2025), with exchanges at Glyndwr University in Wales (UX design, mobile apps) and Presidency University in Bangalore (management, blockchain). Along the way I worked at Dassault Systèmes, Enoria, JuniorISEP, and now Runelabs.",
-  "Today I’m heading towards gaming and 3D animation, wearing hats as a creative dev, UX designer, and certified scrum master. Fluent in English, native in French.",
-];
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const paragraphs = [t("about.p1"), t("about.p2"), t("about.p3")];
 ---
 
 <div class="mb-16" id="about">
@@ -15,14 +19,14 @@ const paragraphs = [
       <Image
         class="w-full rounded-lg"
         src={hadouinImage}
-        alt="Portrait of Hadouin Leroy, creative developer based in Paris"
+        alt={t("about.image.alt")}
         width={600}
         height={800}
         data-parallax="0.04"
       />
     </div>
     <div class="text col-span-3">
-      <h2 class="text-2xl font-bold">About me</h2>
+      <h2 class="text-2xl font-bold">{t("about.title")}</h2>
       {paragraphs.map((item) => <p class="font-inter my-2">{item}</p>)}
     </div>
   </div>

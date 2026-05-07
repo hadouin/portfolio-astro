@@ -15,7 +15,7 @@ Le Jockey Tricolore is a French DJ collective offering musical animation across 
 
 ## Before & After
 
-![Before and after comparison of the Jockey Tricolore logo](../../assets/portfolio/jockey-tricolore-before-after.png)
+![Before and after comparison of the Jockey Tricolore logo](../../../assets/portfolio/jockey-tricolore-before-after.png)
 
 The old mark was a flat circular badge with thin script lettering that became unreadable below ~80px. The redesigned mark is a monogram, a stylized "d" fused with a vinyl record and a headphones arc, paired with a clean sans-serif wordmark that stacks or sits inline.
 

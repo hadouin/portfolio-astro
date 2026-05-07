@@ -1,0 +1,189 @@
+---
+import { render } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/container.astro";
+import {
+  formatLongDate,
+  localizedPath,
+  useTranslations,
+  type Locale,
+} from "@i18n/utils";
+
+interface Props {
+  locale: Locale;
+  slug: string;
+  entry: CollectionEntry<"blog">;
+  fallback?: boolean;
+}
+
+const { locale, slug, entry, fallback = false } = Astro.props;
+const t = useTranslations(locale);
+const { Content } = await render(entry);
+
+const siteUrl = Astro.site?.toString() ?? "https://hadouin.com";
+const canonical = new URL(
+  localizedPath(`/blog/${slug}`, locale),
+  siteUrl,
+).toString();
+const rawOgImage = entry.data.ogImage ?? entry.data.image.src;
+const ogImage = rawOgImage.startsWith("http")
+  ? rawOgImage
+  : new URL(rawOgImage, siteUrl).toString();
+const publishedISO = entry.data.publishDate.toISOString();
+const modifiedISO = entry.data.updatedDate?.toISOString();
+const pageDescription = entry.data.description ?? entry.data.snippet;
+
+const blogPostingJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  headline: entry.data.title,
+  description: pageDescription,
+  image: ogImage,
+  datePublished: publishedISO,
+  ...(modifiedISO && { dateModified: modifiedISO }),
+  inLanguage: fallback ? "en-US" : locale === "fr" ? "fr-FR" : "en-US",
+  author: {
+    "@type": "Person",
+    name: entry.data.author,
+    url: siteUrl,
+  },
+  publisher: {
+    "@type": "Person",
+    name: "Hadouin Leroy",
+    url: siteUrl,
+  },
+  mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+  keywords: entry.data.tags.join(", "),
+  articleSection: entry.data.category,
+};
+---
+
+<Layout
+  locale={locale}
+  title={entry.data.title}
+  description={pageDescription}
+  image={ogImage}
+  imageAlt={entry.data.image.alt}
+  keywords={entry.data.tags}
+  article={{
+    publishedTime: publishedISO,
+    modifiedTime: modifiedISO,
+    author: entry.data.author,
+    section: entry.data.category,
+    tags: entry.data.tags,
+  }}
+>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(blogPostingJsonLd)}
+  />
+  <Container>
+    {fallback && (
+      <div class="mx-auto max-w-[735px] mt-8">
+        <div class="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {t("project.translationPending")}
+        </div>
+      </div>
+    )}
+    <div class="mx-auto max-w-[735px] mt-14">
+      <span class="text-blue-400 uppercase tracking-wider text-sm font-medium">
+        {entry.data.category}
+      </span>
+      <h1
+        class="text-4xl lg:text-5xl font-bold lg:tracking-tight mt-1 lg:leading-tight">
+        {entry.data.title}
+      </h1>
+      <div class="flex gap-2 mt-3 items-center flex-wrap md:flex-nowrap">
+        <span class="text-gray-400">
+          {entry.data.author}
+        </span>
+        <span class="text-gray-400">•</span>
+        <time
+          class="text-gray-400"
+          datetime={entry.data.publishDate.toISOString()}>
+          {formatLongDate(entry.data.publishDate, locale)}
+        </time>
+        <span class="text-gray-400 hidden md:block">•</span>
+        <div class="w-full md:w-auto flex flex-wrap gap-3">
+          {
+            entry.data.tags.map((tag) => (
+              <span class="text-sm text-gray-500">#{tag}</span>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="mx-auto prose prose-lg mt-6">
+        <Content />
+    </div>
+    <div class="text-center mt-8">
+      <a
+        href={localizedPath("/blog", locale)}
+        class="bg-gray-100 px-5 py-3 rounded-md hover:bg-gray-200 transition"
+        >{t("blog.post.back")}</a
+      >
+    </div>
+  </Container>
+</Layout>
+
+<style is:global>
+  .prose pre {
+    position: relative;
+  }
+  .prose pre .copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #e5e7eb;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0.375rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease, background 0.15s ease;
+  }
+  .prose pre:hover .copy-btn,
+  .prose pre .copy-btn:focus-visible {
+    opacity: 1;
+  }
+  .prose pre .copy-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .prose pre .copy-btn.copied {
+    color: #34d399;
+  }
+</style>
+
+<script define:vars={{ copyLabel: t("blog.post.copy"), copiedLabel: t("blog.post.copied"), errorLabel: t("blog.post.copyError") }}>
+  document.querySelectorAll(".prose pre").forEach((pre) => {
+    if (pre.querySelector(".copy-btn")) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "copy-btn";
+    btn.textContent = copyLabel;
+    btn.setAttribute("aria-label", "Copy code to clipboard");
+    btn.addEventListener("click", async () => {
+      const code = pre.querySelector("code");
+      const text = code?.innerText ?? pre.innerText;
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = copiedLabel;
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = copyLabel;
+          btn.classList.remove("copied");
+        }, 1500);
+      } catch {
+        btn.textContent = errorLabel;
+      }
+    });
+    pre.appendChild(btn);
+  });
+</script>

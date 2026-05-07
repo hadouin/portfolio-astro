@@ -20,7 +20,7 @@ Junior ISEP runs dozens of client projects each year. Teams often hit moments wh
 
 ## Design Thinking Process
 
-![Design thinking illustration](../../assets/portfolio/je-intervenants-design-thinking.png)
+![Design thinking illustration](../../../assets/portfolio/je-intervenants-design-thinking.png)
 
 The project started with a full design thinking pass:
 
@@ -46,7 +46,7 @@ Shipping with a student team meant process mattered as much as design quality. W
 
 Client comms was the biggest bottleneck early on: scattered email threads, missed handoffs, unclear onboarding. Fixed by centralizing everything in Notion: one CRM database for intervenants and project contacts, onboarding automations that fire templated tasks and emails when a new expert signs up, and shared status views so the whole team sees where each relationship stands.
 
-![Notion CRM illustration](../../assets/portfolio/je-intervenants-notion-crm.png)
+![Notion CRM illustration](../../../assets/portfolio/je-intervenants-notion-crm.png)
 
 ## Automated Releases
 
@@ -54,7 +54,7 @@ App releases used to be manual and skipped. Built a CI/CD pipeline that tags ver
 
 ## Launch
 
-![JE Intervenants coming soon banner](../../assets/portfolio/je-intervenants-coming-soon.png)
+![JE Intervenants coming soon banner](../../../assets/portfolio/je-intervenants-coming-soon.png)
 
 A coming-soon landing page was used to build anticipation inside the Junior ISEP community and collect early expert signups before the public launch.
 

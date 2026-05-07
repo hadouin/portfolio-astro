@@ -1,0 +1,28 @@
+---
+import { getCollection } from "astro:content";
+import BlogDetail from "@components/blog-detail.astro";
+
+export async function getStaticPaths() {
+  const all = await getCollection("blog", ({ data }) => !data.draft);
+  const byLocale = { en: new Map(), fr: new Map() } as {
+    en: Map<string, (typeof all)[number]>;
+    fr: Map<string, (typeof all)[number]>;
+  };
+  for (const entry of all) {
+    if (entry.id.startsWith("en/")) byLocale.en.set(entry.id.slice(3), entry);
+    else if (entry.id.startsWith("fr/")) byLocale.fr.set(entry.id.slice(3), entry);
+  }
+  return Array.from(byLocale.en.keys()).map((slug) => {
+    const fr = byLocale.fr.get(slug);
+    const entry = fr ?? byLocale.en.get(slug)!;
+    return {
+      params: { slug },
+      props: { entry, slug, fallback: !fr },
+    };
+  });
+}
+
+const { entry, slug, fallback } = Astro.props;
+---
+
+<BlogDetail locale="fr" slug={slug} entry={entry} fallback={fallback} />

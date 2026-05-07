@@ -1,5 +1,21 @@
+---
+import {
+  defaultLocale,
+  getLocaleFromUrl,
+  useTranslations,
+  type Locale,
+} from "@i18n/utils";
+
+interface Props {
+  locale?: Locale;
+}
+
+const locale = Astro.props.locale ?? getLocaleFromUrl(Astro.url) ?? defaultLocale;
+const t = useTranslations(locale);
+---
+
 <footer class="my-20">
   <p class="text-center text-sm text-slate-500">
-    Copyright © {new Date().getFullYear()} Hadouin. All rights reserved.
+    {t("footer.copyright", { year: new Date().getFullYear() })}
   </p>
 </footer>

@@ -1,0 +1,150 @@
+---
+import About from "@components/about.astro";
+import Container from "@components/container.astro";
+import Cta from "@components/cta.astro";
+import Education from "@components/education.astro";
+import Experience from "@components/experience.astro";
+import Hero from "@components/hero.astro";
+import Projects from "@components/projects.astro";
+import Layout from "@layouts/Layout.astro";
+import { useTranslations, type Locale } from "@i18n/utils";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const siteUrl = Astro.site?.toString() ?? "https://hadouin.com";
+
+const personJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Hadouin Leroy",
+  givenName: "Hadouin",
+  familyName: "Leroy",
+  url: siteUrl,
+  image: new URL("/opengraph.png", siteUrl).toString(),
+  jobTitle: "Founding Engineer",
+  description:
+    "Creative developer with a strong technical background. I turn raw ideas into polished, tangible products — now heading towards gaming and 3D animation. Creative dev, UX designer and certified Scrum Master.",
+  email: "mailto:contact@hadouin.com",
+  nationality: { "@type": "Country", name: "France" },
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Paris",
+    addressCountry: "FR",
+  },
+  worksFor: {
+    "@type": "Organization",
+    name: "Runelabs",
+  },
+  alumniOf: [
+    {
+      "@type": "CollegeOrUniversity",
+      name: "ISEP — Institut Supérieur d'Électronique de Paris",
+    },
+    {
+      "@type": "CollegeOrUniversity",
+      name: "Wrexham Glyndwr University",
+    },
+    {
+      "@type": "CollegeOrUniversity",
+      name: "Presidency University, Bangalore",
+    },
+  ],
+  knowsAbout: [
+    "Creative development",
+    "Web development",
+    "3D animation",
+    "Game development",
+    "Blender",
+    "Three.js",
+    "React",
+    "Astro",
+    "Dojo",
+    "Starknet",
+    "UX design",
+    "Scrum",
+  ],
+  knowsLanguage: [
+    { "@type": "Language", name: "French", alternateName: "fr" },
+    { "@type": "Language", name: "English", alternateName: "en" },
+  ],
+  sameAs: [
+    "https://github.com/hadouin",
+    "https://www.linkedin.com/in/hadouin",
+  ],
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  url: siteUrl,
+  name: "Hadouin Leroy",
+  description: t("site.description"),
+  author: { "@type": "Person", name: "Hadouin Leroy" },
+  inLanguage: locale === "fr" ? "fr-FR" : "en-US",
+};
+
+const keywords =
+  locale === "fr"
+    ? [
+        "Hadouin Leroy",
+        "creative developer",
+        "portfolio",
+        "Paris",
+        "animation 3D",
+        "game developer",
+        "Blender",
+        "Three.js",
+        "Astro",
+        "React",
+        "Dojo",
+        "Starknet",
+        "UX designer",
+        "Scrum Master",
+        "Runelabs",
+      ]
+    : [
+        "Hadouin Leroy",
+        "creative developer",
+        "portfolio",
+        "Paris",
+        "3D animation",
+        "game developer",
+        "Blender",
+        "Three.js",
+        "Astro",
+        "React",
+        "Dojo",
+        "Starknet",
+        "UX designer",
+        "Scrum Master",
+        "Runelabs",
+      ];
+---
+
+<Layout locale={locale} description={t("site.description")} keywords={keywords}>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(personJsonLd)}
+  />
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(websiteJsonLd)}
+  />
+  <Container>
+    <Hero locale={locale} />
+    <About locale={locale} />
+    <Experience locale={locale} />
+    <Education locale={locale} />
+    <Projects locale={locale} />
+    <Cta locale={locale} />
+  </Container>
+</Layout>

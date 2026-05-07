@@ -1,20 +1,27 @@
 ---
 import Link from "@components/ui/link.astro";
+import { localizedPath, useTranslations, type Locale } from "@i18n/utils";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
 ---
 
 <div class="h-[calc(100vh-70px)] flex flex-col justify-center">
-  <h2 class="text-lg font-semibold z-20">Hi, my name is</h2>
+  <h2 class="text-lg font-semibold z-20">{t("hero.greeting")}</h2>
   <h1
     class="whitespace-pre flex flex-col text-5xl lg:text-6xl xl:text-7xl font-bold tracking-wide hacker-effect h-[48px] lg:h-[60px] xl:h-[72px]">
   </h1>
   <h3 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-600 z-20">
-    I build things for the web
+    {t("hero.tagline")}
   </h3>
   <p class="my-4 max-w-lg font-inter leading-tight z-20">
-    I’m a creative developer turning raw ideas into polished products. Now
-    heading towards gaming and 3D animation.
+    {t("hero.intro")}
   </p>
-  <Link class="hire-me w-fit wiggle" href="/contact">Hire me!</Link>
+  <Link class="hire-me w-fit wiggle" href={localizedPath("/contact", locale)}>{t("nav.hireMe")}</Link>
 </div>
 
 <style>

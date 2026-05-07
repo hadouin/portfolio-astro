@@ -1,0 +1,3 @@
+# `/signature` page stays English-only
+
+The `/signature` page generates a copy-paste HTML email signature and is `noindex`. Its payload (name, "Creative Developer" title, phone, links) is composed entirely of Locale-Agnostic Terms — there is no prose to translate, and the title stays English in every locale by global rule. Translating only the surrounding UI chrome (copy buttons, instructions) would create a `/fr/signature` page whose output is byte-identical to `/signature`, which is misleading. The page is therefore excluded from the bilingual surface; the locale switcher hides or redirects to `/fr/` when on this page.

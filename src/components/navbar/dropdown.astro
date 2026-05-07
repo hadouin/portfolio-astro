@@ -33,7 +33,12 @@ const { title, lastItem, children } = Astro.props;
         children.map((item) => (
           <a
             href={item.path}
-            class="py-1 text-gray-600 hover:text-gray-900">
+            hreflang={item.hreflang}
+            aria-current={item.active ? "true" : undefined}
+            class:list={[
+              "py-1 hover:text-gray-900",
+              item.active ? "text-gray-900 font-semibold" : "text-gray-600",
+            ]}>
             {item.title}
           </a>
         ))

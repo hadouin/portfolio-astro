@@ -53,7 +53,7 @@ The frontend uses a modular widget architecture allowing easy extension. Each wi
 
 I also designed merchandise for the project: hoodies and tees featuring original illustrations and the in-game land tiles.
 
-![PonziLand merch lineup I designed](../../assets/portfolio/ponziland-merch.png)
+![PonziLand merch lineup I designed](../../../assets/portfolio/ponziland-merch.png)
 
 ## What I Learned
 

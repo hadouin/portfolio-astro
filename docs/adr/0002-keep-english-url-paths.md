@@ -1,0 +1,3 @@
+# Keep English URL path segments in French routes
+
+French routes use the `/fr/` prefix but keep the English path segments and slugs unchanged: `/fr/projects/emi`, not `/fr/projets/emi`. The audience for this portfolio is recruiters and engineering peers who don't search for "projets hadouin" — the localized-SEO win is negligible while a translated-paths routing map adds custom logic, hreflang pairing complexity, and edge cases for every dynamic route. Project slugs (`emi`, `runelabs`) are also kept shared because they are proper nouns / project codes, not translatable phrases. This makes hreflang pairing a pure locale swap.

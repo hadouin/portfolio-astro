@@ -1,0 +1,98 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/container.astro";
+import Sectionhead from "@components/sectionhead.astro";
+import {
+  formatLongDate,
+  localizedPath,
+  useTranslations,
+  type Locale,
+} from "@i18n/utils";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const publishedBlogEntries = await getCollection("blog", ({ id, data }) => {
+  return id.startsWith(`${locale}/`) && !data.draft && data.publishDate < new Date();
+});
+
+publishedBlogEntries.sort(function (a, b) {
+  return b.data.publishDate.valueOf() - a.data.publishDate.valueOf();
+});
+
+const slugOf = (id: string) => id.slice(locale.length + 1);
+---
+
+<Layout
+  locale={locale}
+  title={t("blog.page.metaTitle")}
+  description={t("blog.page.metaDescription")}
+>
+  <Container>
+    <Sectionhead>
+      <Fragment slot="title">{t("blog.page.title")}</Fragment>
+      <Fragment slot="desc">{t("blog.page.desc")}</Fragment>
+    </Sectionhead>
+    <main class="mt-16">
+      <ul class="grid gap-16 max-w-4xl mx-auto">
+        {
+          publishedBlogEntries.map((blogPostEntry, index) => (
+            <li>
+              <a href={localizedPath(`/blog/${slugOf(blogPostEntry.id)}`, locale)}>
+                <div class="grid md:grid-cols-2 gap-5 md:gap-10 items-center">
+                  <div class="overflow-hidden rounded-md">
+                    {blogPostEntry.data.image.src.endsWith(".mp4") ? (
+                      <video
+                        src={blogPostEntry.data.image.src}
+                        autoplay
+                        muted
+                        playsinline
+                        class="w-full aspect-video object-cover"
+                        data-parallax="0.05"
+                      />
+                    ) : (
+                      <img
+                        src={blogPostEntry.data.image.src}
+                        alt={blogPostEntry.data.image.alt}
+                        loading={index <= 2 ? "eager" : "lazy"}
+                        decoding={index <= 2 ? "sync" : "async"}
+                        class="w-full aspect-video object-cover"
+                        data-parallax="0.05"
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <span class="text-blue-400 uppercase tracking-wider text-sm font-medium">
+                      {blogPostEntry.data.category}
+                    </span>
+
+                    <h2 class="scramble-hover text-3xl font-semibold leading-snug tracking-tight mt-1 ">
+                      {blogPostEntry.data.title}
+                    </h2>
+
+                    <div class="flex gap-2 mt-3">
+                      <span class="text-gray-400">
+                        {blogPostEntry.data.author}
+                      </span>
+                      <span class="text-gray-400">• </span>
+                      <time
+                        class="text-gray-400"
+                        datetime={blogPostEntry.data.publishDate.toISOString()}>
+                        {formatLongDate(blogPostEntry.data.publishDate, locale)}
+                      </time>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </main>
+  </Container>
+</Layout>

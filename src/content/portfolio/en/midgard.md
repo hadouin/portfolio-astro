@@ -33,7 +33,7 @@ Midgard turns game scores into competitive markets. Factory Owners select a game
 
 Live at [midgard.game](https://midgard.game), docs at [docs.midgard.game](https://docs.midgard.game), beta at [beta.midgard.game](https://beta.midgard.game). Built by [RuneLabs](https://github.com/RuneLabsxyz) (same team as PonziLand).
 
-![Midgard vision illustration](../../assets/portfolio/midgard-vision.png)
+![Midgard vision illustration](../../../assets/portfolio/midgard-vision.png)
 
 ## My Role
 
@@ -70,13 +70,13 @@ Factories, stakes, and vault positions live onchain; game sessions and matchmaki
 
 The Midgard wordmark pairs a chunky, slightly-beveled sans with a stylized "M" glyph echoing a factory silhouette: two stacks, a tapered roofline. Goal: read as industrial / mercantile without falling into crypto-tech clichés (no gradients, no circuit lines). Flat fills, high contrast, one accent color so the mark survives on busy game backdrops and small favicon sizes alike.
 
-![Midgard logo on solid background](../../assets/portfolio/midgard-logo.png)
+![Midgard logo on solid background](../../../assets/portfolio/midgard-logo.png)
 
 ### Header & Banners
 
 The header art uses the isometric factory as the anchor, with the wordmark locked to a consistent baseline. Beta banner variants reuse the same factory render so cross-surface recognition stays tight.
 
-![Midgard beta banner](../../assets/portfolio/midgard-beta-banner.png)
+![Midgard beta banner](../../../assets/portfolio/midgard-beta-banner.png)
 
 ## 3D Assets in Blender
 
@@ -87,9 +87,9 @@ Every hero visual on the site and in-app comes from a single Blender scene. One 
 - **GLTF export**: Same meshes feed the web runtime (Draco-compressed, KTX2 textures) so what ships in Three.js matches the marketing renders pixel-for-vibe
 - **Blender Cycles settings**: Low-sample denoised renders for iteration, higher-sample passes for hero frames (see my [Blender render checklist post](/blog/blender-cycles-fast-render-checklist))
 
-![Midgard factory rendered in Blender](../../assets/portfolio/midgard-factory-blender.png)
+![Midgard factory rendered in Blender](../../../assets/portfolio/midgard-factory-blender.png)
 
-![Midgard isometric illustration](../../assets/portfolio/midgard-iso.png)
+![Midgard isometric illustration](../../../assets/portfolio/midgard-iso.png)
 
 ## Three.js Integration
 
