@@ -179,6 +179,7 @@ const openGraph = article
         autoRaf: true,
         anchors: true,
       });
+      (window as any).lenis = lenis;
 
       let parallaxIO: IntersectionObserver | null = null;
       let scrollHandler: (() => void) | null = null;

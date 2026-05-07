@@ -1,8 +1,6 @@
 ---
-import Container from "@components/container.astro";
 import Link from "@components/ui/link.astro";
 import Dropdown from "./dropdown.astro";
-import { Astronav, MenuItems, MenuIcon } from "astro-navbar";
 import { Icon } from "astro-icon";
 const menuitems = [
   {
@@ -37,46 +35,143 @@ const menuitems = [
 ---
 
 <header
-  class="fixed top-0 left-0 right-0 flex flex-col lg:flex-row justify-between items-center bg-white z-50">
-  <Astronav>
-    <div class="flex w-full lg:w-auto items-center justify-between p-5">
-      <a href="/" class="text-lg">
-        <Icon class="h-8" name="Logo-text" />
-      </a>
-      <div class="block lg:hidden">
-        <MenuIcon class="w-4 h-4 text-gray-800" />
-      </div>
-    </div>
-    <MenuItems
-      class="hidden w-full lg:w-auto mt-2 lg:flex lg:mt-0 px-5 pb-5 lg:pb-0 bg-white">
-      <ul class="flex flex-col lg:flex-row lg:gap-3">
-        {
-          menuitems.map((item, index) => (
-            <>
-              {item.children && (
-                <Dropdown
-                  title={item.title}
-                  children={item.children}
-                  lastItem={index === menuitems.length - 1}
-                />
-              )}
+  class="navbar-root group fixed top-0 left-0 right-0 flex flex-col lg:flex-row justify-between items-center bg-white z-50"
+  data-menu-open="false">
+  <div class="flex w-full lg:w-auto items-center justify-between p-5">
+    <a href="/" class="text-lg">
+      <Icon class="h-8" name="Logo-text" />
+    </a>
+    <button
+      type="button"
+      class="navbar-menu-toggle block lg:hidden"
+      aria-label="Toggle Menu"
+      aria-expanded="false"
+      aria-controls="navbar-menu">
+      <svg
+        fill="currentColor"
+        class="w-4 h-4 text-gray-800"
+        width="24"
+        height="24"
+        viewBox="0 0 20 20"
+        xmlns="http://www.w3.org/2000/svg">
+        <title>Toggle Menu</title>
+        <path
+          class="navbar-menu-icon-open"
+          fill-rule="evenodd"
+          d="M4 5h16a1 1 0 010 2H4a1 1 0 110-2zm0 6h16a1 1 0 010 2H4a1 1 0 010-2zm0 6h16a1 1 0 010 2H4a1 1 0 010-2z"></path>
+        <path
+          class="navbar-menu-icon-close"
+          fill-rule="evenodd"
+          clip-rule="evenodd"
+          d="M18.278 16.864a1 1 0 01-1.414 1.414l-4.829-4.828-4.828 4.828a1 1 0 01-1.414-1.414l4.828-4.829-4.828-4.828a1 1 0 011.414-1.414l4.829 4.828 4.828-4.828a1 1 0 111.414 1.414l-4.828 4.829 4.828 4.828z"></path>
+      </svg>
+    </button>
+  </div>
+  <nav
+    id="navbar-menu"
+    class="navbar-menu hidden w-full lg:w-auto mt-2 lg:flex lg:mt-0 px-5 pb-5 lg:pb-0 bg-white">
+    <ul class="flex flex-col lg:flex-row lg:gap-3">
+      {
+        menuitems.map((item, index) => (
+          <>
+            {item.children && (
+              <Dropdown
+                title={item.title}
+                children={item.children}
+                lastItem={index === menuitems.length - 1}
+              />
+            )}
 
-              {!item.children && (
-                <li>
-                  <a
-                    href={item.path}
-                    class="scramble-hover font-bold flex lg:px-3 py-2 text-gray-600 hover:text-gray-900">
-                    {item.title}
-                  </a>
-                </li>
-              )}
-            </>
-          ))
-        }
-      </ul>
-      <div class="lg:hidden flex items-center mt-3 gap-4">
-        <Link href="/contact" size="md" block>Hire me!</Link>
-      </div>
-    </MenuItems>
-  </Astronav>
+            {!item.children && (
+              <li>
+                <a
+                  href={item.path}
+                  class="scramble-hover font-bold flex lg:px-3 py-2 text-gray-600 hover:text-gray-900">
+                  {item.title}
+                </a>
+              </li>
+            )}
+          </>
+        ))
+      }
+    </ul>
+    <div class="lg:hidden flex items-center mt-3 gap-4">
+      <Link href="/contact" size="md" block>Hire me!</Link>
+    </div>
+  </nav>
 </header>
+
+<style>
+  .navbar-root .navbar-menu-icon-close {
+    display: none;
+  }
+  .navbar-root[data-menu-open="true"] .navbar-menu-icon-open {
+    display: none;
+  }
+  .navbar-root[data-menu-open="true"] .navbar-menu-icon-close {
+    display: block;
+  }
+  @media (max-width: 1023px) {
+    .navbar-root[data-menu-open="true"] .navbar-menu {
+      display: block;
+    }
+  }
+</style>
+
+<script>
+  function bindNavbarMenu() {
+    document.querySelectorAll<HTMLElement>(".navbar-root").forEach((header) => {
+      if ((header as any).__navbarMenuBound) return;
+      (header as any).__navbarMenuBound = true;
+      const toggle = header.querySelector<HTMLButtonElement>(
+        ".navbar-menu-toggle"
+      );
+      toggle?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const open = header.dataset.menuOpen === "true";
+        const next = !open;
+        header.dataset.menuOpen = String(next);
+        toggle.setAttribute("aria-expanded", String(next));
+      });
+      header.querySelectorAll<HTMLAnchorElement>("nav a").forEach((a) => {
+        a.addEventListener("click", () => {
+          header.dataset.menuOpen = "false";
+          toggle?.setAttribute("aria-expanded", "false");
+        });
+      });
+    });
+  }
+
+  function bindNavbarHashLinks() {
+    if ((window as any).__navbarHashBound) return;
+    (window as any).__navbarHashBound = true;
+    document.addEventListener(
+      "click",
+      (event) => {
+        const anchor = (event.target as Element | null)?.closest(
+          "header a[href*='#']"
+        ) as HTMLAnchorElement | null;
+        if (!anchor) return;
+        const url = new URL(anchor.href, location.href);
+        if (url.pathname !== location.pathname) return;
+        if (!url.hash || url.hash === "#") return;
+        const target = document.querySelector(url.hash) as HTMLElement | null;
+        if (!target) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const lenis = (window as any).lenis;
+        if (lenis?.scrollTo) {
+          lenis.scrollTo(target, { force: true });
+        } else {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        history.replaceState(null, "", url.hash);
+      },
+      true
+    );
+  }
+
+  bindNavbarHashLinks();
+  bindNavbarMenu();
+  document.addEventListener("astro:page-load", bindNavbarMenu);
+</script>
