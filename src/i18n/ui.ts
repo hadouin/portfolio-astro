@@ -26,7 +26,7 @@ export const ui = {
   en: {
     "site.title.fallback": "Hadouin Leroy — Creative Developer",
     "site.description":
-      "Hi, I'm Hadouin — creative developer in Paris. I build things for the web, turning raw ideas into polished products. Heading towards gaming and 3D animation.",
+      "Hi, I'm Hadouin — freelance creative dev in Paris. I build things for the web, turning raw ideas into polished products.",
     "site.image.alt":
       "Hadouin Leroy — creative developer building things for the web",
 
@@ -43,7 +43,7 @@ export const ui = {
     "hero.greeting": "Hi, my name is",
     "hero.tagline": "I build things for the web",
     "hero.intro":
-      "I'm a creative developer turning raw ideas into polished products. Now heading towards gaming and 3D animation.",
+      "I'm a freelance creative dev turning raw ideas into polished products.",
 
     "about.title": "About me",
     "about.p1":
@@ -51,7 +51,7 @@ export const ui = {
     "about.p2":
       "I graduated from ISEP engineering school in Paris (2025), with exchanges at Glyndwr University in Wales (UX design, mobile apps) and Presidency University in Bangalore (management, blockchain). Along the way I worked at Dassault Systèmes, Enoria, JuniorISEP, and now Runelabs.",
     "about.p3":
-      "Today I'm heading towards gaming and 3D animation, wearing hats as a creative dev, UX designer, and certified scrum master. Fluent in English, native in French.",
+      "Today I'm a freelance creative dev, also wearing hats as a UX designer and certified scrum master. Fluent in English, native in French.",
     "about.image.alt":
       "Portrait of Hadouin Leroy, creative developer based in Paris",
 
@@ -122,7 +122,7 @@ export const ui = {
   fr: {
     "site.title.fallback": "Hadouin Leroy — Creative Developer",
     "site.description":
-      "Salut, moi c'est Hadouin — creative developer à Paris. Je construis des choses pour le web et transforme des idées brutes en produits aboutis. En route vers le gaming et l'animation 3D.",
+      "Salut, moi c'est Hadouin — creative dev freelance à Paris. Je construis des choses pour le web et transforme des idées brutes en produits aboutis.",
     "site.image.alt":
       "Hadouin Leroy — creative developer qui construit des choses pour le web",
 
@@ -139,7 +139,7 @@ export const ui = {
     "hero.greeting": "Salut, je m'appelle",
     "hero.tagline": "Je construis des choses pour le web",
     "hero.intro":
-      "Je suis un creative developer qui transforme des idées brutes en produits aboutis. En route vers le gaming et l'animation 3D.",
+      "Je suis creative dev freelance et je transforme des idées brutes en produits aboutis.",
 
     "about.title": "À propos de moi",
     "about.p1":
@@ -147,7 +147,7 @@ export const ui = {
     "about.p2":
       "Diplômé de l'ISEP à Paris (2025), avec des échanges à Glyndwr University au pays de Galles (UX design, applications mobiles) et à Presidency University à Bangalore (management, blockchain). En chemin, j'ai travaillé chez Dassault Systèmes, Enoria, JuniorISEP, et aujourd'hui chez Runelabs.",
     "about.p3":
-      "Aujourd'hui, je m'oriente vers le gaming et l'animation 3D, avec plusieurs casquettes : creative dev, UX designer et Scrum Master certifié. Anglais courant, français natif.",
+      "Aujourd'hui, je suis creative dev freelance, avec aussi des casquettes d'UX designer et de Scrum Master certifié. Anglais courant, français natif.",
     "about.image.alt":
       "Portrait de Hadouin Leroy, creative developer basé à Paris",
 
