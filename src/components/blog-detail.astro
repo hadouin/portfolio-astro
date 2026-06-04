@@ -9,6 +9,8 @@ import {
   useTranslations,
   type Locale,
 } from "@i18n/utils";
+import { breadcrumbJsonLd, metaDescription } from "@utils/seo";
+import { getCollection } from "astro:content";
 
 interface Props {
   locale: Locale;
@@ -21,6 +23,24 @@ const { locale, slug, entry, fallback = false } = Astro.props;
 const t = useTranslations(locale);
 const { Content } = await render(entry);
 
+const portfolioEntries = await getCollection(
+  "portfolio",
+  ({ id, data }) =>
+    id.startsWith(`${locale}/`) && !data.draft && data.show !== false,
+);
+const tagSet = new Set(entry.data.tags.map((tag) => tag.toLowerCase()));
+const relatedProjects = portfolioEntries
+  .map((project) => {
+    const projectSlug = project.id.replace(/^(en|fr)\//, "").replace(/\.md$/, "");
+    const overlap = project.data.technos.filter((tech) =>
+      tagSet.has(tech.toLowerCase()),
+    ).length;
+    return { project, projectSlug, overlap };
+  })
+  .filter(({ overlap }) => overlap > 0)
+  .sort((a, b) => b.overlap - a.overlap)
+  .slice(0, 3);
+
 const siteUrl = Astro.site?.toString() ?? "https://hadouin.com";
 const canonical = new URL(
   localizedPath(`/blog/${slug}`, locale),
@@ -32,7 +52,9 @@ const ogImage = rawOgImage.startsWith("http")
   : new URL(rawOgImage, siteUrl).toString();
 const publishedISO = entry.data.publishDate.toISOString();
 const modifiedISO = entry.data.updatedDate?.toISOString();
-const pageDescription = entry.data.description ?? entry.data.snippet;
+const pageDescription = metaDescription(
+  entry.data.description ?? entry.data.snippet,
+);
 
 const blogPostingJsonLd = {
   "@context": "https://schema.org",
@@ -57,6 +79,12 @@ const blogPostingJsonLd = {
   keywords: entry.data.tags.join(", "),
   articleSection: entry.data.category,
 };
+
+const breadcrumbLd = breadcrumbJsonLd([
+  { name: t("breadcrumb.home"), url: new URL(localizedPath("/", locale), siteUrl).toString() },
+  { name: t("breadcrumb.blog"), url: new URL(localizedPath("/blog", locale), siteUrl).toString() },
+  { name: entry.data.title, url: canonical },
+]);
 ---
 
 <Layout
@@ -79,6 +107,12 @@ const blogPostingJsonLd = {
     slot="head"
     type="application/ld+json"
     set:html={JSON.stringify(blogPostingJsonLd)}
+  />
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(breadcrumbLd)}
   />
   <Container>
     {fallback && (
@@ -120,6 +154,28 @@ const blogPostingJsonLd = {
     <div class="mx-auto prose prose-lg mt-6">
         <Content />
     </div>
+    {
+      relatedProjects.length > 0 && (
+        <aside class="mx-auto max-w-[735px] mt-10 rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-3">
+            {t("blog.post.relatedProjects")}
+          </h2>
+          <ul class="space-y-2">
+            {relatedProjects.map(({ project, projectSlug }) => (
+              <li>
+                <a
+                  class="font-medium text-slate-800 hover:text-blue-600 transition"
+                  href={localizedPath(`/projects/${projectSlug}`, locale)}
+                >
+                  {project.data.title}
+                </a>
+                <p class="text-sm text-slate-600 mt-0.5">{project.data.snippet}</p>
+              </li>
+            ))}
+          </ul>
+        </aside>
+      )
+    }
     <div class="text-center mt-8">
       <a
         href={localizedPath("/blog", locale)}

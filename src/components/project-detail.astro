@@ -11,6 +11,11 @@ import {
   useTranslations,
   type Locale,
 } from "@i18n/utils";
+import {
+  breadcrumbJsonLd,
+  metaDescription,
+  technosAsSchemaThings,
+} from "@utils/seo";
 
 interface Props {
   locale: Locale;
@@ -47,7 +52,9 @@ const rawOgImage = entry.data.ogImage ?? heroMeta?.src ?? entry.data.image.src;
 const ogImage = rawOgImage.startsWith("http")
   ? rawOgImage
   : new URL(rawOgImage, siteUrl).toString();
-const pageDescription = entry.data.description ?? entry.data.snippet;
+const pageDescription = metaDescription(
+  entry.data.description ?? entry.data.snippet,
+);
 
 const creativeWorkJsonLd = {
   "@context": "https://schema.org",
@@ -59,6 +66,7 @@ const creativeWorkJsonLd = {
   dateCreated: entry.data.startDate.toISOString(),
   ...(entry.data.endDate && { dateModified: entry.data.endDate.toISOString() }),
   keywords: entry.data.technos.join(", "),
+  about: technosAsSchemaThings(entry.data.technos),
   inLanguage: fallback ? "en-US" : locale === "fr" ? "fr-FR" : "en-US",
   creator: {
     "@type": "Person",
@@ -67,6 +75,12 @@ const creativeWorkJsonLd = {
   },
   ...(entry.data.github && { codeRepository: entry.data.github }),
 };
+
+const breadcrumbLd = breadcrumbJsonLd([
+  { name: t("breadcrumb.home"), url: new URL(localizedPath("/", locale), siteUrl).toString() },
+  { name: t("breadcrumb.projects"), url: new URL(localizedPath("/", locale) + "#projects", siteUrl).toString() },
+  { name: entry.data.title, url: canonical },
+]);
 
 const homeAnchor = localizedPath("/", locale) + `#project-${slug}`;
 ---
@@ -78,19 +92,18 @@ const homeAnchor = localizedPath("/", locale) + `#project-${slug}`;
   image={ogImage}
   imageAlt={entry.data.image.alt}
   keywords={entry.data.technos}
-  article={{
-    publishedTime: entry.data.startDate.toISOString(),
-    modifiedTime: entry.data.endDate?.toISOString(),
-    author: "Hadouin Leroy",
-    section: t("blog.post.section"),
-    tags: entry.data.technos,
-  }}
 >
   <script
     is:inline
     slot="head"
     type="application/ld+json"
     set:html={JSON.stringify(creativeWorkJsonLd)}
+  />
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify(breadcrumbLd)}
   />
   <Container>
     <div class="mx-auto max-w-4xl mt-8">

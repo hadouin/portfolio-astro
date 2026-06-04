@@ -1,0 +1,61 @@
+# Hadouin Leroy — https://hadouin.com
+
+> Freelance creative developer in Paris. Web apps, 3D (Blender, Three.js), and onchain games (Starknet, Dojo).
+
+## Identity
+- Name: Hadouin Leroy
+- Role: Founding Engineer at Runelabs; freelance creative developer
+- Location: Paris, France
+- Email: contact@hadouin.com
+- Phone: +33 7 67 35 80 80
+- Languages: French (native), English (fluent)
+
+## Expertise
+- Creative development, UX design, certified Scrum Master
+- Web: Astro, React, Svelte, TypeScript, Angular
+- 3D: Blender, Three.js
+- Onchain gaming: Starknet, Cairo, Dojo, Rust indexers
+- Tools: Figma, Docker, GitLab CI/CD, PostgreSQL
+
+## Current work
+- Runelabs (Web3 game studio) — Founding Engineer since Jan 2025
+- Midgard — score-based competitive markets on Starknet
+- PonziLand — full-stack onchain DeFi game on Starknet
+
+## Education
+- ISEP — Institut Supérieur d'Électronique de Paris (2025)
+- Exchange: Glyndwr University (Wales), Presidency University (Bangalore)
+
+## Projects (priority order)
+- Midgard: https://hadouin.com/projects/midgard — Score-based competitive markets on Starknet
+- PonziLand: https://hadouin.com/projects/ponziland — Fully onchain DeFi metagame on Starknet (SvelteKit, Cairo, Dojo, Rust)
+- JE Intervenants: https://hadouin.com/projects/je-intervenants — Expert directory connecting alumni and students at Junior ISEP
+- Enoria: https://hadouin.com/projects/enoria — Collaborative church management app (UI rework and freelance feature work)
+- Moodle UX/UI Redesign: https://hadouin.com/projects/moodle-redesign — Full UX/UI redesign of the Moodle mobile app
+- Locavore: https://hadouin.com/projects/locavore — Mobile app concept mapping French local markets
+- Emi: https://hadouin.com/projects/emi — Connected vest and web platform for industrial worker health monitoring
+- LinkMeal: https://hadouin.com/projects/linkmeal — App fighting food waste by letting students exchange uneaten meals
+- Monquiro: https://hadouin.com/projects/monquiro — Brand identity for an AI accounting SaaS
+- Le Jockey Tricolore: https://hadouin.com/projects/jockey-tricolore — Logo rebrand for a French DJ collective
+- Centime: https://hadouin.com/projects/centime — Logo and brand identity design
+- FreeRoom • Edelweiss: https://hadouin.com/projects/freeroom — Real-time free classroom finder for ISEP (SvelteKit, Prisma, PostgreSQL)
+- Javarchitects: https://hadouin.com/projects/javarchitects — Famous board game as a JavaFX application
+- Pokemon Java: https://hadouin.com/projects/pokemon-java — Pokemon battle simulator in Java
+- GeoPython: https://hadouin.com/projects/geopython — Geometry Dash recreated in Python
+
+## Blog
+- English: https://hadouin.com/blog
+- French: https://hadouin.com/fr/blog
+
+## Profiles
+- Website: https://hadouin.com
+- GitHub: https://github.com/hadouin
+- LinkedIn: https://www.linkedin.com/in/hadouin
+- Twitter/X: https://twitter.com/hadouin
+
+## Contact
+- https://hadouin.com/contact
+- mailto:contact@hadouin.com
+
+## French site
+- https://hadouin.com/fr/

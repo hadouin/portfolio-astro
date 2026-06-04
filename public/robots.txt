@@ -17,4 +17,7 @@ Allow: /
 User-agent: PerplexityBot
 Allow: /
 
+# Machine-readable site summary for LLM crawlers
+# https://hadouin.com/llms.txt
+
 Sitemap: https://hadouin.com/sitemap-index.xml

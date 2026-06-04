@@ -101,6 +101,7 @@ export const ui = {
     "blog.post.copied": "Copied",
     "blog.post.copyError": "Error",
     "blog.post.section": "Projects",
+    "blog.post.relatedProjects": "Related projects",
 
     "project.back.short": "Back to projects",
     "project.back.long": "← Back to Projects",
@@ -115,6 +116,32 @@ export const ui = {
 
     "contact.meta.description":
       "Get in touch with Hadouin Leroy — creative developer based in Paris. Reach out for freelance work, collaborations or gaming and web projects.",
+
+    "person.schemaDescription":
+      "Freelance creative developer in Paris with a strong technical background. Founding Engineer at Runelabs. Builds web apps, 3D experiences (Blender, Three.js), and onchain games (Starknet, Dojo). UX designer and certified Scrum Master.",
+
+    "glance.title": "At a glance",
+    "glance.who.label": "Who",
+    "glance.who.value": "Hadouin Leroy — creative developer",
+    "glance.what.label": "What",
+    "glance.what.value":
+      "Web apps, 3D (Blender, Three.js), onchain games (Starknet, Dojo)",
+    "glance.now.label": "Now",
+    "glance.now.value": "Founding Engineer @ Runelabs",
+    "glance.where.label": "Where",
+    "glance.where.value": "Paris, France",
+    "glance.contact.label": "Contact",
+    "glance.contact.value": "contact@hadouin.com",
+
+    "footer.home": "Home",
+    "footer.blog": "Blog",
+    "footer.contact": "Contact",
+    "footer.cv": "CV",
+    "footer.llms": "llms.txt",
+
+    "breadcrumb.home": "Home",
+    "breadcrumb.projects": "Projects",
+    "breadcrumb.blog": "Blog",
 
     "switcher.toFr": "Voir en français",
     "switcher.toEn": "View in English",
@@ -197,6 +224,7 @@ export const ui = {
     "blog.post.copied": "Copié",
     "blog.post.copyError": "Erreur",
     "blog.post.section": "Projets",
+    "blog.post.relatedProjects": "Projets associés",
 
     "project.back.short": "Retour aux projets",
     "project.back.long": "← Retour aux projets",
@@ -212,6 +240,32 @@ export const ui = {
 
     "contact.meta.description":
       "Contactez Hadouin Leroy — creative developer basé à Paris. Disponible pour des missions freelance, collaborations, projets gaming et web.",
+
+    "person.schemaDescription":
+      "Creative developer freelance à Paris avec une solide base technique. Founding Engineer chez Runelabs. Conçoit des apps web, des expériences 3D (Blender, Three.js) et des jeux onchain (Starknet, Dojo). UX designer et Scrum Master certifié.",
+
+    "glance.title": "En bref",
+    "glance.who.label": "Qui",
+    "glance.who.value": "Hadouin Leroy — creative developer",
+    "glance.what.label": "Quoi",
+    "glance.what.value":
+      "Apps web, 3D (Blender, Three.js), jeux onchain (Starknet, Dojo)",
+    "glance.now.label": "Actuellement",
+    "glance.now.value": "Founding Engineer @ Runelabs",
+    "glance.where.label": "Où",
+    "glance.where.value": "Paris, France",
+    "glance.contact.label": "Contact",
+    "glance.contact.value": "contact@hadouin.com",
+
+    "footer.home": "Accueil",
+    "footer.blog": "Blog",
+    "footer.contact": "Contact",
+    "footer.cv": "CV",
+    "footer.llms": "llms.txt",
+
+    "breadcrumb.home": "Accueil",
+    "breadcrumb.projects": "Projets",
+    "breadcrumb.blog": "Blog",
 
     "switcher.toFr": "Voir en français",
     "switcher.toEn": "View in English",

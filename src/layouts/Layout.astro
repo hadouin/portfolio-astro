@@ -38,6 +38,7 @@ export interface Props {
 
 const SITE_NAME = "Hadouin Leroy";
 const TWITTER_HANDLE = "@hadouin";
+const analyticsDomain = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN;
 
 const {
   title,
@@ -68,6 +69,10 @@ const alternates = noAlternates
 const xDefaultHref = noAlternates
   ? null
   : new URL(localizedPath(basePath, defaultLocale), Astro.site).toString();
+
+const alternateOgLocales = locales
+  .filter((loc) => loc !== locale)
+  .map((loc) => ogLocaleTag[loc]);
 
 const resolvedImageWithDomain = new URL(image, Astro.site).toString();
 
@@ -122,6 +127,7 @@ const openGraph = article
       <meta name="keywords" content={keywords.join(", ")} />
     )}
     <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM site summary" />
     <link
       rel="alternate"
       type="application/rss+xml"
@@ -134,6 +140,15 @@ const openGraph = article
     {xDefaultHref && (
       <link rel="alternate" hreflang="x-default" href={xDefaultHref} />
     )}
+    {
+      analyticsDomain && (
+        <script
+          defer
+          data-domain={analyticsDomain}
+          src="https://plausible.io/js/script.js"
+        />
+      )
+    }
 
     <ClientRouter />
     <SEO
@@ -157,6 +172,10 @@ const openGraph = article
           { name: "robots", content: noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large" },
           { property: "og:site_name", content: SITE_NAME },
           { property: "og:locale", content: ogLocaleTag[locale] },
+          ...alternateOgLocales.map((altLocale) => ({
+            property: "og:locale:alternate",
+            content: altLocale,
+          })),
         ],
       }}
     />
@@ -209,11 +228,14 @@ const openGraph = article
     <script>
       import Lenis from "lenis";
 
-      const lenis = new Lenis({
-        autoRaf: true,
-        anchors: true,
-      });
-      (window as any).lenis = lenis;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const lenis = reduceMotion
+        ? null
+        : new Lenis({
+            autoRaf: true,
+            anchors: true,
+          });
+      if (lenis) (window as any).lenis = lenis;
 
       let parallaxIO: IntersectionObserver | null = null;
       let scrollHandler: (() => void) | null = null;
@@ -274,9 +296,8 @@ const openGraph = article
           });
 
         if (parallaxIO) parallaxIO.disconnect();
-        if (scrollHandler) lenis.off("scroll", scrollHandler);
+        if (scrollHandler && lenis) lenis.off("scroll", scrollHandler);
 
-        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const isMobile = window.matchMedia("(max-width: 767px)").matches;
         if (reduceMotion || isMobile) return;
 
@@ -299,8 +320,6 @@ const openGraph = article
         );
         parallaxEls.forEach((el) => {
           el.style.willChange = "transform";
-          // Seed with the scroll-accurate transform so the element does not
-          // flash at baseline between bindPage() and the first IO callback.
           {
             const vh = window.innerHeight;
             const speed = parseFloat(el.dataset.parallax || "0.05");
@@ -326,28 +345,23 @@ const openGraph = article
           });
         };
         scrollHandler = update;
-        lenis.on("scroll", update);
-        // IO populates `visible` async; flush on the next frame so the first
-        // update() sees the real set instead of running empty.
-        requestAnimationFrame(() => {
-          update();
-          requestAnimationFrame(update);
-        });
+        if (lenis) {
+          lenis.on("scroll", update);
+          requestAnimationFrame(() => {
+            update();
+            requestAnimationFrame(update);
+          });
+        }
       }
 
-      // Force lenis' animated scroll + internal state to match a target Y
-      // instantly. scrollTo({immediate,force}) already does this, but calling
-      // resize()+emit nudges its scroll listeners so downstream effects
-      // (parallax update) see the new position on the next tick.
       function syncScroll(y: number) {
-        lenis.scrollTo(y, { immediate: true, force: true });
+        if (lenis) {
+          lenis.scrollTo(y, { immediate: true, force: true });
+          lenis.resize();
+        }
         window.scrollTo(0, y);
-        lenis.resize();
       }
 
-      // Paint the *real* parallax transform (matching the scroll-driven
-      // update loop) so that the view-transition snapshot matches the state
-      // the element will settle into after VT ends — no post-morph snap.
       function paintParallax() {
         if (window.matchMedia("(max-width: 767px)").matches) return;
         const vh = window.innerHeight;
@@ -365,32 +379,21 @@ const openGraph = article
 
       const SCROLL_KEY_PREFIX = "hadouin:scroll:";
 
-      // Persist scroll position before leaving so the destination page can
-      // snap back to the matching section during the morph.
       document.addEventListener("astro:before-preparation", () => {
         sessionStorage.setItem(
           SCROLL_KEY_PREFIX + location.pathname,
           String(window.scrollY)
         );
-        // Leaving a project detail page: scroll the outgoing doc to top so
-        // the hero sits at its natural position in the old snapshot, then
-        // recompute parallax so the old snapshot reflects scroll=0 state.
         if (location.pathname.startsWith("/projects/")) {
           syncScroll(0);
           paintParallax();
         }
       });
 
-      // Set the incoming document's scroll and parallax transforms
-      // synchronously (before the new snapshot paints) so both the morph
-      // target rect and the post-VT real DOM match frame-for-frame.
       document.addEventListener("astro:after-swap", () => {
         if (location.pathname.startsWith("/projects/")) {
-          // Forward nav into detail: hero always at top.
           syncScroll(0);
         } else {
-          // Priority: URL hash (explicit "back to this project") > saved
-          // scroll (user landed here before) > top.
           let y = 0;
           if (location.hash) {
             try {
@@ -422,18 +425,16 @@ const openGraph = article
         const y = saved ? parseInt(saved, 10) : 0;
         if (y <= 120) return;
 
-        // Reveal button after the morph finishes so it does not compete
-        // visually with the hero animation.
         setTimeout(() => btn.classList.add("is-visible"), 720);
 
         const hide = () => btn.classList.remove("is-visible");
         btn.addEventListener("click", () => {
           hide();
-          lenis.scrollTo(y, { duration: 1.0 });
+          if (lenis) lenis.scrollTo(y, { duration: 1.0 });
+          else window.scrollTo({ top: y, behavior: "smooth" });
           sessionStorage.removeItem(key);
         }, { once: true });
 
-        // Dismiss if the user scrolls themselves.
         const onScroll = () => {
           if (Math.abs(window.scrollY) > 40) {
             hide();
@@ -449,11 +450,6 @@ const openGraph = article
       });
     </script>
     <style is:global>
-      /* Improve Page speed */
-      /* https://css-tricks.com/almanac/properties/c/content-visibility/ */
-      img {
-        content-visibility: auto;
-      }
       html {
         scroll-padding-top: 70px; /* height of sticky header */
         background-color: #ffffff;
@@ -474,11 +470,10 @@ const openGraph = article
         animation: 320ms 280ms cubic-bezier(0, 0, 0.2, 1) both vt-fade-in;
       }
 
-      /* Shared-element morph rides on top of the whiteout */
       ::view-transition-group(*) {
         animation-duration: 620ms;
         animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-        border-radius: 0.5rem; /* preserve rounded-lg frame during morph */
+        border-radius: 0.5rem;
         overflow: clip;
       }
       ::view-transition-image-pair(*) {
@@ -492,7 +487,6 @@ const openGraph = article
         mix-blend-mode: normal;
         border-radius: 0.5rem;
       }
-      /* Root pair is full-viewport — undo rounding so the page does not clip */
       ::view-transition-group(root),
       ::view-transition-image-pair(root),
       ::view-transition-old(root),

@@ -2,6 +2,7 @@
 import {
   defaultLocale,
   getLocaleFromUrl,
+  localizedPath,
   useTranslations,
   type Locale,
 } from "@i18n/utils";
@@ -12,9 +13,31 @@ interface Props {
 
 const locale = Astro.props.locale ?? getLocaleFromUrl(Astro.url) ?? defaultLocale;
 const t = useTranslations(locale);
+
+const footerLinks = [
+  { label: t("footer.home"), href: localizedPath("/", locale) },
+  { label: t("footer.blog"), href: localizedPath("/blog", locale) },
+  { label: t("footer.contact"), href: localizedPath("/contact", locale) },
+  { label: t("footer.cv"), href: locale === "fr" ? "/hadouin_leroy-cv-fr.pdf" : "/hadouin_leroy-cv-en.pdf" },
+];
 ---
 
 <footer class="my-20">
+  <nav
+    class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-600 mb-4"
+    aria-label="Footer"
+  >
+    {
+      footerLinks.map((link) => (
+        <a class="hover:text-slate-900 transition" href={link.href}>
+          {link.label}
+        </a>
+      ))
+    }
+    <a class="hover:text-slate-900 transition" href="/llms.txt">
+      {t("footer.llms")}
+    </a>
+  </nav>
   <p class="text-center text-sm text-slate-500">
     {t("footer.copyright", { year: new Date().getFullYear() })}
   </p>

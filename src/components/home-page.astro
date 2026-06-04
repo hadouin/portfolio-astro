@@ -1,5 +1,6 @@
 ---
 import About from "@components/about.astro";
+import AtAGlance from "@components/at-a-glance.astro";
 import Container from "@components/container.astro";
 import Cta from "@components/cta.astro";
 import Education from "@components/education.astro";
@@ -7,7 +8,9 @@ import Experience from "@components/experience.astro";
 import Hero from "@components/hero.astro";
 import Projects from "@components/projects.astro";
 import Layout from "@layouts/Layout.astro";
-import { useTranslations, type Locale } from "@i18n/utils";
+import { getExperiences } from "@i18n/data";
+import { localizedPath, useTranslations, type Locale } from "@i18n/utils";
+import { getCollection } from "astro:content";
 
 interface Props {
   locale: Locale;
@@ -15,8 +18,26 @@ interface Props {
 
 const { locale } = Astro.props;
 const t = useTranslations(locale);
+const experiences = getExperiences(locale);
 
 const siteUrl = Astro.site?.toString() ?? "https://hadouin.com";
+
+const featuredProjects = await getCollection(
+  "portfolio",
+  ({ id, data }) =>
+    id.startsWith(`${locale}/`) && !data.draft && data.show !== false,
+);
+featuredProjects.sort(
+  (a, b) => (a.data.priority ?? 999) - (b.data.priority ?? 999),
+);
+const workExamples = featuredProjects.slice(0, 4).map((entry) => {
+  const slug = entry.id.replace(/^(en|fr)\//, "").replace(/\.md$/, "");
+  return {
+    "@type": "CreativeWork" as const,
+    name: entry.data.title,
+    url: new URL(localizedPath(`/projects/${slug}`, locale), siteUrl).toString(),
+  };
+});
 
 const personJsonLd = {
   "@context": "https://schema.org",
@@ -27,8 +48,7 @@ const personJsonLd = {
   url: siteUrl,
   image: new URL("/opengraph.png", siteUrl).toString(),
   jobTitle: "Founding Engineer",
-  description:
-    "Freelance creative dev with a strong technical background. I turn raw ideas into polished, tangible products. Creative dev, UX designer and certified Scrum Master.",
+  description: t("person.schemaDescription"),
   email: "mailto:contact@hadouin.com",
   nationality: { "@type": "Country", name: "France" },
   address: {
@@ -40,6 +60,16 @@ const personJsonLd = {
     "@type": "Organization",
     name: "Runelabs",
   },
+  hasOccupation: experiences.map((exp) => ({
+    "@type": "Occupation",
+    name: exp.role,
+    occupationalCategory: exp.context,
+    worksFor: {
+      "@type": "Organization",
+      name: exp.company,
+    },
+  })),
+  workExample: workExamples,
   alumniOf: [
     {
       "@type": "CollegeOrUniversity",
@@ -74,6 +104,7 @@ const personJsonLd = {
   sameAs: [
     "https://github.com/hadouin",
     "https://www.linkedin.com/in/hadouin",
+    "https://twitter.com/hadouin",
   ],
 };
 
@@ -91,12 +122,14 @@ const keywords =
   locale === "fr"
     ? [
         "Hadouin Leroy",
+        "développeur créatif",
         "creative developer",
         "creative dev freelance",
-        "freelance creative dev",
+        "freelance Paris",
         "portfolio",
         "Paris",
-        "game developer",
+        "développeur web",
+        "développeur de jeux",
         "Blender",
         "Three.js",
         "Astro",
@@ -142,6 +175,7 @@ const keywords =
   />
   <Container>
     <Hero locale={locale} />
+    <AtAGlance locale={locale} />
     <About locale={locale} />
     <Experience locale={locale} />
     <Education locale={locale} />

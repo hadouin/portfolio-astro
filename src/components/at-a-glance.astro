@@ -1,0 +1,39 @@
+---
+import { useTranslations, type Locale } from "@i18n/utils";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const facts = [
+  { label: t("glance.who.label"), value: t("glance.who.value") },
+  { label: t("glance.what.label"), value: t("glance.what.value") },
+  { label: t("glance.now.label"), value: t("glance.now.value") },
+  { label: t("glance.where.label"), value: t("glance.where.value") },
+  { label: t("glance.contact.label"), value: t("glance.contact.value") },
+];
+---
+
+<section
+  class="mb-16 rounded-lg border border-slate-200 bg-slate-50/80 px-6 py-5"
+  aria-labelledby="at-a-glance-heading"
+>
+  <h2 id="at-a-glance-heading" class="text-lg font-bold mb-4">
+    {t("glance.title")}
+  </h2>
+  <dl class="grid gap-3 sm:grid-cols-2">
+    {
+      facts.map(({ label, value }) => (
+        <div>
+          <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {label}
+          </dt>
+          <dd class="font-inter text-slate-800 mt-0.5">{value}</dd>
+        </div>
+      ))
+    }
+  </dl>
+</section>
