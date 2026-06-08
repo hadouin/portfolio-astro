@@ -31,6 +31,7 @@
 - PonziLand: https://hadouin.com/projects/ponziland — Fully onchain DeFi metagame on Starknet (SvelteKit, Cairo, Dojo, Rust)
 - JE Intervenants: https://hadouin.com/projects/je-intervenants — Expert directory connecting alumni and students at Junior ISEP
 - Enoria: https://hadouin.com/projects/enoria — Collaborative church management app (UI rework and freelance feature work)
+- Deep Trading: https://hadouin.com/projects/deep-trading — End-to-end algo trading platform: backtest → review metrics → deploy live bots with risk guardrails, real-time telemetry (Sharpe, equity curves), and strategy marketplace (SvelteKit, Python, Alpaca)
 - Moodle UX/UI Redesign: https://hadouin.com/projects/moodle-redesign — Full UX/UI redesign of the Moodle mobile app
 - Locavore: https://hadouin.com/projects/locavore — Mobile app concept mapping French local markets
 - Emi: https://hadouin.com/projects/emi — Connected vest and web platform for industrial worker health monitoring
