@@ -39,6 +39,8 @@ const imagesByName = Object.fromEntries(
 
 const CARD_WIDTHS = [400, 600, 800, 1200];
 const CARD_SIZES = "(min-width: 1024px) 50vw, 100vw";
+const FLOAT_WIDTHS = [300, 500, 700];
+const FLOAT_SIZES = "(min-width: 1024px) 30vw, 60vw";
 
 const slugOf = (id: string) => id.slice(locale.length + 1);
 ---
@@ -73,17 +75,39 @@ const slugOf = (id: string) => id.slice(locale.length + 1);
         const rawSrc = meta ? meta.src : img.src;
         mediaNode = <img class={imgClass} src={rawSrc} alt={img.alt} loading={loading} data-parallax="0.05" />;
       }
+      const floatImgClass = "w-full h-auto object-cover rounded-lg shadow-lg";
+      const floatNodes = entry.data.images.slice(0, 2).map((sec, secIndex) => {
+        const secMeta = imagesByName[sec.src];
+        const secAnimated = /\.gif$/i.test(sec.src);
+        const inner =
+          secMeta && !secAnimated ? (
+            <Image
+              class={floatImgClass}
+              src={secMeta}
+              alt={sec.alt}
+              widths={FLOAT_WIDTHS}
+              sizes={FLOAT_SIZES}
+              loading="lazy"
+            />
+          ) : (
+            <img class={floatImgClass} src={secMeta ? secMeta.src : sec.src} alt={sec.alt} loading="lazy" />
+          );
+        return <div class={`float-img float-img-${secIndex + 1} hidden md:block`}>{inner}</div>;
+      });
       return (
         <li id={`project-${slug}`} class:list={["group grid lg:grid-cols-2 gap-8 items-center my-24 first:mt-0 last:mb-0 scroll-mt-[90px]", { "opacity-60": entry.data.disabled }]}>
-          {entry.data.disabled ? (
-            <div class="watermark-hover lg:group-odd:order-1 block overflow-hidden rounded-lg cursor-not-allowed">
-              {mediaNode}
-            </div>
-          ) : (
-            <a href={projectHref} class="watermark-hover lg:group-odd:order-1 block overflow-hidden rounded-lg" transition:name={heroName}>
-              {mediaNode}
-            </a>
-          )}
+          <div class="relative lg:group-odd:order-1">
+            {floatNodes}
+            {entry.data.disabled ? (
+              <div class="watermark-hover relative z-10 block overflow-hidden rounded-lg cursor-not-allowed">
+                {mediaNode}
+              </div>
+            ) : (
+              <a href={projectHref} class="watermark-hover relative z-10 block overflow-hidden rounded-lg" transition:name={heroName}>
+                {mediaNode}
+              </a>
+            )}
+          </div>
           <div class="lg:group-odd:text-right">
             {entry.data.disabled ? (
               <h3 class="text-3xl font-bold">{entry.data.title}</h3>
@@ -100,3 +124,53 @@ const slugOf = (id: string) => id.slice(locale.length + 1);
     })
   }
 </ul>
+
+<style is:global>
+  .float-img {
+    position: absolute;
+    z-index: 0;
+    animation: floatY var(--float-dur, 8s) ease-in-out var(--float-delay, 0s) infinite alternate;
+  }
+  .float-img-1 {
+    top: -2rem;
+    left: -2.5rem;
+    width: 58%;
+    --float-rot: -5deg;
+    --float-dur: 8s;
+  }
+  .float-img-2 {
+    bottom: -2.5rem;
+    right: -2.5rem;
+    width: 52%;
+    --float-rot: 4deg;
+    --float-dur: 11s;
+    --float-delay: -4s;
+  }
+  /* Mirror offsets on odd rows (image column on the right) so floats peek outward */
+  @media (min-width: 1024px) {
+    li.group:nth-child(odd) .float-img-1 {
+      left: auto;
+      right: -2.5rem;
+      --float-rot: 5deg;
+    }
+    li.group:nth-child(odd) .float-img-2 {
+      right: auto;
+      left: -2.5rem;
+      --float-rot: -4deg;
+    }
+  }
+  @keyframes floatY {
+    from {
+      transform: translateY(-10px) rotate(var(--float-rot, 0deg));
+    }
+    to {
+      transform: translateY(10px) rotate(var(--float-rot, 0deg));
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .float-img {
+      animation: none;
+      transform: rotate(var(--float-rot, 0deg));
+    }
+  }
+</style>

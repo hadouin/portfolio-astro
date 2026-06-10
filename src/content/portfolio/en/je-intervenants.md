@@ -4,6 +4,9 @@ title: "JE Intervenants"
 snippet: "Platform for Junior ISEP to connect alumni and industry experts with student project teams through a browsable expert directory."
 image:
   { src: "je-intervenants-banner.png", alt: "JE Intervenants platform banner" }
+images:
+  - { src: "je-intervenants-design-thinking.png", alt: "Design thinking workshop board" }
+  - { src: "je-intervenants-notion-crm.png", alt: "Notion CRM for intervenants" }
 technos: ["Design Thinking", "UX Research", "Product Design", "Scrum", "Figma", "Notion", "CI/CD"]
 startDate: "2024-01-01 00:00"
 demo: "https://je-intervenants.juniorisep.com/"
