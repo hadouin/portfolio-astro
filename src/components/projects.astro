@@ -47,7 +47,7 @@ const slugOf = (id: string) => id.slice(locale.length + 1);
 
 <h2 id="projects" class="text-4xl font-bold mt-52">{t("projects.title")}</h2>
 <h3 class="text-lg text-slate-700 mb-8">{t("projects.subtitle")}</h3>
-<ul class="mb-24">
+<ul class="mb-24 pt-6">
   {
     activeProjectsShowcase.map((entry, index) => {
       const img = entry.data.image;
@@ -95,7 +95,7 @@ const slugOf = (id: string) => id.slice(locale.length + 1);
         return <div class={`float-img float-img-${secIndex + 1} hidden md:block`}>{inner}</div>;
       });
       return (
-        <li id={`project-${slug}`} class:list={["group grid lg:grid-cols-2 gap-8 items-center my-24 first:mt-0 last:mb-0 scroll-mt-[90px]", { "opacity-60": entry.data.disabled }]}>
+        <li id={`project-${slug}`} class:list={["group grid lg:grid-cols-2 gap-12 lg:gap-x-20 items-center my-24 first:mt-0 last:mb-0 scroll-mt-[90px]", { "opacity-60": entry.data.disabled }]}>
           <div class="relative lg:group-odd:order-1">
             {floatNodes}
             {entry.data.disabled ? (
@@ -131,23 +131,29 @@ const slugOf = (id: string) => id.slice(locale.length + 1);
     z-index: 0;
     animation: floatY var(--float-dur, 8s) ease-in-out var(--float-delay, 0s) infinite alternate;
   }
+  /* Below lg the layout is stacked: keep side overhangs small so floats
+     never spill off-screen or under the text below */
   .float-img-1 {
-    top: -2rem;
-    left: -2.5rem;
+    top: -2.5rem;
+    left: -1rem;
     width: 58%;
     --float-rot: -5deg;
     --float-dur: 8s;
   }
   .float-img-2 {
     bottom: -2.5rem;
-    right: -2.5rem;
+    right: -1rem;
     width: 52%;
     --float-rot: 4deg;
     --float-dur: 11s;
     --float-delay: -4s;
   }
-  /* Mirror offsets on odd rows (image column on the right) so floats peek outward */
+  /* On lg+ overhang generously on the outer edge only; the edge facing the
+     text column stays modest so floats never sit behind the text */
   @media (min-width: 1024px) {
+    .float-img-1 {
+      left: -2.5rem;
+    }
     li.group:nth-child(odd) .float-img-1 {
       left: auto;
       right: -2.5rem;
@@ -155,7 +161,7 @@ const slugOf = (id: string) => id.slice(locale.length + 1);
     }
     li.group:nth-child(odd) .float-img-2 {
       right: auto;
-      left: -2.5rem;
+      left: -1rem;
       --float-rot: -4deg;
     }
   }
