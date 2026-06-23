@@ -1,8 +1,9 @@
 ---
-import { Image } from "astro:assets";
+import { Image, getImage } from "astro:assets";
 import Link from "@components/ui/link.astro";
 import { localizedPath, useTranslations, type Locale } from "@i18n/utils";
 import heroPortrait from "@assets/hadouin-hero.jpg";
+import heroEdges from "@assets/hadouin-hero-edges.webp";
 
 interface Props {
   locale: Locale;
@@ -11,13 +12,21 @@ interface Props {
 const { locale } = Astro.props;
 const t = useTranslations(locale);
 const displayName = "Hadouin";
+const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75, format: "webp" });
 ---
 
 <section
   class="hero-shell relative isolate min-h-[calc(100svh-70px)] overflow-hidden"
   data-dark-hero
 >
-  <div class="hero-portrait absolute inset-x-0 top-0 h-[56%] md:inset-y-0 md:left-0 md:right-auto md:h-auto md:w-[58%]">
+  <div
+    class="hero-portrait absolute inset-x-0 top-0 h-[56%] md:inset-y-0 md:left-0 md:right-auto md:h-auto md:w-[58%]"
+    data-chromatic-portrait
+    data-image-src={heroTexture.src}
+    data-edge-src={heroEdges.src}
+    data-image-width={heroPortrait.width}
+    data-image-height={heroPortrait.height}
+  >
     <Image
       src={heroPortrait}
       alt={t("about.image.alt")}
@@ -26,8 +35,9 @@ const displayName = "Hadouin";
       quality={68}
       loading="eager"
       fetchpriority="high"
-      class="h-full w-full object-cover object-[50%_43%] md:object-[50%_48%]"
+      class="hero-portrait-image hero-portrait-base"
     />
+    <canvas class="hero-chromatic-canvas" aria-hidden="true"></canvas>
   </div>
 
   <div
@@ -76,17 +86,52 @@ const displayName = "Hadouin";
   }
 
   .hero-portrait {
+    isolation: isolate;
+    overflow: hidden;
     -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
   }
 
+  .hero-portrait-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 43%;
+  }
+
+  .hero-portrait-base {
+    z-index: 0;
+  }
+
+  .hero-chromatic-canvas {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .hero-portrait[data-chromatic-ready="true"] .hero-chromatic-canvas {
+    opacity: 1;
+  }
+
+  .hero-portrait[data-chromatic-ready="true"] .hero-portrait-base {
+    visibility: hidden;
+  }
+
   .hero-portrait::after {
     position: absolute;
+    z-index: 2;
     inset: 0;
     content: "";
     background:
       linear-gradient(to bottom, transparent 48%, #1a1a19 100%),
       linear-gradient(to right, transparent 62%, rgb(26 26 25 / 0.42) 100%);
+    pointer-events: none;
   }
 
   .hero-kicker {
@@ -119,11 +164,22 @@ const displayName = "Hadouin";
         linear-gradient(to right, transparent 54%, #1a1a19 100%),
         linear-gradient(to top, rgb(26 26 25 / 0.18), transparent 38%);
     }
+
+    .hero-portrait-image {
+      object-position: 50% 48%;
+    }
   }
 
+  @media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
+    .hero-chromatic-canvas {
+      display: none;
+    }
+  }
 </style>
 
 <script>
+  import { initHeroChromaticWebGL } from "../lib/hero-chromatic-webgl";
+
   const letters = "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&?@:/}{()*+-#$&";
   const scrambleColors = ["#8BA6F3", "#F0C477", "#EE8D8D"];
   const randomScrambleColor = () =>
@@ -177,6 +233,52 @@ const displayName = "Hadouin";
     scramble();
   }
 
+  function initChromaticPortrait() {
+    const previousCleanup = (window as any).__chromaticHeroCleanup as (() => void) | undefined;
+    previousCleanup?.();
+
+    const hero = document.querySelector<HTMLElement>("[data-dark-hero]");
+    const portrait = document.querySelector<HTMLElement>("[data-chromatic-portrait]");
+    const canvas = portrait?.querySelector<HTMLCanvasElement>(".hero-chromatic-canvas");
+    const imageSrc = portrait?.dataset.imageSrc;
+    const edgeSrc = portrait?.dataset.edgeSrc;
+    const imageWidth = Number(portrait?.dataset.imageWidth);
+    const imageHeight = Number(portrait?.dataset.imageHeight);
+    const referenceImage = portrait?.querySelector<HTMLImageElement>("img");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+    if (
+      !hero ||
+      !portrait ||
+      !canvas ||
+      !imageSrc ||
+      !edgeSrc ||
+      !referenceImage ||
+      !Number.isFinite(imageWidth) ||
+      !Number.isFinite(imageHeight) ||
+      imageWidth < 1 ||
+      imageHeight < 1 ||
+      reduceMotion ||
+      !finePointer
+    ) {
+      (window as any).__chromaticHeroCleanup = undefined;
+      return;
+    }
+
+    const cleanup = initHeroChromaticWebGL({
+      container: portrait,
+      canvas,
+      imageSrc,
+      edgeSrc,
+      hero,
+      imageSize: [imageWidth, imageHeight],
+      referenceImage,
+    });
+
+    (window as any).__chromaticHeroCleanup = cleanup ?? undefined;
+  }
+
   function syncHeroTheme() {
     const hero = document.querySelector<HTMLElement>("[data-dark-hero]");
     const previous = (window as any).__heroThemeObserver as IntersectionObserver | undefined;
@@ -205,9 +307,11 @@ const displayName = "Hadouin";
   }
 
   initHero();
+  initChromaticPortrait();
   syncHeroTheme();
   document.addEventListener("astro:page-load", () => {
     initHero();
+    initChromaticPortrait();
     syncHeroTheme();
   });
 </script>
