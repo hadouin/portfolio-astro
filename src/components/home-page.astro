@@ -174,12 +174,14 @@ const keywords =
     set:html={JSON.stringify(websiteJsonLd)}
   />
   <Hero locale={locale} />
-  <Container>
-    <AtAGlance locale={locale} />
-    <About locale={locale} />
-    <Experience locale={locale} />
-    <Education locale={locale} />
-    <Projects locale={locale} />
-    <Cta locale={locale} />
-  </Container>
+  <div class="bg-white">
+    <Container>
+      <AtAGlance locale={locale} />
+      <About locale={locale} />
+      <Experience locale={locale} />
+      <Education locale={locale} />
+      <Projects locale={locale} />
+      <Cta locale={locale} />
+    </Container>
+  </div>
 </Layout>

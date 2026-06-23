@@ -57,12 +57,12 @@ const switcherChildren = locales.map((loc) => ({
   class="navbar-root group fixed top-0 left-0 right-0 flex flex-col lg:flex-row justify-between items-center bg-white z-50"
   data-home={isHome ? "true" : "false"}
   data-menu-open="false">
-  <div class="relative flex h-[70px] w-full items-center justify-between px-5 lg:w-[76px]">
+  <div class="relative flex h-[70px] w-full items-center justify-between px-5 lg:w-[96px]">
     <a
       href={localizedPath("/", locale)}
-      class="navbar-logo absolute bottom-0 left-5 inline-flex h-8 w-9 items-end justify-center leading-none"
+      class="navbar-logo absolute bottom-0 left-8 inline-flex h-12 w-14 items-end justify-center leading-none"
     >
-      <Icon class="block h-8 w-9 shrink-0" name="Logo-h-solo" />
+      <Icon class="block h-12 w-14 shrink-0" name="Logo-h-solo" />
     </a>
     <button
       type="button"
@@ -177,7 +177,7 @@ const switcherChildren = locales.map((loc) => ({
 <style>
   :global(body.hero-dark-active .navbar-root[data-home="true"]) {
     background: #1a1a19;
-    color: #f4f4f0;
+    color: #ffffff;
   }
 
   :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-menu) {
@@ -186,13 +186,9 @@ const switcherChildren = locales.map((loc) => ({
 
   :global(body.hero-dark-active .navbar-root[data-home="true"] a),
   :global(body.hero-dark-active .navbar-root[data-home="true"] button),
-  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-menu-toggle svg) {
-    color: #d5d5cf;
-  }
-
-  :global(body.hero-dark-active .navbar-root[data-home="true"] a:hover),
-  :global(body.hero-dark-active .navbar-root[data-home="true"] button:hover) {
-    color: #ffffff;
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-menu-toggle svg),
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-dropdown-toggle svg) {
+    color: #ffffff !important;
   }
 
   :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-logo svg) {
@@ -201,6 +197,10 @@ const switcherChildren = locales.map((loc) => ({
 
   :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-logo svg path) {
     fill: #ffffff;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-dropdown-panel a) {
+    color: #ffffff !important;
   }
 
   :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-dropdown-panel > div) {

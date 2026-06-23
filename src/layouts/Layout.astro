@@ -453,6 +453,11 @@ const openGraph = article
       html {
         scroll-padding-top: 70px; /* height of sticky header */
         background-color: #ffffff;
+        transition: background-color 220ms ease;
+      }
+
+      html:has(body.hero-dark-active) {
+        background-color: #1a1a19;
       }
 
       .navbar-root,
