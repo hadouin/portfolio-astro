@@ -125,6 +125,24 @@ const displayName = "Hadouin";
 
 <script>
   const letters = "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&?@:/}{()*+-#$&";
+  const scrambleColors = ["#8BA6F3", "#F0C477", "#EE8D8D"];
+  const randomScrambleColor = () =>
+    scrambleColors[Math.floor(Math.random() * scrambleColors.length)];
+
+  function setScrambledContent(element: HTMLElement, target: string, iteration: number) {
+    element.replaceChildren();
+    for (let index = 0; index < target.length; index++) {
+      const ch = target[index];
+      if (index < iteration) {
+        element.appendChild(document.createTextNode(ch));
+        continue;
+      }
+      const span = document.createElement("span");
+      span.style.color = randomScrambleColor();
+      span.textContent = letters[Math.floor(Math.random() * letters.length)];
+      element.appendChild(span);
+    }
+  }
 
   function initHero() {
     const element = document.querySelector(".hacker-effect") as HTMLElement | null;
@@ -145,13 +163,7 @@ const displayName = "Hadouin";
       if (interval) clearInterval(interval);
       let iteration = 0;
       interval = setInterval(() => {
-        element.textContent = target
-          .split("")
-          .map((letter, index) => {
-            if (index < iteration) return letter;
-            return letters[Math.floor(Math.random() * letters.length)];
-          })
-          .join("");
+        setScrambledContent(element, target, iteration);
 
         if (iteration >= target.length) {
           if (interval) clearInterval(interval);
