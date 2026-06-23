@@ -58,8 +58,11 @@ const switcherChildren = locales.map((loc) => ({
   data-home={isHome ? "true" : "false"}
   data-menu-open="false">
   <div class="flex w-full lg:w-auto items-center justify-between p-5">
-    <a href={localizedPath("/", locale)} class="navbar-logo text-lg">
-      <Icon class="h-8 w-9" name="Logo-h-solo" />
+    <a
+      href={localizedPath("/", locale)}
+      class="navbar-logo inline-flex h-8 w-9 items-center justify-center leading-none"
+    >
+      <Icon class="block h-8 w-9 shrink-0" name="Logo-h-solo" />
     </a>
     <button
       type="button"
