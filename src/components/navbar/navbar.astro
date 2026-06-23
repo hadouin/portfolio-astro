@@ -59,7 +59,7 @@ const switcherChildren = locales.map((loc) => ({
   data-menu-open="false">
   <div class="flex w-full lg:w-auto items-center justify-between p-5">
     <a href={localizedPath("/", locale)} class="navbar-logo text-lg">
-      <Icon class="h-8" name="Logo-text" />
+      <Icon class="h-8 w-9" name="Logo-h-solo" />
     </a>
     <button
       type="button"
@@ -193,11 +193,11 @@ const switcherChildren = locales.map((loc) => ({
   }
 
   :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-logo svg) {
-    filter: invert(1) brightness(1.8);
+    color: #ffffff;
   }
 
   :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-logo svg path) {
-    fill: #f4f4f0;
+    fill: #ffffff;
   }
 
   :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-dropdown-panel > div) {
