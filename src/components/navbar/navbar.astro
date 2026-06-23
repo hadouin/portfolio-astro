@@ -57,16 +57,16 @@ const switcherChildren = locales.map((loc) => ({
   class="navbar-root group fixed top-0 left-0 right-0 flex flex-col lg:flex-row justify-between items-center bg-white z-50"
   data-home={isHome ? "true" : "false"}
   data-menu-open="false">
-  <div class="flex w-full lg:w-auto items-center justify-between p-5">
+  <div class="relative flex h-[70px] w-full items-center justify-between px-5 lg:w-[76px]">
     <a
       href={localizedPath("/", locale)}
-      class="navbar-logo inline-flex h-8 w-9 items-center justify-center leading-none"
+      class="navbar-logo absolute bottom-0 left-5 inline-flex h-8 w-9 items-end justify-center leading-none"
     >
       <Icon class="block h-8 w-9 shrink-0" name="Logo-h-solo" />
     </a>
     <button
       type="button"
-      class="navbar-menu-toggle block lg:hidden"
+      class="navbar-menu-toggle ml-auto block lg:hidden"
       aria-label="Toggle Menu"
       aria-expanded="false"
       aria-controls="navbar-menu">
