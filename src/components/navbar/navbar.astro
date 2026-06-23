@@ -20,6 +20,7 @@ const t = useTranslations(locale);
 
 const basePath = stripLocaleFromPath(Astro.url.pathname);
 const isSignaturePage = basePath === "/signature";
+const isHome = basePath === "/";
 
 const home = (anchor: string) =>
   `${localizedPath("/", locale)}${anchor}`;
@@ -54,9 +55,10 @@ const switcherChildren = locales.map((loc) => ({
 
 <header
   class="navbar-root group fixed top-0 left-0 right-0 flex flex-col lg:flex-row justify-between items-center bg-white z-50"
+  data-home={isHome ? "true" : "false"}
   data-menu-open="false">
   <div class="flex w-full lg:w-auto items-center justify-between p-5">
-    <a href={localizedPath("/", locale)} class="text-lg">
+    <a href={localizedPath("/", locale)} class="navbar-logo text-lg">
       <Icon class="h-8" name="Logo-text" />
     </a>
     <button
@@ -170,6 +172,43 @@ const switcherChildren = locales.map((loc) => ({
 </header>
 
 <style>
+  :global(body.hero-dark-active .navbar-root[data-home="true"]) {
+    background: #1a1a19;
+    color: #f4f4f0;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-menu) {
+    background: #1a1a19;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] a),
+  :global(body.hero-dark-active .navbar-root[data-home="true"] button),
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-menu-toggle svg) {
+    color: #d5d5cf;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] a:hover),
+  :global(body.hero-dark-active .navbar-root[data-home="true"] button:hover) {
+    color: #ffffff;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-logo svg) {
+    filter: invert(1) brightness(1.8);
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-logo svg path) {
+    fill: #f4f4f0;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-dropdown-panel > div) {
+    border-color: #333331;
+    background: #222220;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] [data-lang-puck]) {
+    --tw-ring-color: #1a1a19;
+  }
+
   .navbar-root .navbar-menu-icon-close {
     display: none;
   }
