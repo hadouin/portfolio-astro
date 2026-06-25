@@ -295,6 +295,28 @@ const openGraph = article
             el.dataset.scrambleText = target;
             let interval: ReturnType<typeof setInterval> | undefined;
 
+            // Lock width to natural text so random scramble glyphs can't
+            // jitter the element's size while animating. Only the inline
+            // navbar items need this; block headings keep their own layout.
+            const shouldLock = !!el.closest(".navbar-root");
+            const lockWidth = () => {
+              if (!shouldLock) return;
+              el.style.width = "";
+              const w = el.getBoundingClientRect().width;
+              if (w) {
+                el.style.display = "inline-block";
+                el.style.width = `${Math.ceil(w)}px`;
+                el.style.whiteSpace = "nowrap";
+                el.style.overflow = "hidden";
+                el.style.textAlign = "center";
+              }
+            };
+            if ((document as any).fonts?.ready) {
+              (document as any).fonts.ready.then(lockWidth);
+            } else {
+              lockWidth();
+            }
+
             el.addEventListener("mouseenter", () => {
               if (interval) clearInterval(interval);
               let iteration = 0;
