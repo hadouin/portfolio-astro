@@ -30,11 +30,92 @@ const styles = {
 <button
   {...rest}
   class:list={[
-    "rounded text-center transition focus-visible:ring-2 ring-offset-2 ring-gray-200",
+    "btn-accent relative text-center transition focus-visible:ring-2 ring-offset-2 ring-gray-200",
     block && "w-full",
     sizes[size],
     styles[style],
     className,
   ]}
-  ><slot />
+  ><span class="btn-accent-lines" aria-hidden="true">
+    <span class="btn-accent-line btn-accent-line-red"></span>
+    <span class="btn-accent-line btn-accent-line-yellow"></span>
+    <span class="btn-accent-line btn-accent-line-blue"></span>
+  </span><span class="relative z-10"><slot /></span>
 </button>
+
+<style>
+  .btn-accent {
+    transition:
+      transform 200ms ease-out,
+      background-color 200ms ease-out,
+      color 200ms ease-out;
+  }
+
+  .btn-accent-lines {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 100%;
+    margin-right: 6px;
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .btn-accent-line {
+    flex: 0 0 3px;
+    width: 3px;
+    min-width: 3px;
+    transform: translateX(14px);
+    opacity: 0;
+    transition:
+      transform 200ms ease-out,
+      opacity 200ms ease-out;
+  }
+
+  .btn-accent-line-blue {
+    background: #8ba6f3;
+    transition-delay: 100ms;
+  }
+
+  .btn-accent-line-yellow {
+    background: #f0c477;
+    transition-delay: 50ms;
+  }
+
+  .btn-accent-line-red {
+    background: #ee8d8d;
+    transition-delay: 0ms;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .btn-accent:hover {
+      transform: translateX(8px);
+    }
+
+    .btn-accent:hover .btn-accent-line {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .btn-accent:hover .btn-accent-line-blue {
+      transition-delay: 0ms;
+    }
+
+    .btn-accent:hover .btn-accent-line-yellow {
+      transition-delay: 50ms;
+    }
+
+    .btn-accent:hover .btn-accent-line-red {
+      transition-delay: 100ms;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn-accent-line {
+      transition: none;
+    }
+  }
+</style>
