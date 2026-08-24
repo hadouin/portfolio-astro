@@ -184,7 +184,7 @@ const openGraph = article
   <body>
     <Navbar locale={locale} />
     <div
-      class="hidden xl:flex fixed bottom-0 w-10 items-center justify-center flex-col right-10 left-auto after:h-20 after:w-px after:bg-slate-500">
+      class="side-rail hidden xl:flex fixed bottom-0 z-20 w-10 items-center justify-center flex-col right-10 left-auto after:h-20 after:w-px after:bg-slate-500">
       <div class="email-sidelink my-5">
         <a
           class="relative no-underline tracking-widest"
@@ -194,7 +194,7 @@ const openGraph = article
       </div>
     </div>
     <div
-      class="hidden xl:flex fixed bottom-0 w-10 items-center justify-center flex-col left-10 right-auto after:h-20 after:w-px after:bg-slate-500">
+      class="side-rail hidden xl:flex fixed bottom-0 z-20 w-10 items-center justify-center flex-col left-10 right-auto after:h-20 after:w-px after:bg-slate-500">
       <ul
         class="socials-side flex flex-col justify-center items-center list-none text-slate-700">
         <li class="mb-3">
@@ -242,8 +242,34 @@ const openGraph = article
 
       const scrambleLetters =
         "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&";
+      const scrambleColors = ["#8BA6F3", "#F0C477", "#EE8D8D"];
       const randomScrambleChar = () =>
         scrambleLetters[Math.floor(Math.random() * scrambleLetters.length)];
+      const randomScrambleColor = () =>
+        scrambleColors[Math.floor(Math.random() * scrambleColors.length)];
+
+      function setScrambledContent(
+        el: HTMLElement,
+        target: string,
+        iteration: number
+      ) {
+        el.replaceChildren();
+        for (let index = 0; index < target.length; index++) {
+          const ch = target[index];
+          if (ch === " ") {
+            el.appendChild(document.createTextNode(" "));
+            continue;
+          }
+          if (index < iteration) {
+            el.appendChild(document.createTextNode(ch));
+            continue;
+          }
+          const span = document.createElement("span");
+          span.style.color = randomScrambleColor();
+          span.textContent = randomScrambleChar();
+          el.appendChild(span);
+        }
+      }
 
       function bindPage() {
         document.querySelectorAll<HTMLElement>(".watermark-hover").forEach((el) => {
@@ -269,6 +295,28 @@ const openGraph = article
             el.dataset.scrambleText = target;
             let interval: ReturnType<typeof setInterval> | undefined;
 
+            // Lock width to natural text so random scramble glyphs can't
+            // jitter the element's size while animating. Only the inline
+            // navbar items need this; block headings keep their own layout.
+            const shouldLock = !!el.closest(".navbar-root");
+            const lockWidth = () => {
+              if (!shouldLock) return;
+              el.style.width = "";
+              const w = el.getBoundingClientRect().width;
+              if (w) {
+                el.style.display = "inline-block";
+                el.style.width = `${Math.ceil(w)}px`;
+                el.style.whiteSpace = "nowrap";
+                el.style.overflow = "hidden";
+                el.style.textAlign = "center";
+              }
+            };
+            if ((document as any).fonts?.ready) {
+              (document as any).fonts.ready.then(lockWidth);
+            } else {
+              lockWidth();
+            }
+
             el.addEventListener("mouseenter", () => {
               if (interval) clearInterval(interval);
               let iteration = 0;
@@ -277,14 +325,7 @@ const openGraph = article
               const step = target.length / (durationMs / tickMs);
 
               interval = setInterval(() => {
-                el.textContent = target
-                  .split("")
-                  .map((ch, index) => {
-                    if (ch === " ") return " ";
-                    if (index < iteration) return target[index];
-                    return randomScrambleChar();
-                  })
-                  .join("");
+                setScrambledContent(el, target, iteration);
 
                 if (iteration >= target.length) {
                   if (interval) clearInterval(interval);
@@ -453,6 +494,22 @@ const openGraph = article
       html {
         scroll-padding-top: 70px; /* height of sticky header */
         background-color: #ffffff;
+        transition: background-color 220ms ease;
+      }
+
+      html:has(body.hero-dark-active) {
+        background-color: #1a1a19;
+      }
+
+      .navbar-root,
+      .navbar-menu,
+      .side-rail,
+      .side-rail::after,
+      .socials-side {
+        transition:
+          background-color 220ms ease,
+          color 220ms ease,
+          border-color 220ms ease;
       }
 
       /* View Transitions: whiteout fade + smooth hero-image morph */

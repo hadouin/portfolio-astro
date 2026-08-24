@@ -1,6 +1,9 @@
 ---
+import { Image, getImage } from "astro:assets";
 import Link from "@components/ui/link.astro";
 import { localizedPath, useTranslations, type Locale } from "@i18n/utils";
+import heroPortrait from "@assets/hadouin-hero.jpg";
+import heroEdges from "@assets/hadouin-hero-edges.webp";
 
 interface Props {
   locale: Locale;
@@ -9,111 +12,192 @@ interface Props {
 const { locale } = Astro.props;
 const t = useTranslations(locale);
 const displayName = "Hadouin";
+const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75, format: "webp" });
 ---
 
-<div class="h-[calc(100vh-70px)] flex flex-col justify-center">
-  <p class="text-lg font-semibold z-20">{t("hero.greeting")}</p>
-  <h1
-    class="text-5xl lg:text-6xl xl:text-7xl font-bold tracking-wide z-20"
-    aria-label="Hadouin Leroy"
+<section
+  class="hero-shell relative isolate z-30 -mt-[70px] min-h-[100svh] overflow-hidden"
+  data-dark-hero
+>
+  <div
+    class="hero-portrait absolute inset-x-0 top-0 h-[56%] md:inset-y-0 md:left-0 md:right-auto md:h-auto md:w-[58%]"
+    data-chromatic-portrait
+    data-image-src={heroTexture.src}
+    data-edge-src={heroEdges.src}
+    data-image-width={heroPortrait.width}
+    data-image-height={heroPortrait.height}
   >
-    <span class="sr-only">Hadouin Leroy</span>
-    <span
-      class="whitespace-pre flex flex-col hacker-effect h-[48px] lg:h-[60px] xl:h-[72px]"
-      aria-hidden="true"
-    >
-      <span class="hero-name-fallback">{displayName}</span>
-    </span>
-  </h1>
-  <p class="text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-600 z-20">
-    {t("hero.tagline")}
-  </p>
-  <p class="my-4 max-w-lg font-inter leading-tight z-20">
-    {t("hero.intro")}
-  </p>
-  <Link class="hire-me w-fit wiggle" href={localizedPath("/contact", locale)}>{t("nav.hireMe")}</Link>
-</div>
+    <Image
+      src={heroPortrait}
+      alt={t("about.image.alt")}
+      widths={[720, 1080, 1440, 1600]}
+      sizes="(min-width: 768px) 58vw, 100vw"
+      quality={68}
+      loading="eager"
+      fetchpriority="high"
+      class="hero-portrait-image hero-portrait-base"
+    />
+    <canvas class="hero-chromatic-canvas" aria-hidden="true"></canvas>
+  </div>
+
+  <div
+    class="hero-content relative z-10 mx-auto flex min-h-[100svh] w-full max-w-screen-2xl items-end px-4 pb-12 pt-[48vh] md:items-center md:justify-end md:px-6 md:pb-16 md:pt-[70px] lg:px-8"
+  >
+    <div class="w-full md:w-[56%] md:max-w-[50rem] lg:w-[54%]">
+      <p class="hero-kicker mb-3 text-sm font-semibold uppercase tracking-[0.24em] md:text-base">
+        {t("hero.greeting")}
+      </p>
+      <h1
+        class="text-5xl font-bold tracking-wide sm:text-6xl lg:text-7xl xl:text-8xl"
+        aria-label="Hadouin Leroy"
+      >
+        <span class="sr-only">Hadouin Leroy</span>
+        <span
+          class="hacker-effect block h-[48px] whitespace-pre sm:h-[60px] lg:h-[72px] xl:h-[96px]"
+          data-value={displayName}
+          aria-hidden="true"
+        >
+          {displayName}
+        </span>
+      </h1>
+      <p class="hero-tagline mt-2 max-w-3xl text-3xl font-bold leading-[0.98] sm:text-4xl lg:text-5xl xl:text-6xl">
+        {t("hero.tagline")}
+      </p>
+      <p class="hero-intro my-6 max-w-2xl font-inter text-base leading-relaxed sm:text-lg">
+        {t("hero.intro")}
+      </p>
+      <Link
+        class="hire-me wiggle w-fit font-semibold"
+        style="inverted"
+        href={localizedPath("/contact", locale)}
+      >
+        {t("nav.hireMe")}
+      </Link>
+    </div>
+  </div>
+
+  <div class="hero-grain pointer-events-none absolute inset-0 z-20" aria-hidden="true"></div>
+</section>
 
 <style>
-  .hacker-effect {
-    transform: translateY(-700%);
+  .hero-shell {
+    background: #1a1a19;
+    color: #f4f4f0;
   }
 
-  .hero-name-fallback {
-    display: block;
+  .hero-portrait {
+    isolation: isolate;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
   }
 
-  :global(.hacker-effect.is-animating) .hero-name-fallback {
-    display: none;
+  .hero-portrait-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 43%;
+  }
+
+  .hero-portrait-base {
+    z-index: 0;
+  }
+
+  .hero-chromatic-canvas {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .hero-portrait[data-chromatic-ready="true"] .hero-chromatic-canvas {
+    opacity: 1;
+  }
+
+  .hero-portrait[data-chromatic-ready="true"] .hero-portrait-base {
+    visibility: hidden;
+  }
+
+  .hero-portrait::after {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    content: "";
+    background:
+      linear-gradient(to bottom, transparent 48%, #1a1a19 100%),
+      linear-gradient(to right, transparent 62%, rgb(26 26 25 / 0.42) 100%);
+    pointer-events: none;
+  }
+
+  .hero-kicker {
+    color: #c7c7c0;
+  }
+
+  .hero-tagline {
+    color: #a8a8a2;
+    text-wrap: balance;
+  }
+
+  .hero-intro {
+    color: #deded8;
+  }
+
+  .hero-grain {
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+    mix-blend-mode: soft-light;
+  }
+
+  @media (min-width: 768px) {
+    .hero-portrait {
+      -webkit-mask-image: linear-gradient(to right, #000 0%, #000 58%, transparent 100%);
+      mask-image: linear-gradient(to right, #000 0%, #000 58%, transparent 100%);
+    }
+
+    .hero-portrait::after {
+      background:
+        linear-gradient(to right, transparent 54%, #1a1a19 100%),
+        linear-gradient(to top, rgb(26 26 25 / 0.18), transparent 38%);
+    }
+
+    .hero-portrait-image {
+      object-position: 50% 48%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
+    .hero-chromatic-canvas {
+      display: none;
+    }
   }
 </style>
 
 <script>
+  import { initHeroChromaticWebGL } from "../lib/hero-chromatic-webgl";
+
   const letters = "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&?@:/}{()*+-#$&";
-  function getRandomLetter() {
-    return letters[Math.floor(Math.random() * letters.length)];
-  }
+  const scrambleColors = ["#8BA6F3", "#F0C477", "#EE8D8D"];
+  const randomScrambleColor = () =>
+    scrambleColors[Math.floor(Math.random() * scrambleColors.length)];
 
-  class Column {
-    private startIndex: number = 0;
-    private endIndex: number = 9;
-    private length: number = 5;
-    private targetIndex: number = 7;
-    private targetChar: string = "H";
-    private columnHeight: number = 10;
-
-    constructor(
-      startIndex: number,
-      endIndex: number,
-      length: number,
-      targetIndex: number,
-      targetChar: string,
-      columnHeight: number
-    ) {
-      this.startIndex = startIndex;
-      this.endIndex = endIndex;
-      this.length = length;
-      this.targetIndex = targetIndex;
-      this.targetChar = targetChar;
-      this.columnHeight = columnHeight;
-    }
-
-    public getString(currentIteration: number) {
-      let result = "";
-
-      for (let i = 0; i < this.columnHeight; i++) {
-        const currentPosition = this.startIndex + currentIteration;
-
-        if (i >= this.endIndex) {
-          result += " ";
-        } else if (
-          currentPosition >= this.targetIndex &&
-          i === this.targetIndex &&
-          currentPosition + 1 - this.length >= i
-        ) {
-          result += this.targetChar;
-        } else if (i <= currentPosition && i >= currentPosition - this.length) {
-          result += getRandomLetter();
-        } else {
-          result += " ";
-        }
+  function setScrambledContent(element: HTMLElement, target: string, iteration: number) {
+    element.replaceChildren();
+    for (let index = 0; index < target.length; index++) {
+      const ch = target[index];
+      if (index < iteration) {
+        element.appendChild(document.createTextNode(ch));
+        continue;
       }
-      return result;
+      const span = document.createElement("span");
+      span.style.color = randomScrambleColor();
+      span.textContent = letters[Math.floor(Math.random() * letters.length)];
+      element.appendChild(span);
     }
-  }
-  const colHeight = 10;
-  const targetIndex = 7;
-
-  function getHackerGrid(string: string): Column[] {
-    const columns: Column[] = [];
-    for (let i = 0; i < string.length; i++) {
-      const start = Math.floor(Math.random() * 5);
-      const end = 10 - Math.floor(Math.random() * 3);
-      columns.push(
-        new Column(start, end, 5, targetIndex, string[i], colHeight)
-      );
-    }
-    return columns;
   }
 
   function initHero() {
@@ -122,73 +206,112 @@ const displayName = "Hadouin";
     if ((element as any).__heroBound) return;
     (element as any).__heroBound = true;
 
-    let iteration = 0;
+    const target = element.dataset.value ?? "Hadouin";
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let interval: ReturnType<typeof setInterval> | undefined;
-    let started = false;
-    const columns = getHackerGrid("Hadouin");
 
-    function startScramble() {
-      if (started) return;
-      started = true;
-      element!.classList.add("is-animating");
+    const scramble = () => {
+      if (reduceMotion) {
+        element.textContent = target;
+        return;
+      }
+
+      if (interval) clearInterval(interval);
+      let iteration = 0;
       interval = setInterval(() => {
-        const rows: string[] = [];
-        for (let i: number = 0; i < colHeight; i++) {
-          let row = "";
-          for (let j = 0; j < columns.length; j++) {
-            row += columns[j].getString(iteration)[i];
-          }
-          rows.push(row);
-        }
+        setScrambledContent(element, target, iteration);
 
-        element!.innerHTML = rows
-          .map((row, index) => {
-            if (index === targetIndex)
-              return `<span class="flex min-h-[48px] lg:min-h-[60px] xl:min-h-[72px] target-row z-20" data-value="Hadouin">${row}</span>`;
-            return `<span class="flex min-h-[48px] lg:min-h-[60px] xl:min-h-[72px] text-slate-200 -z-20">${row}</span>`;
-          })
-          .join("\n");
-
-        iteration += 1;
-        if (iteration >= 20) {
-          clearInterval(interval);
-          element!.classList.remove("is-animating");
-          setHoverEffect();
+        if (iteration >= target.length) {
+          if (interval) clearInterval(interval);
+          element.textContent = target;
         }
-      }, 50);
+        iteration += 1 / 3;
+      }, 30);
+    };
+
+    element.addEventListener("mouseenter", scramble);
+    scramble();
+  }
+
+  function initChromaticPortrait() {
+    const previousCleanup = (window as any).__chromaticHeroCleanup as (() => void) | undefined;
+    previousCleanup?.();
+
+    const hero = document.querySelector<HTMLElement>("[data-dark-hero]");
+    const portrait = document.querySelector<HTMLElement>("[data-chromatic-portrait]");
+    const canvas = portrait?.querySelector<HTMLCanvasElement>(".hero-chromatic-canvas");
+    const imageSrc = portrait?.dataset.imageSrc;
+    const edgeSrc = portrait?.dataset.edgeSrc;
+    const imageWidth = Number(portrait?.dataset.imageWidth);
+    const imageHeight = Number(portrait?.dataset.imageHeight);
+    const referenceImage = portrait?.querySelector<HTMLImageElement>("img");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+    if (
+      !hero ||
+      !portrait ||
+      !canvas ||
+      !imageSrc ||
+      !edgeSrc ||
+      !referenceImage ||
+      !Number.isFinite(imageWidth) ||
+      !Number.isFinite(imageHeight) ||
+      imageWidth < 1 ||
+      imageHeight < 1 ||
+      reduceMotion ||
+      !finePointer
+    ) {
+      (window as any).__chromaticHeroCleanup = undefined;
+      return;
     }
 
-    function setHoverEffect() {
-      let hoverInterval: ReturnType<typeof setInterval> | undefined;
-      const hoverElement = element!.querySelector(".target-row");
-      hoverElement?.addEventListener("mouseover", () => {
-        let iteration = 0;
-        if (hoverInterval) clearInterval(hoverInterval);
-        hoverInterval = setInterval(() => {
-          const targetRow = element!.querySelector(".target-row") as HTMLElement | null;
-          if (!targetRow) return;
-          targetRow.innerText = targetRow.innerText
-            .split("")
-            .map((_letter, index) => {
-              if (index < iteration) {
-                return (targetRow.dataset.value as string)[index];
-              }
-              return letters[Math.floor(Math.random() * 26)];
-            })
-            .join("");
+    const cleanup = initHeroChromaticWebGL({
+      container: portrait,
+      canvas,
+      imageSrc,
+      edgeSrc,
+      hero,
+      imageSize: [imageWidth, imageHeight],
+      referenceImage,
+    });
 
-          if (iteration >= (targetRow.dataset.value as string).length) {
-            if (hoverInterval) clearInterval(hoverInterval);
-          }
+    (window as any).__chromaticHeroCleanup = cleanup ?? undefined;
+  }
 
-          iteration += 1 / 3;
-        }, 30);
-      });
+  function syncHeroTheme() {
+    const hero = document.querySelector<HTMLElement>("[data-dark-hero]");
+    const previous = (window as any).__heroThemeObserver as IntersectionObserver | undefined;
+    previous?.disconnect();
+
+    if (!hero) {
+      document.body.classList.remove("hero-dark-active");
+      return;
     }
 
-    startScramble();
+    const updateTheme = () => {
+      const rect = hero.getBoundingClientRect();
+      document.body.classList.toggle(
+        "hero-dark-active",
+        rect.bottom > 70 && rect.top < window.innerHeight
+      );
+    };
+
+    const observer = new IntersectionObserver(updateTheme, {
+      rootMargin: "-70px 0px 0px",
+      threshold: 0,
+    });
+    observer.observe(hero);
+    (window as any).__heroThemeObserver = observer;
+    updateTheme();
   }
 
   initHero();
-  document.addEventListener("astro:page-load", initHero);
+  initChromaticPortrait();
+  syncHeroTheme();
+  document.addEventListener("astro:page-load", () => {
+    initHero();
+    initChromaticPortrait();
+    syncHeroTheme();
+  });
 </script>
