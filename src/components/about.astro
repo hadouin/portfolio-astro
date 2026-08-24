@@ -1,6 +1,4 @@
 ---
-import hadouinImage from "assets/hadouin-isep.jpg";
-import { Image } from "astro:assets";
 import { useTranslations, type Locale } from "@i18n/utils";
 
 interface Props {
@@ -13,26 +11,18 @@ const t = useTranslations(locale);
 const paragraphs = [t("about.p1"), t("about.p2"), t("about.p3")];
 ---
 
-<div class="mb-16" id="about">
-  <div class="grid lg:grid-cols-5 place-items-center gap-12">
-    <div class="col-span-2 w-full overflow-hidden rounded-lg">
-      <Image
-        class="w-full rounded-lg"
-        src={hadouinImage}
-        alt={t("about.image.alt")}
-        width={600}
-        height={800}
-        data-parallax="0.04"
-      />
-    </div>
-    <div class="text col-span-3">
-      <h2 class="text-2xl font-bold">{t("about.title")}</h2>
-      {paragraphs.map((item) => <p class="font-inter my-2">{item}</p>)}
-    </div>
+<section class="about-section mb-16 bg-white pt-24 lg:pt-32 relative z-10" id="about">
+  <div class="text max-w-3xl">
+    <h2 class="text-2xl font-bold">{t("about.title")}</h2>
+    {paragraphs.map((item) => <p class="font-inter my-2">{item}</p>)}
   </div>
-</div>
+</section>
 
 <style>
+  .about-section {
+    background-color: #ffffff;
+  }
+
   ul.tech-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(140px, 200px));
