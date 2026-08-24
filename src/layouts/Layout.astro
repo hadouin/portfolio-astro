@@ -184,7 +184,7 @@ const openGraph = article
   <body>
     <Navbar locale={locale} />
     <div
-      class="side-rail hidden xl:flex fixed bottom-0 w-10 items-center justify-center flex-col right-10 left-auto after:h-20 after:w-px after:bg-slate-500">
+      class="side-rail hidden xl:flex fixed bottom-0 z-20 w-10 items-center justify-center flex-col right-10 left-auto after:h-20 after:w-px after:bg-slate-500">
       <div class="email-sidelink my-5">
         <a
           class="relative no-underline tracking-widest"
@@ -194,7 +194,7 @@ const openGraph = article
       </div>
     </div>
     <div
-      class="side-rail hidden xl:flex fixed bottom-0 w-10 items-center justify-center flex-col left-10 right-auto after:h-20 after:w-px after:bg-slate-500">
+      class="side-rail hidden xl:flex fixed bottom-0 z-20 w-10 items-center justify-center flex-col left-10 right-auto after:h-20 after:w-px after:bg-slate-500">
       <ul
         class="socials-side flex flex-col justify-center items-center list-none text-slate-700">
         <li class="mb-3">
@@ -510,15 +510,6 @@ const openGraph = article
           background-color 220ms ease,
           color 220ms ease,
           border-color 220ms ease;
-      }
-
-      body.hero-dark-active .side-rail,
-      body.hero-dark-active .socials-side {
-        color: #c7c7c0;
-      }
-
-      body.hero-dark-active .side-rail::after {
-        background-color: #686863;
       }
 
       /* View Transitions: whiteout fade + smooth hero-image morph */
