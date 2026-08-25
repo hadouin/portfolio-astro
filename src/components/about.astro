@@ -15,16 +15,21 @@ const paragraphs = [t("about.p1"), t("about.p2"), t("about.p3")];
 
 <div class="mb-16" id="about">
   <div class="grid lg:grid-cols-5 place-items-center gap-12">
-    <div class="col-span-2 w-full overflow-hidden rounded-lg">
-      <Image
-        class="w-full rounded-lg"
-        src={hadouinImage}
-        alt={t("about.image.alt")}
-        width={600}
-        height={800}
-        data-parallax="0.04"
-      />
-    </div>
+    <figure class="about-portrait col-span-2 w-full">
+      <span class="portrait-line portrait-line-red" aria-hidden="true"></span>
+      <span class="portrait-line portrait-line-yellow" aria-hidden="true"></span>
+      <span class="portrait-line portrait-line-blue" aria-hidden="true"></span>
+      <div class="portrait-frame">
+        <Image
+          class="w-full"
+          src={hadouinImage}
+          alt={t("about.image.alt")}
+          width={600}
+          height={800}
+          data-parallax="0.04"
+        />
+      </div>
+    </figure>
     <div class="text col-span-3">
       <h2 class="text-2xl font-bold">{t("about.title")}</h2>
       {paragraphs.map((item) => <p class="font-inter my-2">{item}</p>)}
@@ -33,6 +38,89 @@ const paragraphs = [t("about.p1"), t("about.p2"), t("about.p3")];
 </div>
 
 <style>
+  .about-portrait {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .portrait-frame {
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    transform-origin: center;
+    transition: transform 300ms ease-in-out;
+  }
+
+  .portrait-frame :global(img) {
+    display: block;
+    border-radius: inherit;
+  }
+
+  .portrait-line {
+    position: absolute;
+    z-index: 1;
+    bottom: 7%;
+    left: 0.25rem;
+    width: 0.55rem;
+    border-radius: 1px;
+    opacity: 0;
+    transform-origin: bottom center;
+    transition:
+      transform 300ms ease-in-out,
+      opacity 180ms ease-in-out;
+  }
+
+  .portrait-line-red {
+    height: 56%;
+    background: #f18a8a;
+    transform: translateX(0.75rem) rotate(-1.8deg);
+    transition-delay: 200ms;
+  }
+
+  .portrait-line-yellow {
+    height: 64%;
+    background: #f4c36a;
+    transform: translateX(1rem) rotate(-1.4deg);
+    transition-delay: 100ms;
+  }
+
+  .portrait-line-blue {
+    height: 72%;
+    background: #86a7f2;
+    transform: translateX(1.25rem) rotate(-1deg);
+    transition-delay: 0ms;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .about-portrait:hover .portrait-frame {
+      transform: translate3d(1.25rem, -0.1rem, 0) rotate(1.35deg);
+    }
+
+    .about-portrait:hover .portrait-line {
+      opacity: 1;
+    }
+
+    .about-portrait:hover .portrait-line-red {
+      transform: translateX(-1.15rem) rotate(1.8deg);
+    }
+
+    .about-portrait:hover .portrait-line-yellow {
+      transform: translateX(-0.45rem) rotate(1.4deg);
+    }
+
+    .about-portrait:hover .portrait-line-blue {
+      transform: translateX(0.25rem) rotate(1deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .portrait-frame,
+    .portrait-line {
+      transition: none;
+    }
+  }
+
   ul.tech-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(140px, 200px));
