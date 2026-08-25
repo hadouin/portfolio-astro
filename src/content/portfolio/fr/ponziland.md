@@ -4,6 +4,8 @@ title: "PonziLand"
 snippet: "Métagame DeFi 100% onchain et token-agnostic, construit sur Starknet. Projet multi-langage avec frontend SvelteKit, smart contracts Cairo via Dojo et services d'indexation en Rust."
 image:
   { src: "ponziland-display-full.png", alt: "Aperçu PonziLand" }
+images:
+  - { src: "ponziland-merch.png", alt: "Merch PonziLand" }
 technos: ["Svelte", "TypeScript", "Cairo", "Dojo", "Rust", "Starknet", "PostgreSQL"]
 startDate: "2024-06-01 08:00"
 endDate: "2099-02-01 00:00"
