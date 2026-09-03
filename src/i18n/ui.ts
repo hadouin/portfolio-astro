@@ -45,6 +45,9 @@ export const ui = {
     "hero.intro":
       "I'm a freelance creative dev turning raw ideas into polished products.",
 
+    "door.hint": "Scroll to open",
+    "hero.cta": "Start here",
+
     "about.title": "About me",
     "about.p1":
       "Hello! My name is Hadouin LEROY, a creative developer with a strong technical background, shaped by hands-on experience designing and building applications from scratch. I like turning raw ideas into polished, tangible products.",
@@ -167,6 +170,9 @@ export const ui = {
     "hero.tagline": "Je construis des choses pour le web",
     "hero.intro":
       "Je suis creative dev freelance et je transforme des idées brutes en produits aboutis.",
+
+    "door.hint": "Faites défiler pour ouvrir",
+    "hero.cta": "Commencez ici",
 
     "about.title": "À propos de moi",
     "about.p1":

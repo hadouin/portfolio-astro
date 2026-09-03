@@ -67,22 +67,241 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
         {t("hero.intro")}
       </p>
       <Link
-        class="hire-me wiggle w-fit font-semibold"
+        class="w-fit font-semibold"
         style="inverted"
-        href={localizedPath("/contact", locale)}
+        href={`${localizedPath("/", locale)}#about`}
+        data-door-open
       >
-        {t("nav.hireMe")}
+        {t("hero.cta")}
       </Link>
     </div>
   </div>
 
   <div class="hero-grain pointer-events-none absolute inset-0 z-20" aria-hidden="true"></div>
+
+  <div class="hero-door-hint" data-door-hint aria-hidden="true">
+    <span class="hero-door-chevrons"><i></i><i></i></span>
+    <span class="hero-door-label">{t("door.hint")}</span>
+    <span class="hero-door-meter"><span class="hero-door-meter-fill"></span></span>
+  </div>
+
+  <div class="hero-door-lip" aria-hidden="true"></div>
 </section>
+
+<div class="hero-door-fx" data-door-fx aria-hidden="true">
+  <div class="hero-door-steam" data-door-steam></div>
+</div>
 
 <style>
   .hero-shell {
     background: #1a1a19;
     color: #f4f4f0;
+    --door-y: 0;
+    --gate: 0;
+    --arm: 0;
+  }
+
+  /* ---------------- shutter gate ---------------- */
+
+  /* Lifted out of flow so the content below sits underneath it, ready to be
+     revealed. Only ever applied by the gate script. */
+  .hero-shell.is-gated {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 40;
+    margin-top: 0;
+    height: 100svh;
+    min-height: 0;
+    transform: translate3d(
+      var(--shake-x, 0px),
+      calc(var(--door-y) * 1% + var(--shake-y, 0px)),
+      0
+    );
+    will-change: transform;
+  }
+
+  .hero-shell.is-open {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* Fade the copy out once the shutter is clearly on its way up, so it never
+     collides with the navbar on the way past. Peeking keeps it fully legible. */
+  .hero-shell.is-gated .hero-content,
+  .hero-shell.is-gated .hero-door-hint {
+    opacity: clamp(0, calc((var(--door-y) + 52) / 28), 1);
+  }
+
+  /* The bottom edge of the shutter: a lip that only shows itself once the
+     door starts to move. */
+  .hero-door-lip {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 25;
+    height: 8px;
+    opacity: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      #f0c477 0 14px,
+      #17171a 14px 28px
+    );
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.75);
+    pointer-events: none;
+  }
+
+  .hero-shell.is-gated .hero-door-lip {
+    opacity: clamp(0, calc(var(--arm) * 1.6), 1);
+  }
+
+  /* ---------------- scroll-to-open indicator ---------------- */
+
+  .hero-door-hint {
+    position: absolute;
+    inset: auto 0 clamp(1.25rem, 3.5vh, 2.5rem) 0;
+    z-index: 25;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+    pointer-events: none;
+  }
+
+  .hero-shell.is-gated .hero-door-hint {
+    display: flex;
+  }
+
+  .hero-shell.is-open .hero-door-hint {
+    opacity: 0;
+  }
+
+  /* Mobile stacks the copy against the bottom edge, so make room for the
+     indicator sitting below it. */
+  @media (max-width: 767px) {
+    .hero-shell.is-gated .hero-content {
+      padding-bottom: 7.5rem;
+    }
+  }
+
+  .hero-door-chevrons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .hero-door-chevrons i {
+    width: 14px;
+    height: 14px;
+    border-right: 1.5px solid rgb(244 244 240 / 0.75);
+    border-bottom: 1.5px solid rgb(244 244 240 / 0.75);
+    transform: rotate(45deg);
+    animation: heroDoorChevron 1.7s ease-in-out infinite;
+  }
+
+  .hero-door-chevrons i:last-child {
+    animation-delay: 0.18s;
+    opacity: 0.55;
+  }
+
+  @keyframes heroDoorChevron {
+    0%,
+    100% {
+      transform: translateY(-3px) rotate(45deg);
+      opacity: 0.35;
+    }
+    50% {
+      transform: translateY(3px) rotate(45deg);
+      opacity: 1;
+    }
+  }
+
+  .hero-door-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+    text-transform: uppercase;
+    color: rgb(244 244 240 / 0.72);
+  }
+
+  /* Fills as the shutter is pushed; goes gold once it will latch open. */
+  .hero-door-meter {
+    position: relative;
+    width: clamp(90px, 16vw, 150px);
+    height: 2px;
+    overflow: hidden;
+    background: rgb(244 244 240 / 0.16);
+  }
+
+  .hero-door-meter-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc(var(--arm) * 100%);
+    background: rgb(244 244 240 / 0.65);
+  }
+
+  .hero-shell.is-armed .hero-door-meter-fill {
+    background: #f0c477;
+    box-shadow: 0 0 10px rgb(240 196 119 / 0.85);
+  }
+
+  .hero-shell.is-armed .hero-door-label {
+    color: #f0c477;
+  }
+
+  /* ---------------- hydraulic steam ---------------- */
+
+  .hero-door-fx {
+    position: fixed;
+    inset: 0;
+    /* Above the shutter (40) but under the navbar (50): the vent fires while
+       the door still covers the viewport, so it has to read in front of it. */
+    z-index: 41;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .hero-door-steam {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Vapour, not smoke: bright and near-white, blown out under pressure and
+     gone almost as fast. The animation snaps open then trails off. */
+  .hero-door-steam :global(.hero-steam) {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: 64px;
+    height: 64px;
+    margin: -32px 0 0 -32px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 50% 50%,
+      rgb(255 255 255 / 0.95) 0%,
+      rgb(244 248 252 / 0.5) 34%,
+      rgb(226 236 246 / 0) 68%
+    );
+    filter: blur(7px);
+    opacity: 0;
+    animation: heroSteam var(--d, 400ms) cubic-bezier(0.08, 0.82, 0.17, 1)
+      forwards;
+  }
+
+  @keyframes heroSteam {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, 0, 0) scale(calc(var(--s) * 0.16));
+    }
+    10% {
+      opacity: 0.95;
+    }
+    58% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 0;
+      transform: translate3d(var(--dx), var(--dy), 0) scale(var(--s));
+    }
   }
 
   .hero-portrait {
@@ -179,6 +398,7 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
 
 <script>
   import { initHeroChromaticWebGL } from "../lib/hero-chromatic-webgl";
+  import { initHeroDoorGate } from "../lib/hero-door-gate";
 
   const letters = "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&?@:/}{()*+-#$&";
   const scrambleColors = ["#8BA6F3", "#F0C477", "#EE8D8D"];
@@ -230,6 +450,9 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     };
 
     element.addEventListener("mouseenter", scramble);
+    // Fired by the door gate the moment the shutter breaks loose. Listening on
+    // the element itself means the handler dies with it on a page swap.
+    element.addEventListener("hero:opening", scramble);
     scramble();
   }
 
@@ -306,12 +529,25 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     updateTheme();
   }
 
+  function setupDoorGate() {
+    const previous = (window as any).__heroDoorGateCleanup as (() => void) | undefined;
+    previous?.();
+    (window as any).__heroDoorGateCleanup = initHeroDoorGate() ?? undefined;
+  }
+
   initHero();
   initChromaticPortrait();
   syncHeroTheme();
+  setupDoorGate();
   document.addEventListener("astro:page-load", () => {
     initHero();
     initChromaticPortrait();
     syncHeroTheme();
+    setupDoorGate();
+  });
+  document.addEventListener("astro:before-swap", () => {
+    const cleanup = (window as any).__heroDoorGateCleanup as (() => void) | undefined;
+    cleanup?.();
+    (window as any).__heroDoorGateCleanup = undefined;
   });
 </script>
