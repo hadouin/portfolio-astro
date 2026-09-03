@@ -30,14 +30,6 @@ const menuitems = [
   { title: t("nav.projects"), path: home("#projects") },
   { title: t("nav.contact"), path: localizedPath("/contact", locale) },
   { title: t("nav.blog"), path: localizedPath("/blog", locale) },
-  {
-    title: t("nav.cv"),
-    path: "#",
-    children: [
-      { title: t("nav.cv.en"), path: "/hadouin_leroy-cv-en.pdf" },
-      { title: t("nav.cv.fr"), path: "/hadouin_leroy-cv-fr.pdf" },
-    ],
-  },
 ];
 
 const switcherChildren = locales.map((loc) => ({
