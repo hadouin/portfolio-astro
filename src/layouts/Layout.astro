@@ -3,6 +3,7 @@ import { SEO } from "astro-seo";
 import { ClientRouter } from "astro:transitions";
 import Footer from "@components/footer.astro";
 import Navbar from "@components/navbar/navbar.astro";
+import Loader from "@components/loader.astro";
 import {
   defaultLocale,
   getLocaleFromUrl,
@@ -182,6 +183,7 @@ const openGraph = article
     <slot name="head" />
   </head>
   <body>
+    <Loader />
     <Navbar locale={locale} />
     <div
       class="side-rail hidden xl:flex fixed bottom-0 z-20 w-10 items-center justify-center flex-col right-10 left-auto after:h-20 after:w-px after:bg-slate-500">
@@ -236,6 +238,8 @@ const openGraph = article
             anchors: true,
           });
       if (lenis) (window as any).lenis = lenis;
+      // Loader owns the scroll while it is up; it calls lenis.start() on exit.
+      if (lenis && "loading" in document.documentElement.dataset) lenis.stop();
 
       let parallaxIO: IntersectionObserver | null = null;
       let scrollHandler: (() => void) | null = null;

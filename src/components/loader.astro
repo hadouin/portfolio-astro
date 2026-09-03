@@ -1,0 +1,257 @@
+---
+/**
+ * First-load preloader. Splits the H logo into two halves that converge,
+ * holds, then wipes upward to reveal the page.
+ *
+ * Shown once per session, on the initial full page load only. Skipped for
+ * reduced-motion and for ClientRouter navigations (sessionStorage flag).
+ * The gate script is the first node in <body> so it runs before any content
+ * paints — no flash either way.
+ */
+const LOGO_PATH =
+  "M423.381 0L344.061 376.5H224.881L248.235 263.653H142.898L119.163 376.5H0L79.3199 0H198.37L164.089 165.174H270.05L304.331 0H423.381Z";
+---
+
+<script is:inline>
+  (() => {
+    try {
+      const seen = sessionStorage.getItem("hadouin:loader-seen");
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!seen && !reduce) document.documentElement.dataset.loading = "";
+    } catch {
+      /* storage blocked — skip the loader rather than risk trapping the page */
+    }
+  })();
+</script>
+
+<div id="site-loader" aria-hidden="true">
+  <div class="loader-logo">
+    <div class="loader-half loader-half--l">
+      <div class="loader-half-inner">
+        <svg viewBox="0 0 424 377" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d={LOGO_PATH} fill="currentColor" />
+        </svg>
+      </div>
+    </div>
+    <div class="loader-half loader-half--r">
+      <div class="loader-half-inner">
+        <svg viewBox="0 0 424 377" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d={LOGO_PATH} fill="currentColor" />
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="loader-bar"><span></span></div>
+</div>
+
+<style is:inline>
+  #site-loader {
+    display: none;
+  }
+
+  html[data-loading] {
+    overflow: hidden;
+  }
+
+  html[data-loading] #site-loader {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    background-color: #ffffff;
+    clip-path: inset(0 0 0 0);
+    will-change: clip-path;
+  }
+
+  #site-loader .loader-logo {
+    position: relative;
+    width: 96px;
+    height: 85px; /* 96 * 377/424, preserves the logo aspect ratio */
+    color: #0f172a; /* slate-900 */
+  }
+
+  @media (min-width: 768px) {
+    #site-loader .loader-logo {
+      width: 132px;
+      height: 117px;
+    }
+  }
+
+  #site-loader .loader-half {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Clip lives on the wrapper so it stays put while the inner half slides. */
+  #site-loader .loader-half--l {
+    clip-path: inset(0 50% 0 0);
+  }
+
+  #site-loader .loader-half--r {
+    clip-path: inset(0 0 0 50%);
+  }
+
+  #site-loader .loader-half-inner {
+    width: 100%;
+    height: 100%;
+    will-change: transform, opacity;
+  }
+
+  #site-loader .loader-half-inner svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  #site-loader .loader-bar {
+    position: relative;
+    width: 96px;
+    height: 1px;
+    overflow: hidden;
+    background-color: rgba(15, 23, 42, 0.12);
+  }
+
+  @media (min-width: 768px) {
+    #site-loader .loader-bar {
+      width: 132px;
+    }
+  }
+
+  #site-loader .loader-bar span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: #0f172a;
+    transform: scaleX(0);
+    transform-origin: left center;
+    will-change: transform;
+  }
+
+  /* --- entrance: halves converge, rule draws --- */
+  html[data-loading] .loader-half--l .loader-half-inner {
+    animation: loaderConvergeUp 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  html[data-loading] .loader-half--r .loader-half-inner {
+    animation: loaderConvergeDown 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  html[data-loading] .loader-bar span {
+    animation: loaderBar 1100ms 220ms cubic-bezier(0.65, 0, 0.35, 1) both;
+  }
+
+  @keyframes loaderConvergeUp {
+    from {
+      opacity: 0;
+      transform: translateY(64%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes loaderConvergeDown {
+    from {
+      opacity: 0;
+      transform: translateY(-64%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes loaderBar {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* --- exit: logo lifts away, panel wipes upward --- */
+  html[data-loading-exit] #site-loader {
+    animation: loaderWipeUp 680ms 140ms cubic-bezier(0.76, 0, 0.24, 1) both;
+  }
+
+  html[data-loading-exit] #site-loader .loader-logo,
+  html[data-loading-exit] #site-loader .loader-bar {
+    animation: loaderLift 520ms cubic-bezier(0.55, 0, 1, 0.45) both;
+  }
+
+  @keyframes loaderWipeUp {
+    from {
+      clip-path: inset(0 0 0 0);
+    }
+    to {
+      clip-path: inset(0 0 100% 0);
+    }
+  }
+
+  @keyframes loaderLift {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-28px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #site-loader {
+      display: none !important;
+    }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const root = document.documentElement;
+    if (!("loading" in root.dataset)) return;
+
+    const MIN_MS = 1150; // let the convergence land before we can exit
+    const MAX_MS = 3200; // never hold the page hostage on a slow asset
+    const EXIT_MS = 900; // must outlast the wipe + its delay
+
+    const started = performance.now();
+    let done = false;
+
+    const finish = () => {
+      if (done) return;
+      done = true;
+      try {
+        sessionStorage.setItem("hadouin:loader-seen", "1");
+      } catch {
+        /* storage blocked — loader simply replays next load */
+      }
+      root.dataset.loadingExit = "";
+      setTimeout(() => {
+        delete root.dataset.loading;
+        delete root.dataset.loadingExit;
+        const lenis = window.lenis;
+        if (lenis) {
+          lenis.resize();
+          lenis.start();
+        }
+      }, EXIT_MS);
+    };
+
+    const schedule = () => {
+      const elapsed = performance.now() - started;
+      setTimeout(finish, Math.max(0, MIN_MS - elapsed));
+    };
+
+    if (document.readyState === "complete") schedule();
+    else window.addEventListener("load", schedule, { once: true });
+
+    setTimeout(finish, MAX_MS);
+  })();
+</script>
