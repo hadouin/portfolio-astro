@@ -1,0 +1,84 @@
+---
+/**
+ * 3D factory scene (Three.js, basic shapes). Placed right after the hero.
+ * Camera "spots" follow the storyboard order; prev/next buttons step through them.
+ */
+---
+
+<section class="factory-scene relative z-10 bg-[#1a1a19] text-white" data-factory-scene aria-label="Factory 3D scene">
+  <canvas class="factory-canvas block h-[100svh] w-full" data-factory-canvas></canvas>
+
+  <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 py-6 pl-20 pr-16 md:py-10 md:pl-24 md:pr-24">
+    <div class="pointer-events-auto max-w-md">
+      <p class="mb-1 text-xs font-semibold uppercase tracking-[0.24em] text-[#c7c7c0]">
+        <span data-factory-spot-index>1</span>/<span data-factory-spot-count>1</span>
+      </p>
+      <h2 class="text-2xl font-bold sm:text-3xl" data-factory-spot-title>Factory</h2>
+      <p class="mt-1 font-inter text-sm text-[#a8a8a2]" data-factory-spot-note></p>
+    </div>
+    <div class="pointer-events-auto flex gap-2">
+      <button
+        type="button"
+        class="factory-btn rounded-full border border-white/25 px-4 py-2 text-sm font-semibold transition hover:bg-white hover:text-[#1a1a19]"
+        data-factory-prev
+        aria-label="Previous spot"
+      >←</button>
+      <button
+        type="button"
+        class="factory-btn rounded-full border border-white/25 px-4 py-2 text-sm font-semibold transition hover:bg-white hover:text-[#1a1a19]"
+        data-factory-next
+        aria-label="Next spot"
+      >→</button>
+    </div>
+  </div>
+
+  <p class="pointer-events-none absolute left-20 top-4 z-10 text-xs text-[#8b8b85] md:left-24 md:top-6">Drag to orbit</p>
+</section>
+
+<script>
+  import { createFactoryScene } from "@lib/factory/scene";
+  import { FACTORY_PLAN } from "@lib/factory/plan";
+
+  function initFactoryScene() {
+    const previousCleanup = (window as any).__factorySceneCleanup as (() => void) | undefined;
+    previousCleanup?.();
+
+    const root = document.querySelector<HTMLElement>("[data-factory-scene]");
+    const canvas = root?.querySelector<HTMLCanvasElement>("[data-factory-canvas]");
+    if (!root || !canvas) return;
+
+    const title = root.querySelector<HTMLElement>("[data-factory-spot-title]")!;
+    const note = root.querySelector<HTMLElement>("[data-factory-spot-note]")!;
+    const idx = root.querySelector<HTMLElement>("[data-factory-spot-index]")!;
+    const count = root.querySelector<HTMLElement>("[data-factory-spot-count]")!;
+    const prev = root.querySelector<HTMLButtonElement>("[data-factory-prev]")!;
+    const next = root.querySelector<HTMLButtonElement>("[data-factory-next]")!;
+
+    let current = 0;
+    const handle = createFactoryScene({
+      canvas,
+      plan: FACTORY_PLAN,
+      onSpotChange(spot, i) {
+        current = i;
+        title.textContent = spot.title;
+        note.textContent = spot.note ?? "";
+        idx.textContent = String(i + 1);
+      },
+    });
+    count.textContent = String(handle.spotCount);
+
+    const onPrev = () => handle.goToSpot(current - 1);
+    const onNext = () => handle.goToSpot(current + 1);
+    prev.addEventListener("click", onPrev);
+    next.addEventListener("click", onNext);
+
+    (window as any).__factorySceneCleanup = () => {
+      prev.removeEventListener("click", onPrev);
+      next.removeEventListener("click", onNext);
+      handle.dispose();
+      (window as any).__factorySceneCleanup = undefined;
+    };
+  }
+
+  document.addEventListener("astro:page-load", initFactoryScene);
+</script>
