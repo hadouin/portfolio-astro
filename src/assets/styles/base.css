@@ -49,3 +49,17 @@
   from { clip-path: inset(0 0 0 0); }
   to   { clip-path: inset(0 0 0 100%); }
 }
+/* The page behind the hero shutter: pushed down by --reveal so it is uncovered
+   from its top edge as the door lifts, and rattled by --shake-* during the
+   opening. Both vars are set by the hero gate and default to nothing. */
+[data-quake] {
+  transform: translate3d(
+    var(--shake-x, 0px),
+    calc(var(--reveal, 0) * 1svh + var(--shake-y, 0px)),
+    0
+  );
+}
+
+html.is-quaking .hero-door-fx {
+  transform: translate3d(var(--shake-x, 0px), var(--shake-y, 0px), 0);
+}
