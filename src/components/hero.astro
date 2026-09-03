@@ -266,6 +266,25 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
       return;
     }
 
+    // Hold the first-load preloader until the hero textures are in cache, so
+    // the reveal never lands on an un-rendered portrait. No-op after first load.
+    const loader = (window as any).hadouinLoader;
+    if (loader && "loading" in document.documentElement.dataset) {
+      loader.register(
+        Promise.all(
+          [imageSrc, edgeSrc].map(
+            (src) =>
+              new Promise<void>((resolve) => {
+                const preload = new window.Image();
+                preload.onload = () => resolve();
+                preload.onerror = () => resolve();
+                preload.src = src;
+              })
+          )
+        )
+      );
+    }
+
     const cleanup = initHeroChromaticWebGL({
       container: portrait,
       canvas,

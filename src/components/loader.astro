@@ -1,7 +1,11 @@
 ---
 /**
- * First-load preloader. Splits the H logo into two halves that converge,
- * holds, then wipes upward to reveal the page.
+ * First-load preloader. Splits the H logo into two halves that converge while
+ * real page assets download, then wipes upward to reveal the page.
+ *
+ * Progress is driven by actual work, not a fixed timer: eager images, webfonts,
+ * `window.load`, and any long-running task a component registers (the hero WebGL
+ * textures today, 3D scenes later) via `window.hadouinLoader.register(promise)`.
  *
  * Shown once per session, on the initial full page load only. Skipped for
  * reduced-motion and for ClientRouter navigations (sessionStorage flag).
@@ -14,6 +18,18 @@ const LOGO_PATH =
 
 <script is:inline>
   (() => {
+    // Registered before anything else so component scripts further down the
+    // document can always hand the loader a task to wait on.
+    const tasks = [];
+    window.hadouinLoader = {
+      register(task) {
+        const p = typeof task === "function" ? Promise.resolve().then(task) : task;
+        tasks.push(Promise.resolve(p).catch(() => {}));
+        return p;
+      },
+      _tasks: tasks,
+    };
+
     try {
       const seen = sessionStorage.getItem("hadouin:loader-seen");
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -41,7 +57,10 @@ const LOGO_PATH =
       </div>
     </div>
   </div>
-  <div class="loader-bar"><span></span></div>
+  <div class="loader-meta">
+    <div class="loader-bar"><span></span></div>
+    <div class="loader-pct">0</div>
+  </div>
 </div>
 
 <style is:inline>
@@ -51,6 +70,8 @@ const LOGO_PATH =
 
   html[data-loading] {
     overflow: hidden;
+    /* Match the loader panel so there is no white flash before it paints. */
+    background-color: #1a1a19;
   }
 
   html[data-loading] #site-loader {
@@ -61,8 +82,8 @@ const LOGO_PATH =
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2rem;
-    background-color: #ffffff;
+    gap: 1.75rem;
+    background-color: #1a1a19;
     clip-path: inset(0 0 0 0);
     will-change: clip-path;
   }
@@ -71,7 +92,7 @@ const LOGO_PATH =
     position: relative;
     width: 96px;
     height: 85px; /* 96 * 377/424, preserves the logo aspect ratio */
-    color: #0f172a; /* slate-900 */
+    color: #faf9f6;
   }
 
   @media (min-width: 768px) {
@@ -107,12 +128,18 @@ const LOGO_PATH =
     height: 100%;
   }
 
+  #site-loader .loader-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
   #site-loader .loader-bar {
     position: relative;
     width: 96px;
     height: 1px;
     overflow: hidden;
-    background-color: rgba(15, 23, 42, 0.12);
+    background-color: rgba(250, 249, 246, 0.18);
   }
 
   @media (min-width: 768px) {
@@ -125,13 +152,23 @@ const LOGO_PATH =
     display: block;
     width: 100%;
     height: 100%;
-    background-color: #0f172a;
+    background-color: #faf9f6;
     transform: scaleX(0);
     transform-origin: left center;
+    /* Driven by real progress from the script below. */
+    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform;
   }
 
-  /* --- entrance: halves converge, rule draws --- */
+  #site-loader .loader-pct {
+    min-width: 3ch;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    font-variant-numeric: tabular-nums;
+    color: rgba(250, 249, 246, 0.55);
+  }
+
+  /* --- entrance: halves converge --- */
   html[data-loading] .loader-half--l .loader-half-inner {
     animation: loaderConvergeUp 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
@@ -140,8 +177,8 @@ const LOGO_PATH =
     animation: loaderConvergeDown 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  html[data-loading] .loader-bar span {
-    animation: loaderBar 1100ms 220ms cubic-bezier(0.65, 0, 0.35, 1) both;
+  html[data-loading] .loader-meta {
+    animation: loaderMetaIn 520ms 260ms ease-out both;
   }
 
   @keyframes loaderConvergeUp {
@@ -166,12 +203,12 @@ const LOGO_PATH =
     }
   }
 
-  @keyframes loaderBar {
+  @keyframes loaderMetaIn {
     from {
-      transform: scaleX(0);
+      opacity: 0;
     }
     to {
-      transform: scaleX(1);
+      opacity: 1;
     }
   }
 
@@ -181,7 +218,7 @@ const LOGO_PATH =
   }
 
   html[data-loading-exit] #site-loader .loader-logo,
-  html[data-loading-exit] #site-loader .loader-bar {
+  html[data-loading-exit] #site-loader .loader-meta {
     animation: loaderLift 520ms cubic-bezier(0.55, 0, 1, 0.45) both;
   }
 
@@ -217,16 +254,58 @@ const LOGO_PATH =
     const root = document.documentElement;
     if (!("loading" in root.dataset)) return;
 
-    const MIN_MS = 1150; // let the convergence land before we can exit
-    const MAX_MS = 3200; // never hold the page hostage on a slow asset
+    const MIN_MS = 900; // let the convergence land before we can exit
+    const MAX_MS = 9000; // never hold the page hostage on a stalled asset
     const EXIT_MS = 900; // must outlast the wipe + its delay
 
     const started = performance.now();
-    let done = false;
+    const bar = document.querySelector("#site-loader .loader-bar span");
+    const pct = document.querySelector("#site-loader .loader-pct");
+
+    let total = 0;
+    let done = 0;
+    let shown = 0;
+    let finished = false;
+
+    const paint = () => {
+      // Never let the bar retreat if late tasks enlarge the denominator.
+      const ratio = total === 0 ? 1 : done / total;
+      shown = Math.max(shown, ratio);
+      if (bar) bar.style.transform = "scaleX(" + shown + ")";
+      if (pct) pct.textContent = String(Math.round(shown * 100));
+    };
+
+    const track = (promise) => {
+      total += 1;
+      Promise.resolve(promise)
+        .catch(() => {})
+        .then(() => {
+          done += 1;
+          paint();
+        });
+    };
+
+    // An <img> counts as loaded once decoded, so the reveal never lands on a
+    // half-painted hero. Broken/aborted images resolve rather than block.
+    const trackImage = (img) => {
+      if (img.loading === "lazy") return; // below the fold, not worth waiting on
+      track(
+        new Promise((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            img.decode().then(resolve, resolve);
+            return;
+          }
+          img.addEventListener("load", () => img.decode().then(resolve, resolve), { once: true });
+          img.addEventListener("error", resolve, { once: true });
+        })
+      );
+    };
 
     const finish = () => {
-      if (done) return;
-      done = true;
+      if (finished) return;
+      finished = true;
+      shown = 1;
+      paint();
       try {
         sessionStorage.setItem("hadouin:loader-seen", "1");
       } catch {
@@ -241,16 +320,49 @@ const LOGO_PATH =
           lenis.resize();
           lenis.start();
         }
+        document.dispatchEvent(new CustomEvent("hadouin:loader-done"));
       }, EXIT_MS);
     };
 
-    const schedule = () => {
-      const elapsed = performance.now() - started;
-      setTimeout(finish, Math.max(0, MIN_MS - elapsed));
+    let trackedRegistered = 0;
+
+    const drainRegistered = () => {
+      const registered = window.hadouinLoader ? window.hadouinLoader._tasks : [];
+      for (let i = trackedRegistered; i < registered.length; i += 1) track(registered[i]);
+      trackedRegistered = registered.length;
     };
 
-    if (document.readyState === "complete") schedule();
-    else window.addEventListener("load", schedule, { once: true });
+    // Poll rather than racing a single allSettled, so work registered late
+    // (a 3D scene booting after `load`) still gates the exit.
+    const tick = () => {
+      if (finished) return;
+      drainRegistered();
+      if (total > 0 && done >= total) {
+        const elapsed = performance.now() - started;
+        setTimeout(finish, Math.max(0, MIN_MS - elapsed));
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+
+    const start = () => {
+      document.querySelectorAll("img").forEach(trackImage);
+      if (document.fonts && document.fonts.ready) track(document.fonts.ready);
+      track(
+        document.readyState === "complete"
+          ? Promise.resolve()
+          : new Promise((r) => window.addEventListener("load", r, { once: true }))
+      );
+      drainRegistered();
+      paint();
+      requestAnimationFrame(tick);
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", start, { once: true });
+    } else {
+      start();
+    }
 
     setTimeout(finish, MAX_MS);
   })();
