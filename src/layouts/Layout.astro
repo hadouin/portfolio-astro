@@ -183,7 +183,7 @@ const openGraph = article
     <slot name="head" />
   </head>
   <body>
-    <Loader />
+    <Loader dark={basePath === "/"} />
     <Navbar locale={locale} />
     <div
       class="side-rail hidden xl:flex fixed bottom-0 z-20 w-10 items-center justify-center flex-col right-10 left-auto after:h-20 after:w-px after:bg-slate-500">

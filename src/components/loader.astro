@@ -1,22 +1,35 @@
 ---
 /**
- * First-load preloader. Splits the H logo into two halves that converge while
- * real page assets download, then wipes upward to reveal the page.
+ * First-paint preloader. Covers the page until its assets are actually ready,
+ * so the hero never flickers in.
  *
- * Progress is driven by actual work, not a fixed timer: eager images, webfonts,
- * `window.load`, and any long-running task a component registers (the hero WebGL
- * textures today, 3D scenes later) via `window.hadouinLoader.register(promise)`.
+ * The cover goes up before anything paints, on every full document load — a
+ * hard reload (cache cleared) must get it just as much as a first visit, so
+ * there is deliberately no "once per session" flag.
  *
- * Shown once per session, on the initial full page load only. Skipped for
- * reduced-motion and for ClientRouter navigations (sessionStorage flag).
- * The gate script is the first node in <body> so it runs before any content
- * paints — no flash either way.
+ * How long it stays decides what it looks like:
+ *  - assets already cached  -> nothing was ever visible; the panel is the page's
+ *    own background colour and fades straight out.
+ *  - assets still loading   -> commits to the full animation: the H logo splits
+ *    into halves that converge, a rule tracks real progress, then it wipes up.
+ *
+ * Progress comes from real work: eager images (awaiting decode), webfonts,
+ * `window.load`, and anything a component registers via
+ * `window.hadouinLoader.register(promise)` — the hero WebGL textures today,
+ * 3D scenes later.
  */
+interface Props {
+  /** Render on the page's dark background so the fast path stays invisible. */
+  dark?: boolean;
+}
+
+const { dark = false } = Astro.props;
+
 const LOGO_PATH =
   "M423.381 0L344.061 376.5H224.881L248.235 263.653H142.898L119.163 376.5H0L79.3199 0H198.37L164.089 165.174H270.05L304.331 0H423.381Z";
 ---
 
-<script is:inline>
+<script is:inline define:vars={{ dark }}>
   (() => {
     // Registered before anything else so component scripts further down the
     // document can always hand the loader a task to wait on.
@@ -30,13 +43,17 @@ const LOGO_PATH =
       _tasks: tasks,
     };
 
-    try {
-      const seen = sessionStorage.getItem("hadouin:loader-seen");
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!seen && !reduce) document.documentElement.dataset.loading = "";
-    } catch {
-      /* storage blocked — skip the loader rather than risk trapping the page */
-    }
+    // Only ever on a real document load. ClientRouter re-runs inline scripts on
+    // swap, but `window` survives it, so this flag keeps the loader out of
+    // client-side navigations.
+    if (window.__hadouinLoaderRan) return;
+    window.__hadouinLoaderRan = true;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const root = document.documentElement;
+    root.dataset.loading = "";
+    if (dark) root.dataset.loadingDark = "";
   })();
 </script>
 
@@ -70,12 +87,18 @@ const LOGO_PATH =
 
   html[data-loading] {
     overflow: hidden;
-    /* Match the loader panel so there is no white flash before it paints. */
+    /* Panel colour, so nothing flashes before the panel itself paints. */
+    background-color: #ffffff;
+  }
+
+  html[data-loading][data-loading-dark] {
     background-color: #1a1a19;
   }
 
   html[data-loading] #site-loader {
     display: flex;
+    /* Last-resort reveal if the script below never runs at all. */
+    animation: loaderFailsafe 1ms 12s both;
     position: fixed;
     inset: 0;
     z-index: 100;
@@ -83,15 +106,30 @@ const LOGO_PATH =
     align-items: center;
     justify-content: center;
     gap: 1.75rem;
-    background-color: #1a1a19;
+    background-color: #ffffff;
     clip-path: inset(0 0 0 0);
     will-change: clip-path;
+  }
+
+  html[data-loading-dark] #site-loader {
+    background-color: #1a1a19;
+  }
+
+  /* Contents stay hidden until we commit to the full animation, so a warm
+     cache shows nothing but the page's own background colour. */
+  #site-loader .loader-logo,
+  #site-loader .loader-meta {
+    opacity: 0;
   }
 
   #site-loader .loader-logo {
     position: relative;
     width: 96px;
     height: 85px; /* 96 * 377/424, preserves the logo aspect ratio */
+    color: #0f172a;
+  }
+
+  html[data-loading-dark] #site-loader .loader-logo {
     color: #faf9f6;
   }
 
@@ -139,6 +177,10 @@ const LOGO_PATH =
     width: 96px;
     height: 1px;
     overflow: hidden;
+    background-color: rgba(15, 23, 42, 0.18);
+  }
+
+  html[data-loading-dark] #site-loader .loader-bar {
     background-color: rgba(250, 249, 246, 0.18);
   }
 
@@ -152,7 +194,7 @@ const LOGO_PATH =
     display: block;
     width: 100%;
     height: 100%;
-    background-color: #faf9f6;
+    background-color: #0f172a;
     transform: scaleX(0);
     transform-origin: left center;
     /* Driven by real progress from the script below. */
@@ -160,24 +202,36 @@ const LOGO_PATH =
     will-change: transform;
   }
 
+  html[data-loading-dark] #site-loader .loader-bar span {
+    background-color: #faf9f6;
+  }
+
   #site-loader .loader-pct {
     min-width: 3ch;
     font-size: 11px;
     letter-spacing: 0.12em;
     font-variant-numeric: tabular-nums;
+    color: rgba(15, 23, 42, 0.55);
+  }
+
+  html[data-loading-dark] #site-loader .loader-pct {
     color: rgba(250, 249, 246, 0.55);
   }
 
-  /* --- entrance: halves converge --- */
-  html[data-loading] .loader-half--l .loader-half-inner {
+  /* --- full mode: halves converge --- */
+  html[data-loading-full] .loader-half--l .loader-half-inner {
     animation: loaderConvergeUp 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  html[data-loading] .loader-half--r .loader-half-inner {
+  html[data-loading-full] .loader-half--r .loader-half-inner {
     animation: loaderConvergeDown 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  html[data-loading] .loader-meta {
+  html[data-loading-full] #site-loader .loader-logo {
+    opacity: 1;
+  }
+
+  html[data-loading-full] #site-loader .loader-meta {
     animation: loaderMetaIn 520ms 260ms ease-out both;
   }
 
@@ -212,7 +266,7 @@ const LOGO_PATH =
     }
   }
 
-  /* --- exit: logo lifts away, panel wipes upward --- */
+  /* --- exit (full): logo lifts away, panel wipes upward --- */
   html[data-loading-exit] #site-loader {
     animation: loaderWipeUp 680ms 140ms cubic-bezier(0.76, 0, 0.24, 1) both;
   }
@@ -220,6 +274,11 @@ const LOGO_PATH =
   html[data-loading-exit] #site-loader .loader-logo,
   html[data-loading-exit] #site-loader .loader-meta {
     animation: loaderLift 520ms cubic-bezier(0.55, 0, 1, 0.45) both;
+  }
+
+  /* --- exit (quick): assets were cached, so just clear the cover --- */
+  html[data-loading-exit-quick] #site-loader {
+    animation: loaderFadeOut 200ms linear both;
   }
 
   @keyframes loaderWipeUp {
@@ -242,6 +301,22 @@ const LOGO_PATH =
     }
   }
 
+  @keyframes loaderFailsafe {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  @keyframes loaderFadeOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     #site-loader {
       display: none !important;
@@ -254,9 +329,19 @@ const LOGO_PATH =
     const root = document.documentElement;
     if (!("loading" in root.dataset)) return;
 
-    const MIN_MS = 900; // let the convergence land before we can exit
+    const reveal = () => {
+      delete root.dataset.loading;
+      delete root.dataset.loadingDark;
+      delete root.dataset.loadingFull;
+      delete root.dataset.loadingExit;
+      delete root.dataset.loadingExitQuick;
+    };
+
+    const QUICK_MS = 220; // settle inside this and the assets were cached
+    const MIN_MS = 900; // once committed, let the convergence land
     const MAX_MS = 9000; // never hold the page hostage on a stalled asset
-    const EXIT_MS = 900; // must outlast the wipe + its delay
+    const EXIT_FULL_MS = 900; // must outlast the wipe + its delay
+    const EXIT_QUICK_MS = 200;
 
     const started = performance.now();
     const bar = document.querySelector("#site-loader .loader-bar span");
@@ -265,6 +350,7 @@ const LOGO_PATH =
     let total = 0;
     let done = 0;
     let shown = 0;
+    let committed = false;
     let finished = false;
 
     const paint = () => {
@@ -306,22 +392,19 @@ const LOGO_PATH =
       finished = true;
       shown = 1;
       paint();
-      try {
-        sessionStorage.setItem("hadouin:loader-seen", "1");
-      } catch {
-        /* storage blocked — loader simply replays next load */
-      }
-      root.dataset.loadingExit = "";
-      setTimeout(() => {
-        delete root.dataset.loading;
-        delete root.dataset.loadingExit;
-        const lenis = window.lenis;
-        if (lenis) {
-          lenis.resize();
-          lenis.start();
-        }
-        document.dispatchEvent(new CustomEvent("hadouin:loader-done"));
-      }, EXIT_MS);
+      root.dataset[committed ? "loadingExit" : "loadingExitQuick"] = "";
+      setTimeout(
+        () => {
+          reveal();
+          const lenis = window.lenis;
+          if (lenis) {
+            lenis.resize();
+            lenis.start();
+          }
+          document.dispatchEvent(new CustomEvent("hadouin:loader-done"));
+        },
+        committed ? EXIT_FULL_MS : EXIT_QUICK_MS
+      );
     };
 
     let trackedRegistered = 0;
@@ -332,16 +415,30 @@ const LOGO_PATH =
       trackedRegistered = registered.length;
     };
 
+    // Past the quick window the assets clearly are not cached, so show the
+    // real thing rather than a cover that blinks.
+    const commit = () => {
+      if (committed || finished) return;
+      committed = true;
+      root.dataset.loadingFull = "";
+    };
+
     // Poll rather than racing a single allSettled, so work registered late
     // (a 3D scene booting after `load`) still gates the exit.
     const tick = () => {
       if (finished) return;
       drainRegistered();
+      const elapsed = performance.now() - started;
       if (total > 0 && done >= total) {
-        const elapsed = performance.now() - started;
+        if (!committed && elapsed < QUICK_MS) {
+          finish(); // cached: nothing was ever visible
+          return;
+        }
+        commit();
         setTimeout(finish, Math.max(0, MIN_MS - elapsed));
         return;
       }
+      if (elapsed >= QUICK_MS) commit();
       requestAnimationFrame(tick);
     };
 
@@ -358,12 +455,23 @@ const LOGO_PATH =
       requestAnimationFrame(tick);
     };
 
+    const safeStart = () => {
+      try {
+        start();
+      } catch (e) {
+        reveal(); // never trap the page behind a broken loader
+      }
+    };
+
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", start, { once: true });
+      document.addEventListener("DOMContentLoaded", safeStart, { once: true });
     } else {
-      start();
+      safeStart();
     }
 
-    setTimeout(finish, MAX_MS);
+    setTimeout(() => {
+      commit();
+      finish();
+    }, MAX_MS);
   })();
 </script>
