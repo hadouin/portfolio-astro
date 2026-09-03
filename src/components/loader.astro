@@ -25,8 +25,18 @@ interface Props {
 
 const { dark = false } = Astro.props;
 
-const LOGO_PATH =
-  "M423.381 0L344.061 376.5H224.881L248.235 263.653H142.898L119.163 376.5H0L79.3199 0H198.37L164.089 165.174H270.05L304.331 0H423.381Z";
+/** Accent lines of the studio logo, ordered nearest-to-furthest from the H. */
+const LOGO_LINES = [
+  { d: "M47.0949 4.69921L55.0806 4.76627L34 104.425H26L47.0949 4.69921Z", fill: "#8BA6F3" },
+  { d: "M32.9784 9.63554L40.9467 9.78482L21 104.379H13L32.9784 9.63554Z", fill: "#F0C477" },
+  { d: "M18.9036 14.7126L26.8552 14.9411L8 104.379H0L18.9036 14.7126Z", fill: "#EE8D8D" },
+];
+
+const LOGO_H =
+  "M157.243 0L135.253 104.379H102.212L108.687 73.0938H79.4834L72.9033 104.379H39.8672L61.8574 0H94.8623L85.3584 45.792H114.734L124.238 0H157.243Z";
+
+/** viewBox height of the logo, in user units — the mask travel distance. */
+const LOGO_VB_H = 105;
 ---
 
 <script is:inline define:vars={{ dark }}>
@@ -58,26 +68,38 @@ const LOGO_PATH =
 </script>
 
 <div id="site-loader" aria-hidden="true">
-  <div class="loader-logo">
-    <div class="loader-half loader-half--l">
-      <div class="loader-half-inner">
-        <svg viewBox="0 0 424 377" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d={LOGO_PATH} fill="currentColor" />
-        </svg>
-      </div>
-    </div>
-    <div class="loader-half loader-half--r">
-      <div class="loader-half-inner">
-        <svg viewBox="0 0 424 377" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d={LOGO_PATH} fill="currentColor" />
-        </svg>
-      </div>
-    </div>
-  </div>
-  <div class="loader-meta">
-    <div class="loader-bar"><span></span></div>
-    <div class="loader-pct">0</div>
-  </div>
+  <svg
+    class="loader-mark"
+    viewBox="0 0 158 105"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+      {
+        LOGO_LINES.map((_, i) => (
+          <clipPath id={`loader-line-clip-${i}`} clipPathUnits="userSpaceOnUse">
+            {/* Full-height rect slid down out of the way, then raised as the
+                line fills — keeps the diagonal's geometry intact. */}
+            <rect
+              class="loader-line-mask"
+              x="0"
+              y="0"
+              width="158"
+              height={LOGO_VB_H}
+              style={`transform: translateY(${LOGO_VB_H}px)`}
+            />
+          </clipPath>
+        ))
+      }
+    </defs>
+    {
+      LOGO_LINES.map((line, i) => (
+        <path d={line.d} fill={line.fill} clip-path={`url(#loader-line-clip-${i})`} />
+      ))
+    }
+    <path fill-rule="evenodd" clip-rule="evenodd" d={LOGO_H} fill="currentColor" />
+  </svg>
+  <div class="loader-pct">0</div>
 </div>
 
 <style is:inline>
@@ -117,97 +139,36 @@ const LOGO_PATH =
 
   /* Contents stay hidden until we commit to the full animation, so a warm
      cache shows nothing but the page's own background colour. */
-  #site-loader .loader-logo,
-  #site-loader .loader-meta {
+  #site-loader .loader-mark,
+  #site-loader .loader-pct {
     opacity: 0;
   }
 
-  #site-loader .loader-logo {
-    position: relative;
-    width: 96px;
-    height: 85px; /* 96 * 377/424, preserves the logo aspect ratio */
+  #site-loader .loader-mark {
+    display: block;
+    width: 148px;
+    height: auto;
     color: #0f172a;
   }
 
-  html[data-loading-dark] #site-loader .loader-logo {
+  html[data-loading-dark] #site-loader .loader-mark {
     color: #faf9f6;
   }
 
   @media (min-width: 768px) {
-    #site-loader .loader-logo {
-      width: 132px;
-      height: 117px;
+    #site-loader .loader-mark {
+      width: 196px;
     }
   }
 
-  #site-loader .loader-half {
-    position: absolute;
-    inset: 0;
-  }
-
-  /* Clip lives on the wrapper so it stays put while the inner half slides. */
-  #site-loader .loader-half--l {
-    clip-path: inset(0 50% 0 0);
-  }
-
-  #site-loader .loader-half--r {
-    clip-path: inset(0 0 0 50%);
-  }
-
-  #site-loader .loader-half-inner {
-    width: 100%;
-    height: 100%;
-    will-change: transform, opacity;
-  }
-
-  #site-loader .loader-half-inner svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
-
-  #site-loader .loader-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  #site-loader .loader-bar {
-    position: relative;
-    width: 96px;
-    height: 1px;
-    overflow: hidden;
-    background-color: rgba(15, 23, 42, 0.18);
-  }
-
-  html[data-loading-dark] #site-loader .loader-bar {
-    background-color: rgba(250, 249, 246, 0.18);
-  }
-
-  @media (min-width: 768px) {
-    #site-loader .loader-bar {
-      width: 132px;
-    }
-  }
-
-  #site-loader .loader-bar span {
-    display: block;
-    width: 100%;
-    height: 100%;
-    background-color: #0f172a;
-    transform: scaleX(0);
-    transform-origin: left center;
-    /* Driven by real progress from the script below. */
-    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: transform;
-  }
-
-  html[data-loading-dark] #site-loader .loader-bar span {
-    background-color: #faf9f6;
+  /* Raised from the base as its line fills; driven by the script below. */
+  #site-loader .loader-line-mask {
+    transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   #site-loader .loader-pct {
     min-width: 3ch;
+    text-align: center;
     font-size: 11px;
     letter-spacing: 0.12em;
     font-variant-numeric: tabular-nums;
@@ -218,38 +179,19 @@ const LOGO_PATH =
     color: rgba(250, 249, 246, 0.55);
   }
 
-  /* --- full mode: halves converge --- */
-  html[data-loading-full] .loader-half--l .loader-half-inner {
-    animation: loaderConvergeUp 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* --- full mode: the mark appears, lines then track real progress --- */
+  html[data-loading-full] #site-loader .loader-mark {
+    animation: loaderMarkIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  html[data-loading-full] .loader-half--r .loader-half-inner {
-    animation: loaderConvergeDown 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-
-  html[data-loading-full] #site-loader .loader-logo {
-    opacity: 1;
-  }
-
-  html[data-loading-full] #site-loader .loader-meta {
+  html[data-loading-full] #site-loader .loader-pct {
     animation: loaderMetaIn 520ms 260ms ease-out both;
   }
 
-  @keyframes loaderConvergeUp {
+  @keyframes loaderMarkIn {
     from {
       opacity: 0;
-      transform: translateY(64%);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes loaderConvergeDown {
-    from {
-      opacity: 0;
-      transform: translateY(-64%);
+      transform: translateY(12px);
     }
     to {
       opacity: 1;
@@ -271,8 +213,8 @@ const LOGO_PATH =
     animation: loaderWipeUp 680ms 140ms cubic-bezier(0.76, 0, 0.24, 1) both;
   }
 
-  html[data-loading-exit] #site-loader .loader-logo,
-  html[data-loading-exit] #site-loader .loader-meta {
+  html[data-loading-exit] #site-loader .loader-mark,
+  html[data-loading-exit] #site-loader .loader-pct {
     animation: loaderLift 520ms cubic-bezier(0.55, 0, 1, 0.45) both;
   }
 
@@ -344,8 +286,9 @@ const LOGO_PATH =
     const EXIT_QUICK_MS = 200;
 
     const started = performance.now();
-    const bar = document.querySelector("#site-loader .loader-bar span");
+    const masks = document.querySelectorAll("#site-loader .loader-line-mask");
     const pct = document.querySelector("#site-loader .loader-pct");
+    const VB_H = 105; // logo viewBox height, in user units
 
     let total = 0;
     let done = 0;
@@ -354,10 +297,16 @@ const LOGO_PATH =
     let finished = false;
 
     const paint = () => {
-      // Never let the bar retreat if late tasks enlarge the denominator.
+      // Never let progress retreat if late tasks enlarge the denominator.
       const ratio = total === 0 ? 1 : done / total;
       shown = Math.max(shown, ratio);
-      if (bar) bar.style.transform = "scaleX(" + shown + ")";
+      // Each line owns an equal slice of the run and fills from its base, so
+      // they grow one after another rather than all at once.
+      const slice = 1 / masks.length;
+      masks.forEach((mask, i) => {
+        const fill = Math.min(1, Math.max(0, (shown - i * slice) / slice));
+        mask.style.transform = "translateY(" + (1 - fill) * VB_H + "px)";
+      });
       if (pct) pct.textContent = String(Math.round(shown * 100));
     };
 
