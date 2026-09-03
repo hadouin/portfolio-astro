@@ -1,0 +1,10 @@
+{
+  "worktree": {
+    "setup": "pnpm install"
+  },
+  "scripts": {
+    "dev": {
+      "command": "pnpm dev"
+    }
+  }
+}

@@ -1,0 +1,440 @@
+---
+/**
+ * First-paint preloader. Covers the page until its assets are actually ready,
+ * so the hero never flickers in.
+ *
+ * The cover goes up before anything paints, on every full document load — a
+ * hard reload (cache cleared) must get it just as much as a first visit, so
+ * there is deliberately no "once per session" flag.
+ *
+ * How long it stays decides what it looks like:
+ *  - assets already cached  -> nothing was ever visible; the panel is the page's
+ *    own background colour and fades straight out.
+ *  - assets still loading   -> commits to the full animation: the H logo splits
+ *    into halves that converge, a rule tracks real progress, then it wipes up.
+ *
+ * Progress comes from real work: eager images (awaiting decode), webfonts,
+ * `window.load`, and anything a component registers via
+ * `window.hadouinLoader.register(promise)` — the hero WebGL textures today,
+ * 3D scenes later.
+ */
+interface Props {
+  /** Render on the page's dark background so the fast path stays invisible. */
+  dark?: boolean;
+}
+
+const { dark = false } = Astro.props;
+
+/** Accent lines of the studio logo, ordered nearest-to-furthest from the H. */
+const LOGO_LINES = [
+  { d: "M47.0949 4.69921L55.0806 4.76627L34 104.425H26L47.0949 4.69921Z", fill: "#8BA6F3" },
+  { d: "M32.9784 9.63554L40.9467 9.78482L21 104.379H13L32.9784 9.63554Z", fill: "#F0C477" },
+  { d: "M18.9036 14.7126L26.8552 14.9411L8 104.379H0L18.9036 14.7126Z", fill: "#EE8D8D" },
+];
+
+const LOGO_H =
+  "M157.243 0L135.253 104.379H102.212L108.687 73.0938H79.4834L72.9033 104.379H39.8672L61.8574 0H94.8623L85.3584 45.792H114.734L124.238 0H157.243Z";
+
+/** viewBox height of the logo, in user units — the mask travel distance. */
+const LOGO_VB_H = 105;
+---
+
+<script is:inline define:vars={{ dark }}>
+  (() => {
+    // Registered before anything else so component scripts further down the
+    // document can always hand the loader a task to wait on.
+    const tasks = [];
+    window.hadouinLoader = {
+      register(task) {
+        const p = typeof task === "function" ? Promise.resolve().then(task) : task;
+        tasks.push(Promise.resolve(p).catch(() => {}));
+        return p;
+      },
+      _tasks: tasks,
+    };
+
+    // Only ever on a real document load. ClientRouter re-runs inline scripts on
+    // swap, but `window` survives it, so this flag keeps the loader out of
+    // client-side navigations.
+    if (window.__hadouinLoaderRan) return;
+    window.__hadouinLoaderRan = true;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const root = document.documentElement;
+    root.dataset.loading = "";
+    if (dark) root.dataset.loadingDark = "";
+  })();
+</script>
+
+<div id="site-loader" aria-hidden="true">
+  <svg
+    class="loader-mark"
+    viewBox="0 0 158 105"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+      {
+        LOGO_LINES.map((_, i) => (
+          <clipPath id={`loader-line-clip-${i}`} clipPathUnits="userSpaceOnUse">
+            {/* Full-height rect slid down out of the way, then raised as the
+                line fills — keeps the diagonal's geometry intact. */}
+            <rect
+              class="loader-line-mask"
+              x="0"
+              y="0"
+              width="158"
+              height={LOGO_VB_H}
+              style={`transform: translateY(${LOGO_VB_H}px)`}
+            />
+          </clipPath>
+        ))
+      }
+    </defs>
+    {
+      LOGO_LINES.map((line, i) => (
+        <path d={line.d} fill={line.fill} clip-path={`url(#loader-line-clip-${i})`} />
+      ))
+    }
+    <path fill-rule="evenodd" clip-rule="evenodd" d={LOGO_H} fill="currentColor" />
+  </svg>
+  <div class="loader-pct">0</div>
+</div>
+
+<style is:inline>
+  #site-loader {
+    display: none;
+  }
+
+  html[data-loading] {
+    overflow: hidden;
+    /* Panel colour, so nothing flashes before the panel itself paints. */
+    background-color: #ffffff;
+  }
+
+  html[data-loading][data-loading-dark] {
+    background-color: #1a1a19;
+  }
+
+  html[data-loading] #site-loader {
+    display: flex;
+    /* Last-resort reveal if the script below never runs at all. */
+    animation: loaderFailsafe 1ms 12s both;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.75rem;
+    background-color: #ffffff;
+    clip-path: inset(0 0 0 0);
+    will-change: clip-path;
+  }
+
+  html[data-loading-dark] #site-loader {
+    background-color: #1a1a19;
+  }
+
+  /* Contents stay hidden until we commit to the full animation, so a warm
+     cache shows nothing but the page's own background colour. */
+  #site-loader .loader-mark,
+  #site-loader .loader-pct {
+    opacity: 0;
+  }
+
+  #site-loader .loader-mark {
+    display: block;
+    width: 148px;
+    height: auto;
+    color: #0f172a;
+  }
+
+  html[data-loading-dark] #site-loader .loader-mark {
+    color: #faf9f6;
+  }
+
+  @media (min-width: 768px) {
+    #site-loader .loader-mark {
+      width: 196px;
+    }
+  }
+
+  /* Raised from the base as its line fills; driven by the script below. */
+  #site-loader .loader-line-mask {
+    transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  #site-loader .loader-pct {
+    min-width: 3ch;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    font-variant-numeric: tabular-nums;
+    color: rgba(15, 23, 42, 0.55);
+  }
+
+  html[data-loading-dark] #site-loader .loader-pct {
+    color: rgba(250, 249, 246, 0.55);
+  }
+
+  /* --- full mode: the mark appears, lines then track real progress --- */
+  html[data-loading-full] #site-loader .loader-mark {
+    animation: loaderMarkIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  html[data-loading-full] #site-loader .loader-pct {
+    animation: loaderMetaIn 520ms 260ms ease-out both;
+  }
+
+  @keyframes loaderMarkIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes loaderMetaIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* --- exit (full): logo lifts away, panel wipes upward --- */
+  html[data-loading-exit] #site-loader {
+    animation: loaderWipeUp 680ms 140ms cubic-bezier(0.76, 0, 0.24, 1) both;
+  }
+
+  html[data-loading-exit] #site-loader .loader-mark,
+  html[data-loading-exit] #site-loader .loader-pct {
+    animation: loaderLift 520ms cubic-bezier(0.55, 0, 1, 0.45) both;
+  }
+
+  /* --- exit (quick): assets were cached, so just clear the cover --- */
+  html[data-loading-exit-quick] #site-loader {
+    animation: loaderFadeOut 200ms linear both;
+  }
+
+  @keyframes loaderWipeUp {
+    from {
+      clip-path: inset(0 0 0 0);
+    }
+    to {
+      clip-path: inset(0 0 100% 0);
+    }
+  }
+
+  @keyframes loaderLift {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-28px);
+    }
+  }
+
+  @keyframes loaderFailsafe {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  @keyframes loaderFadeOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #site-loader {
+      display: none !important;
+    }
+  }
+</style>
+
+<script is:inline define:vars={{ accents: LOGO_LINES.map((line) => line.fill) }}>
+  (() => {
+    const root = document.documentElement;
+    if (!("loading" in root.dataset)) return;
+
+    const reveal = () => {
+      delete root.dataset.loading;
+      delete root.dataset.loadingDark;
+      delete root.dataset.loadingFull;
+      delete root.dataset.loadingExit;
+      delete root.dataset.loadingExitQuick;
+    };
+
+    const QUICK_MS = 220; // settle inside this and the assets were cached
+    const MIN_MS = 900; // once committed, let the convergence land
+    const MAX_MS = 9000; // never hold the page hostage on a stalled asset
+    const EXIT_FULL_MS = 900; // must outlast the wipe + its delay
+    const EXIT_QUICK_MS = 200;
+
+    const started = performance.now();
+    const masks = document.querySelectorAll("#site-loader .loader-line-mask");
+    const pct = document.querySelector("#site-loader .loader-pct");
+    const VB_H = 105; // logo viewBox height, in user units
+
+    let total = 0;
+    let done = 0;
+    let shown = 0;
+    let lastPct = -1;
+    let accentIdx = -1;
+    let committed = false;
+    let finished = false;
+
+    const paint = () => {
+      // Never let progress retreat if late tasks enlarge the denominator.
+      const ratio = total === 0 ? 1 : done / total;
+      shown = Math.max(shown, ratio);
+      // Each line owns an equal slice of the run and fills from its base, so
+      // they grow one after another rather than all at once.
+      const slice = 1 / masks.length;
+      masks.forEach((mask, i) => {
+        const fill = Math.min(1, Math.max(0, (shown - i * slice) / slice));
+        mask.style.transform = "translateY(" + (1 - fill) * VB_H + "px)";
+      });
+      // Recolour from the accent palette on every change, the way the hero's
+      // scramble effect does. Never repeat the current colour, so the tick is
+      // always visible.
+      const next = Math.round(shown * 100);
+      if (pct && next !== lastPct) {
+        lastPct = next;
+        pct.textContent = String(next);
+        accentIdx =
+          accentIdx < 0
+            ? Math.floor(Math.random() * accents.length)
+            : (accentIdx + 1 + Math.floor(Math.random() * (accents.length - 1))) % accents.length;
+        pct.style.color = accents[accentIdx];
+      }
+    };
+
+    const track = (promise) => {
+      total += 1;
+      Promise.resolve(promise)
+        .catch(() => {})
+        .then(() => {
+          done += 1;
+          paint();
+        });
+    };
+
+    // An <img> counts as loaded once decoded, so the reveal never lands on a
+    // half-painted hero. Broken/aborted images resolve rather than block.
+    const trackImage = (img) => {
+      if (img.loading === "lazy") return; // below the fold, not worth waiting on
+      track(
+        new Promise((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            img.decode().then(resolve, resolve);
+            return;
+          }
+          img.addEventListener("load", () => img.decode().then(resolve, resolve), { once: true });
+          img.addEventListener("error", resolve, { once: true });
+        })
+      );
+    };
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      shown = 1;
+      paint();
+      root.dataset[committed ? "loadingExit" : "loadingExitQuick"] = "";
+      setTimeout(
+        () => {
+          reveal();
+          const lenis = window.lenis;
+          if (lenis) {
+            lenis.resize();
+            lenis.start();
+          }
+          document.dispatchEvent(new CustomEvent("hadouin:loader-done"));
+        },
+        committed ? EXIT_FULL_MS : EXIT_QUICK_MS
+      );
+    };
+
+    let trackedRegistered = 0;
+
+    const drainRegistered = () => {
+      const registered = window.hadouinLoader ? window.hadouinLoader._tasks : [];
+      for (let i = trackedRegistered; i < registered.length; i += 1) track(registered[i]);
+      trackedRegistered = registered.length;
+    };
+
+    // Past the quick window the assets clearly are not cached, so show the
+    // real thing rather than a cover that blinks.
+    const commit = () => {
+      if (committed || finished) return;
+      committed = true;
+      root.dataset.loadingFull = "";
+    };
+
+    // Poll rather than racing a single allSettled, so work registered late
+    // (a 3D scene booting after `load`) still gates the exit.
+    const tick = () => {
+      if (finished) return;
+      drainRegistered();
+      const elapsed = performance.now() - started;
+      if (total > 0 && done >= total) {
+        if (!committed && elapsed < QUICK_MS) {
+          finish(); // cached: nothing was ever visible
+          return;
+        }
+        commit();
+        setTimeout(finish, Math.max(0, MIN_MS - elapsed));
+        return;
+      }
+      if (elapsed >= QUICK_MS) commit();
+      requestAnimationFrame(tick);
+    };
+
+    const start = () => {
+      document.querySelectorAll("img").forEach(trackImage);
+      if (document.fonts && document.fonts.ready) track(document.fonts.ready);
+      track(
+        document.readyState === "complete"
+          ? Promise.resolve()
+          : new Promise((r) => window.addEventListener("load", r, { once: true }))
+      );
+      drainRegistered();
+      paint();
+      requestAnimationFrame(tick);
+    };
+
+    const safeStart = () => {
+      try {
+        start();
+      } catch (e) {
+        reveal(); // never trap the page behind a broken loader
+      }
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", safeStart, { once: true });
+    } else {
+      safeStart();
+    }
+
+    setTimeout(() => {
+      commit();
+      finish();
+    }, MAX_MS);
+  })();
+</script>
