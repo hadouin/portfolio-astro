@@ -1,7 +1,6 @@
 ---
 import Link from "@components/ui/link.astro";
 import Dropdown from "./dropdown.astro";
-import { Icon } from "astro-icon/components";
 import {
   defaultLocale,
   localizedPath,
@@ -20,6 +19,7 @@ const t = useTranslations(locale);
 
 const basePath = stripLocaleFromPath(Astro.url.pathname);
 const isSignaturePage = basePath === "/signature";
+const isHome = basePath === "/";
 
 const home = (anchor: string) =>
   `${localizedPath("/", locale)}${anchor}`;
@@ -54,14 +54,48 @@ const switcherChildren = locales.map((loc) => ({
 
 <header
   class="navbar-root group fixed top-0 left-0 right-0 flex flex-col lg:flex-row justify-between items-center bg-white z-50"
+  data-home={isHome ? "true" : "false"}
   data-menu-open="false">
-  <div class="flex w-full lg:w-auto items-center justify-between p-5">
-    <a href={localizedPath("/", locale)} class="text-lg">
-      <Icon class="h-8" name="Logo-text" />
+  <div class="relative flex h-[70px] w-full items-center justify-between px-5 lg:w-[96px]">
+    <a
+      href={localizedPath("/", locale)}
+      class="navbar-logo absolute bottom-0 left-8 inline-flex h-12 items-end leading-none"
+      aria-label="Home"
+    >
+      <svg
+        class="navbar-logo-svg block h-12 w-auto shrink-0"
+        viewBox="0 0 158 105"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          class="navbar-logo-line navbar-logo-line-blue"
+          d="M47.0949 4.69921L55.0806 4.76627L34 104.425H26L47.0949 4.69921Z"
+          fill="#8BA6F3"
+        />
+        <path
+          class="navbar-logo-line navbar-logo-line-yellow"
+          d="M32.9784 9.63554L40.9467 9.78482L21 104.379H13L32.9784 9.63554Z"
+          fill="#F0C477"
+        />
+        <path
+          class="navbar-logo-line navbar-logo-line-red"
+          d="M18.9036 14.7126L26.8552 14.9411L8 104.379H0L18.9036 14.7126Z"
+          fill="#EE8D8D"
+        />
+        <path
+          class="navbar-logo-h"
+          fill-rule="evenodd"
+          clip-rule="evenodd"
+          d="M157.243 0L135.253 104.379H102.212L108.687 73.0938H79.4834L72.9033 104.379H39.8672L61.8574 0H94.8623L85.3584 45.792H114.734L124.238 0H157.243Z"
+          fill="currentColor"
+        />
+      </svg>
     </a>
     <button
       type="button"
-      class="navbar-menu-toggle block lg:hidden"
+      class="navbar-menu-toggle ml-auto block lg:hidden"
       aria-label="Toggle Menu"
       aria-expanded="false"
       aria-controls="navbar-menu">
@@ -170,6 +204,126 @@ const switcherChildren = locales.map((loc) => ({
 </header>
 
 <style>
+  :global(body.hero-dark-active .navbar-root[data-home="true"]) {
+    background: transparent;
+    color: #ffffff;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-menu) {
+    background: transparent;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] a),
+  :global(body.hero-dark-active .navbar-root[data-home="true"] button),
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-menu-toggle svg),
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-dropdown-toggle svg) {
+    color: #ffffff !important;
+  }
+
+  .navbar-logo-svg {
+    color: #1f2937;
+    overflow: visible;
+  }
+
+  .navbar-logo-line {
+    transform-box: fill-box;
+    transform-origin: center;
+    opacity: 0;
+    transition:
+      transform 200ms ease-out,
+      opacity 200ms ease-out;
+  }
+
+  .navbar-logo-line-blue {
+    transform: translateX(14px);
+    transition-delay: 100ms;
+  }
+
+  .navbar-logo-line-yellow {
+    transform: translateX(14px);
+    transition-delay: 50ms;
+  }
+
+  .navbar-logo-line-red {
+    transform: translateX(14px);
+    transition-delay: 0ms;
+  }
+
+  .navbar-logo-h {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: translate3d(-5px, 1px, 0);
+    transition: transform 200ms ease-out;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .navbar-logo:hover .navbar-logo-h {
+      transform: none;
+    }
+
+    .navbar-logo:hover .navbar-logo-line {
+      opacity: 1;
+      transform: none;
+    }
+
+    .navbar-logo:hover .navbar-logo-line-blue {
+      transition-delay: 0ms;
+    }
+
+    .navbar-logo:hover .navbar-logo-line-yellow {
+      transition-delay: 50ms;
+    }
+
+    .navbar-logo:hover .navbar-logo-line-red {
+      transition-delay: 100ms;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .navbar-logo-h,
+    .navbar-logo-line {
+      transition: none;
+    }
+
+    .navbar-logo-h {
+      transform: none;
+    }
+
+    .navbar-logo-line {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-logo-svg) {
+    color: #ffffff;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-dropdown-panel a) {
+    color: #ffffff !important;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] .navbar-dropdown-panel > div) {
+    border-color: #333331;
+    background: #222220;
+  }
+
+  :global(body.hero-dark-active .navbar-root[data-home="true"] [data-lang-puck]) {
+    --tw-ring-color: transparent;
+  }
+
+  @media (max-width: 1023px) {
+    :global(body.hero-dark-active .navbar-root[data-home="true"][data-menu-open="true"]) {
+      background: #1a1a19;
+    }
+
+    :global(
+      body.hero-dark-active .navbar-root[data-home="true"][data-menu-open="true"] .navbar-menu
+    ) {
+      background: #1a1a19;
+    }
+  }
+
   .navbar-root .navbar-menu-icon-close {
     display: none;
   }
