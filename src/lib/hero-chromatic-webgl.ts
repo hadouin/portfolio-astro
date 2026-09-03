@@ -389,6 +389,8 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   let effectIntensity = 0;
   let recentMove = 0;
   let splatStrength = 0;
+  /** Multiplies the chromatic split while the screen is shaking. */
+  let shakeBoost = 0;
   let hasPointer = false;
   let pointerSeeded = false;
   let tiltActive = false;
@@ -549,7 +551,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     gl.uniform2f(compositeLocations.uMouseVel, smoothVel[0], smoothVel[1]);
     gl.uniform2f(compositeLocations.uTilt, smoothTilt[0], smoothTilt[1]);
     gl.uniform1f(compositeLocations.uTime, time);
-    gl.uniform1f(compositeLocations.uStrength, 1);
+    gl.uniform1f(compositeLocations.uStrength, 1 + shakeBoost);
     gl.uniform1f(compositeLocations.uIntensity, effectIntensity);
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -619,6 +621,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     pendingVel[0] *= Math.exp(-6 * delta);
     pendingVel[1] *= Math.exp(-6 * delta);
     recentMove *= Math.exp(-4.5 * delta);
+    shakeBoost *= Math.exp(-7 * delta);
 
     const velEaseX =
       Math.abs(targetVel[0]) >= Math.abs(smoothVel[0]) ? velAttack : velRelease;
@@ -780,6 +783,40 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     startAnimation();
   };
 
+  /**
+   * Lets the door gate drive the effect while the screen is shaking, so the
+   * portrait rattles chromatically instead of sitting perfectly still inside a
+   * frame that is moving. Pass null to hand control back to the pointer.
+   */
+  const applyShake = (offset: { x: number; y: number } | null) => {
+    if (disposed) return;
+
+    if (!offset) {
+      hasPointer = false;
+      shakeBoost = 0;
+      startAnimation();
+      return;
+    }
+
+    hasPointer = true;
+    const magnitude = Math.hypot(offset.x, offset.y);
+
+    // Swing the ripple centre right across the portrait rather than nudging it.
+    mouseUv = [
+      clamp(0.5 + offset.x * 1.3, 0, 1),
+      clamp(0.5 - offset.y * 1.3, 0, 1),
+    ];
+    // Saturate the velocity so velBoost and the blend amount both peg out.
+    pendingVel[0] = clamp(offset.x * 1.4, -0.14, 0.14);
+    pendingVel[1] = clamp(-offset.y * 1.4, -0.14, 0.14);
+    recentMove = 0.35;
+    splatStrength += clamp(magnitude * 1.6, 0.08, 0.45);
+    shakeBoost = Math.max(shakeBoost, clamp(magnitude * 18, 0, 9));
+    startAnimation();
+  };
+
+  (window as any).__heroChromaticShake = applyShake;
+
   const resizeObserver = new ResizeObserver(() => {
     if (resize()) {
       renderComposite();
@@ -879,6 +916,9 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
 
   return () => {
     disposed = true;
+    if ((window as any).__heroChromaticShake === applyShake) {
+      delete (window as any).__heroChromaticShake;
+    }
     resizeObserver.disconnect();
     visibilityObserver.disconnect();
     tiltHandle?.dispose();
