@@ -302,7 +302,8 @@ const heroTextureCompact = await getImage({
           ? `screen ${tilt.screenAngle}deg  neutral${num(tilt.neutral?.x, 1)} /${num(tilt.neutral?.y, 1)}`
           : "screen —",
         tilt ? `sample x${num(tilt.sample.x)}  y${num(tilt.sample.y)}` : "sample —",
-        `focus  x${num(debug.focus[0])}  y${num(debug.focus[1])}`,
+        `bubble x${num(debug.focus[0])}  y${num(debug.focus[1])}`,
+        `anchor x${num(debug.anchor[0])}  y${num(debug.anchor[1])}`,
         `drive  vel${num(debug.velocity[0], 3)} /${num(debug.velocity[1], 3)}  int${num(debug.intensity)}`,
         `source ${debug.source}`,
       ].join("\n");

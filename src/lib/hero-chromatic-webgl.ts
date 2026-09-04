@@ -1,4 +1,4 @@
-import { initDeviceTilt, type TiltDebug } from "./device-tilt";
+import { initDeviceTilt, type DeviceTiltHandle, type TiltDebug } from "./device-tilt";
 
 type Vec2 = [number, number];
 
@@ -9,6 +9,8 @@ export type HeroChromaticDebug = {
   source: "idle" | "mouse" | "touch" | "tilt";
   /** Focus point in container UV, origin bottom-left. */
   focus: Vec2;
+  /** Rest position the bubble settles to when the device is held at its neutral attitude. */
+  anchor: Vec2;
   velocity: Vec2;
   /** 0 = portrait untouched, 1 = full chromatic split. */
   intensity: number;
@@ -164,6 +166,12 @@ const COMPOSITE_FRAGMENT_SHADER = `
     gl_FragColor = vec4(color, 1.0);
   }
 `;
+
+/** How far full-scale tilt carries the bubble from its anchor, in container UV. */
+const TILT_SPAN = 0.42;
+/** Spring pulling the bubble to the tilt target, and the viscous drag on it. */
+const BUBBLE_SPRING = 22;
+const BUBBLE_DAMPING = 6.5;
 
 function createShader(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type);
@@ -379,6 +387,11 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   let lastPointerX = 0;
   let lastPointerY = 0;
   let objectPosition: Vec2 = readObjectPosition(referenceImage);
+  let tiltHandle: DeviceTiltHandle | null = null;
+  let tiltOffset: Vec2 = [0, 0];
+  let anchor: Vec2 = [0.5, 0.5];
+  let bubblePos: Vec2 = [0.5, 0.5];
+  let bubbleVel: Vec2 = [0, 0];
   let debugSource: HeroChromaticDebug["source"] = "idle";
   let tiltDebug: TiltDebug | null = null;
   let lastDebugTime = 0;
@@ -546,6 +559,34 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     lastFrameTime = frameTime;
     time += delta;
 
+    // A bubble level's bubble glides to the raised side and settles rather than
+    // tracking the sensor rigidly. A finger on the glass overrides it outright.
+    if (tiltActive && !pointerSeeded) {
+      const step = Math.min(delta, 1 / 45);
+      const target: Vec2 = [
+        clamp(anchor[0] + tiltOffset[0] * TILT_SPAN, 0, 1),
+        clamp(anchor[1] + tiltOffset[1] * TILT_SPAN, 0, 1),
+      ];
+
+      const moved: Vec2 = [0, 0];
+      for (let axis = 0; axis < 2; axis++) {
+        bubbleVel[axis] +=
+          (BUBBLE_SPRING * (target[axis] - bubblePos[axis]) - BUBBLE_DAMPING * bubbleVel[axis]) *
+          step;
+        const drifted = bubblePos[axis] + bubbleVel[axis] * step;
+        const next = clamp(drifted, 0, 1);
+        // Stop dead at the edge of the portrait instead of building up pressure.
+        if (next !== drifted) bubbleVel[axis] = 0;
+        moved[axis] = next - bubblePos[axis];
+        bubblePos[axis] = next;
+      }
+
+      mouseUv = [bubblePos[0], bubblePos[1]];
+      if (Math.abs(moved[0]) > 1e-5 || Math.abs(moved[1]) > 1e-5) {
+        energize(moved[0], moved[1], 1.6, 0);
+      }
+    }
+
     const velDecay = Math.exp(-1.8 * delta);
     const inputMag = Math.hypot(pendingVel[0], pendingVel[1]);
     const velAttack = 1 - Math.exp(-9 * delta);
@@ -624,6 +665,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
       tilt: tiltDebug,
       source: debugSource,
       focus: [mouseUv[0], mouseUv[1]],
+      anchor: [anchor[0], anchor[1]],
       velocity: [smoothVel[0], smoothVel[1]],
       intensity: effectIntensity,
     });
@@ -653,6 +695,13 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     const y = clamp(1 - (event.clientY - rect.top) / rect.height, 0, 1);
     mouseUv = [x, y];
     debugSource = event.pointerType === "touch" ? "touch" : "mouse";
+
+    // Wherever the finger is becomes the bubble's new rest position, and the
+    // attitude the device is held at right now becomes level.
+    anchor = [x, y];
+    bubblePos = [x, y];
+    bubbleVel = [0, 0];
+    tiltHandle?.recenter();
 
     if (!pointerSeeded) {
       lastPointerX = event.clientX;
@@ -686,21 +735,20 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   // contact, and the next one has to seed a fresh origin.
   const handlePointerRelease = () => {
     pointerSeeded = false;
-    // Drop tilt continuity too: the touch dragged the focus point away from where
-    // the sensor had it, and the next reading should re-seed rather than flick back.
-    tiltActive = false;
-    hasPointer = false;
+    // The bubble stays where it was let go and tilts on from there; it springs
+    // rather than snaps, so there is nothing to re-seed.
+    bubbleVel = [0, 0];
+    hasPointer = tiltActive;
+    tiltHandle?.recenter();
     startAnimation();
   };
 
-  // Phone tilt is the touch-device stand-in for the pointer: the focus point
-  // follows the device's attitude, so the colour split leans with the screen.
+  // Phone tilt is the touch-device stand-in for the pointer. The sensor only sets
+  // where the bubble is heading; the render loop does the gliding.
   const handleTilt = (sample: { x: number; y: number }) => {
-    const x = clamp(0.5 + sample.x * 0.44, 0, 1);
-    const y = clamp(0.5 - sample.y * 0.44, 0, 1);
-    const deltaX = x - mouseUv[0];
-    const deltaY = y - mouseUv[1];
-    mouseUv = [x, y];
+    // The bubble rides to the raised edge: tipping the right side down sends it
+    // left, and lifting the top pulls it up.
+    tiltOffset = [-sample.x, sample.y];
     debugSource = "tilt";
 
     if (!tiltActive) {
@@ -708,11 +756,9 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
       hasPointer = true;
       splatStrength += 0.22;
       recentMove = 0.08;
-      startAnimation();
-      return;
     }
 
-    energize(deltaX, deltaY, 1.6, 0);
+    startAnimation();
   };
 
   const resizeObserver = new ResizeObserver(() => {
@@ -795,7 +841,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   hero.addEventListener("pointercancel", handlePointerRelease, { passive: true });
   hero.addEventListener("pointerleave", handlePointerRelease, { passive: true });
 
-  const tiltCleanup = initDeviceTilt({
+  tiltHandle = initDeviceTilt({
     onTilt: handleTilt,
     gestureTarget: hero,
     onDebug: onDebug
@@ -816,7 +862,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     disposed = true;
     resizeObserver.disconnect();
     visibilityObserver.disconnect();
-    tiltCleanup?.();
+    tiltHandle?.dispose();
     document.removeEventListener("visibilitychange", handleDocumentVisibility);
     hero.removeEventListener("pointerdown", handlePointerDown);
     hero.removeEventListener("pointermove", handlePointerMove);

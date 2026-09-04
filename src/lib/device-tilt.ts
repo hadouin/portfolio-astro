@@ -29,6 +29,12 @@ export type TiltDebug = {
   sample: TiltSample;
 };
 
+export type DeviceTiltHandle = {
+  /** Make the device's current attitude the new zero, effective on the next reading. */
+  recenter: () => void;
+  dispose: () => void;
+};
+
 type DeviceTiltOptions = {
   onTilt: (sample: TiltSample) => void;
   /** Dev-only readout hook: fires on every status change and every reading. */
@@ -55,9 +61,9 @@ function screenAngleDegrees() {
 /**
  * Streams phone tilt (pitch/roll) as screen-space coordinates, like a compass needle
  * that stays put while the device turns around it. Returns null when the platform
- * has no orientation sensor; returns a cleanup function otherwise.
+ * has no orientation sensor.
  */
-export function initDeviceTilt(options: DeviceTiltOptions): (() => void) | null {
+export function initDeviceTilt(options: DeviceTiltOptions): DeviceTiltHandle | null {
   if (typeof window === "undefined") return null;
 
   const {
@@ -195,9 +201,17 @@ export function initDeviceTilt(options: DeviceTiltOptions): (() => void) | null 
     start();
   }
 
-  return () => {
-    disposed = true;
-    removeGestureListeners();
-    window.removeEventListener("deviceorientation", handleOrientation);
+  return {
+    recenter: () => {
+      // Dropping both makes the next reading define the neutral outright, with no
+      // smoothing tail from the posture being replaced.
+      baseline = null;
+      smoothed = null;
+    },
+    dispose: () => {
+      disposed = true;
+      removeGestureListeners();
+      window.removeEventListener("deviceorientation", handleOrientation);
+    },
   };
 }
