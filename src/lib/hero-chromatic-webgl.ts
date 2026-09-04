@@ -1,6 +1,18 @@
-import { initDeviceTilt } from "./device-tilt";
+import { initDeviceTilt, type TiltDebug } from "./device-tilt";
 
 type Vec2 = [number, number];
+
+export type HeroChromaticDebug = {
+  /** Null until the tilt source reports; null forever on platforms without one. */
+  tilt: TiltDebug | null;
+  /** Whatever last moved the focus point. */
+  source: "idle" | "mouse" | "touch" | "tilt";
+  /** Focus point in container UV, origin bottom-left. */
+  focus: Vec2;
+  velocity: Vec2;
+  /** 0 = portrait untouched, 1 = full chromatic split. */
+  intensity: number;
+};
 
 type HeroChromaticOptions = {
   container: HTMLElement;
@@ -10,6 +22,8 @@ type HeroChromaticOptions = {
   hero: HTMLElement;
   imageSize: Vec2;
   referenceImage?: HTMLImageElement | null;
+  /** Dev-only readout hook; leave unset in production so nothing is sampled. */
+  onDebug?: (debug: HeroChromaticDebug) => void;
 };
 
 const VERTEX_SHADER = `
@@ -275,6 +289,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     hero,
     imageSize,
     referenceImage = null,
+    onDebug,
   } = options;
   const gl = canvas.getContext("webgl", {
     alpha: false,
@@ -358,11 +373,15 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   let recentMove = 0;
   let splatStrength = 0;
   let hasPointer = false;
+  let pointerSeeded = false;
   let tiltActive = false;
   let onScreen = true;
   let lastPointerX = 0;
   let lastPointerY = 0;
   let objectPosition: Vec2 = readObjectPosition(referenceImage);
+  let debugSource: HeroChromaticDebug["source"] = "idle";
+  let tiltDebug: TiltDebug | null = null;
+  let lastDebugTime = 0;
 
   const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
 
@@ -568,6 +587,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
 
     stepWave();
     renderComposite();
+    emitDebug();
 
     if (!ready) {
       ready = true;
@@ -595,6 +615,20 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     }
   };
 
+  const emitDebug = (force = false) => {
+    if (!onDebug) return;
+    const now = performance.now();
+    if (!force && now - lastDebugTime < 60) return;
+    lastDebugTime = now;
+    onDebug({
+      tilt: tiltDebug,
+      source: debugSource,
+      focus: [mouseUv[0], mouseUv[1]],
+      velocity: [smoothVel[0], smoothVel[1]],
+      intensity: effectIntensity,
+    });
+  };
+
   const startAnimation = () => {
     if (!animationFrame && onScreen && !document.hidden) {
       lastFrameTime = 0;
@@ -618,10 +652,12 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     const x = clamp((event.clientX - rect.left) / rect.width, 0, 1);
     const y = clamp(1 - (event.clientY - rect.top) / rect.height, 0, 1);
     mouseUv = [x, y];
+    debugSource = event.pointerType === "touch" ? "touch" : "mouse";
 
-    if (!hasPointer) {
+    if (!pointerSeeded) {
       lastPointerX = event.clientX;
       lastPointerY = event.clientY;
+      pointerSeeded = true;
       hasPointer = true;
       splatStrength += 0.22;
       recentMove = 0.08;
@@ -641,8 +677,19 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     updateMouseFromEvent(event);
   };
 
-  const handlePointerLeave = () => {
-    hasPointer = tiltActive;
+  // A finger that lands without dragging should still light up the portrait.
+  const handlePointerDown = (event: PointerEvent) => {
+    updateMouseFromEvent(event);
+  };
+
+  // Touch has no hover: lifting (or losing the pointer to a scroll) ends the
+  // contact, and the next one has to seed a fresh origin.
+  const handlePointerRelease = () => {
+    pointerSeeded = false;
+    // Drop tilt continuity too: the touch dragged the focus point away from where
+    // the sensor had it, and the next reading should re-seed rather than flick back.
+    tiltActive = false;
+    hasPointer = false;
     startAnimation();
   };
 
@@ -654,6 +701,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     const deltaX = x - mouseUv[0];
     const deltaY = y - mouseUv[1];
     mouseUv = [x, y];
+    debugSource = "tilt";
 
     if (!tiltActive) {
       tiltActive = true;
@@ -741,10 +789,23 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   resizeObserver.observe(container);
   visibilityObserver.observe(container);
   document.addEventListener("visibilitychange", handleDocumentVisibility);
+  hero.addEventListener("pointerdown", handlePointerDown, { passive: true });
   hero.addEventListener("pointermove", handlePointerMove, { passive: true });
-  hero.addEventListener("pointerleave", handlePointerLeave, { passive: true });
+  hero.addEventListener("pointerup", handlePointerRelease, { passive: true });
+  hero.addEventListener("pointercancel", handlePointerRelease, { passive: true });
+  hero.addEventListener("pointerleave", handlePointerRelease, { passive: true });
 
-  const tiltCleanup = initDeviceTilt({ onTilt: handleTilt, gestureTarget: hero });
+  const tiltCleanup = initDeviceTilt({
+    onTilt: handleTilt,
+    gestureTarget: hero,
+    onDebug: onDebug
+      ? (debug) => {
+          tiltDebug = debug;
+          // The render loop parks when idle, so status changes have to push.
+          emitDebug(debug.events === 0);
+        }
+      : undefined,
+  });
 
   void initTextures().catch((error) => {
     console.warn("[hero-chromatic] Init failed", error);
@@ -757,8 +818,11 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     visibilityObserver.disconnect();
     tiltCleanup?.();
     document.removeEventListener("visibilitychange", handleDocumentVisibility);
+    hero.removeEventListener("pointerdown", handlePointerDown);
     hero.removeEventListener("pointermove", handlePointerMove);
-    hero.removeEventListener("pointerleave", handlePointerLeave);
+    hero.removeEventListener("pointerup", handlePointerRelease);
+    hero.removeEventListener("pointercancel", handlePointerRelease);
+    hero.removeEventListener("pointerleave", handlePointerRelease);
     if (animationFrame) cancelAnimationFrame(animationFrame);
     delete container.dataset.chromaticReady;
 

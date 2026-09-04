@@ -189,7 +189,10 @@ const heroTextureCompact = await getImage({
 </style>
 
 <script>
-  import { initHeroChromaticWebGL } from "../lib/hero-chromatic-webgl";
+  import {
+    initHeroChromaticWebGL,
+    type HeroChromaticDebug,
+  } from "../lib/hero-chromatic-webgl";
 
   const letters = "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&?@:/}{()*+-#$&";
   const scrambleColors = ["#8BA6F3", "#F0C477", "#EE8D8D"];
@@ -244,6 +247,65 @@ const heroTextureCompact = await getImage({
     scramble();
   }
 
+  // Dev-only tilt readout. `import.meta.env.DEV` is inlined as `false` in a
+  // production build, so this whole panel drops out of the bundle.
+  function initTiltDebugPanel(hero: HTMLElement) {
+    hero.querySelector(".hero-tilt-debug")?.remove();
+
+    const panel = document.createElement("pre");
+    panel.className = "hero-tilt-debug";
+    panel.setAttribute("aria-hidden", "true");
+    panel.style.cssText = [
+      "position:absolute",
+      "left:12px",
+      "bottom:12px",
+      "z-index:40",
+      "margin:0",
+      "padding:8px 10px",
+      "border-radius:6px",
+      "background:rgb(12 12 11 / 0.72)",
+      "color:#deded8",
+      "font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace",
+      "white-space:pre",
+      "pointer-events:none",
+      "backdrop-filter:blur(4px)",
+    ].join(";");
+    hero.appendChild(panel);
+
+    const num = (value: number | null | undefined, digits = 2) =>
+      value === null || value === undefined || Number.isNaN(value)
+        ? "  —".padStart(digits + 4)
+        : value.toFixed(digits).padStart(digits + 4);
+
+    return (debug: HeroChromaticDebug | string) => {
+      if (typeof debug === "string") {
+        panel.textContent = `tilt   effect off · ${debug}`;
+        return;
+      }
+
+      const { tilt } = debug;
+      const sensor = tilt
+        ? `${tilt.status} · ${tilt.events} evt${
+            tilt.status === "awaiting-gesture" ? " · tap hero to allow" : ""
+          }${tilt.status === "listening" && tilt.events === 0 ? " · no sensor data" : ""}`
+        : "no sensor";
+
+      panel.textContent = [
+        `tilt   ${sensor}`,
+        tilt
+          ? `raw    b${num(tilt.raw.beta, 1)}  g${num(tilt.raw.gamma, 1)}  a${num(tilt.raw.alpha, 1)}`
+          : "raw    —",
+        tilt
+          ? `screen ${tilt.screenAngle}deg  neutral${num(tilt.neutral?.x, 1)} /${num(tilt.neutral?.y, 1)}`
+          : "screen —",
+        tilt ? `sample x${num(tilt.sample.x)}  y${num(tilt.sample.y)}` : "sample —",
+        `focus  x${num(debug.focus[0])}  y${num(debug.focus[1])}`,
+        `drive  vel${num(debug.velocity[0], 3)} /${num(debug.velocity[1], 3)}  int${num(debug.intensity)}`,
+        `source ${debug.source}`,
+      ].join("\n");
+    };
+  }
+
   function initChromaticPortrait() {
     const previousCleanup = (window as any).__chromaticHeroCleanup as (() => void) | undefined;
     previousCleanup?.();
@@ -262,8 +324,7 @@ const heroTextureCompact = await getImage({
     // Touch devices get the same effect, driven by the orientation sensor instead.
     const hasTiltSensor = typeof (window as any).DeviceOrientationEvent !== "undefined";
 
-    if (
-      !hero ||
+    const missingAssets =
       !portrait ||
       !canvas ||
       !imageSrc ||
@@ -272,13 +333,19 @@ const heroTextureCompact = await getImage({
       !Number.isFinite(imageWidth) ||
       !Number.isFinite(imageHeight) ||
       imageWidth < 1 ||
-      imageHeight < 1 ||
-      reduceMotion ||
-      (!finePointer && !hasTiltSensor)
-    ) {
+      imageHeight < 1;
+
+    if (!hero || missingAssets || reduceMotion || (!finePointer && !hasTiltSensor)) {
       (window as any).__chromaticHeroCleanup = undefined;
+      if (import.meta.env.DEV && hero) {
+        initTiltDebugPanel(hero)(
+          missingAssets ? "missing assets" : reduceMotion ? "reduce-motion" : "no input source"
+        );
+      }
       return;
     }
+
+    const renderDebug = import.meta.env.DEV ? initTiltDebugPanel(hero) : undefined;
 
     // Hold the first-load preloader until the hero textures are in cache, so
     // the reveal never lands on an un-rendered portrait. No-op after first load.
@@ -307,6 +374,7 @@ const heroTextureCompact = await getImage({
       hero,
       imageSize: [imageWidth, imageHeight],
       referenceImage,
+      onDebug: renderDebug,
     });
 
     (window as any).__chromaticHeroCleanup = cleanup ?? undefined;

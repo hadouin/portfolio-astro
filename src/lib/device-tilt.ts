@@ -5,8 +5,34 @@ type TiltSample = {
   y: number;
 };
 
+export type TiltStatus =
+  /** The platform exposes no orientation sensor at all. */
+  | "unsupported"
+  /** iOS: waiting for the tap that is allowed to raise the permission prompt. */
+  | "awaiting-gesture"
+  /** The user declined, or the prompt failed. */
+  | "denied"
+  /** Subscribed to the sensor; `events` says whether it is actually reporting. */
+  | "listening";
+
+export type TiltDebug = {
+  status: TiltStatus;
+  /** Readings received so far — stuck at 0 means subscribed but silent. */
+  events: number;
+  /** Raw sensor angles in degrees, before screen rotation and recentring. */
+  raw: { alpha: number | null; beta: number | null; gamma: number | null };
+  /** Screen rotation in degrees that the raw angles are corrected against. */
+  screenAngle: number;
+  /** The drifting neutral posture, in screen-space degrees. */
+  neutral: { x: number; y: number } | null;
+  /** The emitted sample, -1..1 per axis. */
+  sample: TiltSample;
+};
+
 type DeviceTiltOptions = {
   onTilt: (sample: TiltSample) => void;
+  /** Dev-only readout hook: fires on every status change and every reading. */
+  onDebug?: (debug: TiltDebug) => void;
   /** Element whose first tap arms the iOS permission prompt. */
   gestureTarget?: HTMLElement;
   /** Degrees of tilt that map to full deflection. */
@@ -21,9 +47,9 @@ function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
 }
 
-function screenAngleRadians() {
+function screenAngleDegrees() {
   const angle = window.screen?.orientation?.angle ?? (window as any).orientation ?? 0;
-  return (typeof angle === "number" ? angle : 0) * (Math.PI / 180);
+  return typeof angle === "number" ? angle : 0;
 }
 
 /**
@@ -34,23 +60,44 @@ function screenAngleRadians() {
 export function initDeviceTilt(options: DeviceTiltOptions): (() => void) | null {
   if (typeof window === "undefined") return null;
 
-  const OrientationEvent = (window as any).DeviceOrientationEvent as
-    | (typeof DeviceOrientationEvent & { requestPermission?: () => Promise<string> })
-    | undefined;
-  if (!OrientationEvent) return null;
-
   const {
     onTilt,
+    onDebug,
     gestureTarget,
     range = 26,
     recenterSeconds = 9,
     smoothing = 0.22,
   } = options;
 
-  let disposed = false;
-  let listening = false;
+  const OrientationEvent = (window as any).DeviceOrientationEvent as
+    | (typeof DeviceOrientationEvent & { requestPermission?: () => Promise<string> })
+    | undefined;
+
   let baseline: TiltSample | null = null;
   let smoothed: TiltSample | null = null;
+  let events = 0;
+  let status: TiltStatus = "unsupported";
+  const report = (event?: DeviceOrientationEvent) =>
+    onDebug?.({
+      status,
+      events,
+      raw: {
+        alpha: event?.alpha ?? null,
+        beta: event?.beta ?? null,
+        gamma: event?.gamma ?? null,
+      },
+      screenAngle: screenAngleDegrees(),
+      neutral: baseline && { ...baseline },
+      sample: smoothed ? { ...smoothed } : { x: 0, y: 0 },
+    });
+
+  if (!OrientationEvent) {
+    report();
+    return null;
+  }
+
+  let disposed = false;
+  let listening = false;
   let lastTime = 0;
 
   const handleOrientation = (event: DeviceOrientationEvent) => {
@@ -60,8 +107,10 @@ export function initDeviceTilt(options: DeviceTiltOptions): (() => void) | null 
     if (beta === null || gamma === null) return;
     if (!Number.isFinite(beta) || !Number.isFinite(gamma)) return;
 
+    events += 1;
+
     // Rotate the raw pitch/roll pair into screen space so landscape feels like portrait.
-    const angle = screenAngleRadians();
+    const angle = screenAngleDegrees() * (Math.PI / 180);
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
     const rawX = gamma * cos - beta * sin;
@@ -93,12 +142,15 @@ export function initDeviceTilt(options: DeviceTiltOptions): (() => void) | null 
     }
 
     onTilt({ x: smoothed.x, y: smoothed.y });
+    report(event);
   };
 
   const start = () => {
     if (listening || disposed) return;
     listening = true;
+    status = "listening";
     window.addEventListener("deviceorientation", handleOrientation, { passive: true });
+    report();
   };
 
   let removeGestureListeners = () => {};
@@ -117,9 +169,17 @@ export function initDeviceTilt(options: DeviceTiltOptions): (() => void) | null 
       removeGestureListeners();
       OrientationEvent.requestPermission?.()
         .then((state) => {
-          if (state === "granted") start();
+          if (state === "granted") {
+            start();
+            return;
+          }
+          status = "denied";
+          report();
         })
-        .catch(() => {});
+        .catch(() => {
+          status = "denied";
+          report();
+        });
     };
 
     removeGestureListeners = () => {
@@ -129,6 +189,8 @@ export function initDeviceTilt(options: DeviceTiltOptions): (() => void) | null 
 
     target.addEventListener("touchend", requestAccess, { passive: true });
     target.addEventListener("click", requestAccess);
+    status = "awaiting-gesture";
+    report();
   } else {
     start();
   }
