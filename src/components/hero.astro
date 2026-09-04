@@ -247,8 +247,11 @@ const heroTextureCompact = await getImage({
     scramble();
   }
 
-  // Dev-only tilt readout. `import.meta.env.DEV` is inlined as `false` in a
-  // production build, so this whole panel drops out of the bundle.
+  // The tilt readout has to be usable on a real phone against a real build, so it
+  // is gated on a #dev hash rather than on the dev server.
+  const debugRequested = () => window.location.hash.toLowerCase().startsWith("#dev");
+  let debugPanelActive = false;
+
   function initTiltDebugPanel(hero: HTMLElement) {
     hero.querySelector(".hero-tilt-debug")?.remove();
 
@@ -309,6 +312,8 @@ const heroTextureCompact = await getImage({
   function initChromaticPortrait() {
     const previousCleanup = (window as any).__chromaticHeroCleanup as (() => void) | undefined;
     previousCleanup?.();
+    document.querySelector(".hero-tilt-debug")?.remove();
+    debugPanelActive = debugRequested();
 
     const hero = document.querySelector<HTMLElement>("[data-dark-hero]");
     const portrait = document.querySelector<HTMLElement>("[data-chromatic-portrait]");
@@ -337,7 +342,7 @@ const heroTextureCompact = await getImage({
 
     if (!hero || missingAssets || reduceMotion || (!finePointer && !hasTiltSensor)) {
       (window as any).__chromaticHeroCleanup = undefined;
-      if (import.meta.env.DEV && hero) {
+      if (debugPanelActive && hero) {
         initTiltDebugPanel(hero)(
           missingAssets ? "missing assets" : reduceMotion ? "reduce-motion" : "no input source"
         );
@@ -345,7 +350,7 @@ const heroTextureCompact = await getImage({
       return;
     }
 
-    const renderDebug = import.meta.env.DEV ? initTiltDebugPanel(hero) : undefined;
+    const renderDebug = debugPanelActive ? initTiltDebugPanel(hero) : undefined;
 
     // Hold the first-load preloader until the hero textures are in cache, so
     // the reveal never lands on an un-rendered portrait. No-op after first load.
@@ -406,6 +411,11 @@ const heroTextureCompact = await getImage({
     (window as any).__heroThemeObserver = observer;
     updateTheme();
   }
+
+  // Toggling #dev on or off rebuilds the effect so the readout can attach or detach.
+  window.addEventListener("hashchange", () => {
+    if (debugRequested() !== debugPanelActive) initChromaticPortrait();
+  });
 
   initHero();
   initChromaticPortrait();
