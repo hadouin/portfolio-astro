@@ -192,3 +192,91 @@ add({ station: "delivery", shape: "box", position: [69.2, UNDER_Y + 6.8, 13], si
 );
 
 export const PARTS = parts;
+
+// ─── scene plan (camera spots + animated idea path) ─────────────────────────
+export interface CameraSpot {
+  position: [number, number, number];
+  target: [number, number, number];
+  title: string;
+  note?: string;
+  follow?: {
+    fromSegment: string;
+    toSegment: string;
+    offset: [number, number, number];
+  };
+}
+
+export interface IdeaSegment {
+  id: string;
+  to: [number, number, number];
+  duration: number;
+  ease?: "linear" | "in" | "out";
+}
+
+export interface FactoryPlan {
+  floor: { width: number; depth: number; color: string };
+  conveyors: Conveyor[];
+  parts: Part[];
+  ideaStart: [number, number, number];
+  ideaPath: IdeaSegment[];
+  spots: CameraSpot[];
+}
+
+const IDEA_Y = BELT_H + 0.9;
+
+const sceneParts: Part[] = [
+  ...parts,
+  ...IDEA_SEEDS.map((position, i) => ({
+    id: `idea-${i}`,
+    shape: "octa" as const,
+    position,
+    size: [0.7, 1.1, 0.7] as [number, number, number],
+    color: C.charcoal,
+    emissive: C.accent,
+  })),
+  // simplified forklift meshes (scene nudges them on x)
+  { id: "forklift-body", shape: "box", position: [67, UNDER_Y + 1.1, 9], size: [2.8, 1.2, 2], color: C.accent },
+  { id: "forklift-mast", shape: "box", position: [68.65, UNDER_Y + 2.5, 9], size: [0.18, 4.4, 0.18], color: C.roller },
+  { id: "forklift-fork-l", shape: "box", position: [70, UNDER_Y + 0.16, 8.5], size: [2.2, 0.12, 0.26], color: C.roller },
+  { id: "forklift-fork-r", shape: "box", position: [70, UNDER_Y + 0.16, 9.5], size: [2.2, 0.12, 0.26], color: C.roller },
+  ...([0, 1, 2, 3] as const).map((i) => ({
+    id: `forklift-wheel-${i}`,
+    shape: "cylinder" as const,
+    position: [67 + (i < 2 ? 1 : -1.1), UNDER_Y + 0.5, 9 + (i % 2 ? 1.1 : -1.1)],
+    size: [1, 0.4, 1] as [number, number, number],
+    rotation: [90, 0, 0] as [number, number, number],
+    color: C.charcoal,
+  })),
+];
+
+export const FACTORY_PLAN: FactoryPlan = {
+  floor: { width: 160, depth: 90, color: C.floor },
+  conveyors: CONVEYORS,
+  parts: sceneParts,
+  ideaStart: [-19, IDEA_Y, 0],
+  ideaPath: [
+    { id: "switch", to: [-14, IDEA_Y, 0], duration: 3 },
+    { id: "refine", to: [-7, IDEA_Y, 0], duration: 4, ease: "in" },
+    { id: "splitter", to: [6, IDEA_Y, 0], duration: 3 },
+    { id: "lanes", to: [34, IDEA_Y, 0], duration: 5 },
+    { id: "feeds", to: [43.5, IDEA_Y, 0], duration: 3 },
+    { id: "chute", to: [TOWER_X, -3, 0], duration: 4, ease: "in" },
+    { id: "shaft", to: [TOWER_X, UNDER_Y + 2, 0], duration: 3, ease: "out" },
+    { id: "delivery", to: [CRATE_START[0], CRATE_START[1], 0], duration: 4 },
+  ],
+  spots: [
+    { position: [-17, 4.5, 9], target: [-19, 1.9, 0], title: "Ideas Switch", note: "Raw ideas enter the hopper." },
+    { position: [-9.5, 12, 3.5], target: [-8, 2, 0], title: "Refine", note: "Open-top machine — look inside." },
+    { position: [2, 4, 8], target: [4, 1.9, 0], title: "Splitter", note: "One stream becomes three lanes." },
+    { position: [16, 9, 22], target: [20, 1.5, 0], title: "Machining", note: "Press, drill, shaper, stamp." },
+    {
+      position: [69, 10, 18],
+      target: [TOWER_X, 0, 0],
+      title: "Assembler Tower",
+      note: "Parts fall through the shaft.",
+      follow: { fromSegment: "chute", toSegment: "shaft", offset: [8, 6, 10] },
+    },
+    { position: [56, UNDER_Y + 4, 10], target: [50, UNDER_Y + 1.5, 0], title: "Underground Delivery", note: "Crate rolls out on the belt." },
+    { position: [64, UNDER_Y + 3, 14], target: [67, UNDER_Y + 1.5, 9], title: "Forklift", note: "Pick up and carry the crate." },
+  ],
+};

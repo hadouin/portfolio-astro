@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { BELT_HEIGHT, C, type CameraSpot, type Conveyor, type FactoryPlan, type Part } from "./plan";
+import { BELT_H, C, type CameraSpot, type Conveyor, type FactoryPlan, type Part } from "./plan";
 
 export interface FactorySceneHandle {
   goToSpot: (index: number) => void;
@@ -64,7 +64,7 @@ function makePart(p: Part): THREE.Mesh {
 function makeConveyor(c: Conveyor): THREE.Group {
   const g = new THREE.Group();
   const width = c.width ?? 3;
-  const top = c.height ?? BELT_HEIGHT;
+  const top = (c.base ?? 0) + BELT_H;
   const dx = c.to[0] - c.from[0];
   const dz = c.to[1] - c.from[1];
   const len = Math.hypot(dx, dz);
