@@ -4,6 +4,7 @@ import Link from "@components/ui/link.astro";
 import { localizedPath, useTranslations, type Locale } from "@i18n/utils";
 import heroPortrait from "@assets/hadouin-hero.jpg";
 import heroEdges from "@assets/hadouin-hero-edges.webp";
+import heroEdgesCompact from "@assets/hadouin-hero-edges-compact.webp";
 
 interface Props {
   locale: Locale;
@@ -13,6 +14,14 @@ const { locale } = Astro.props;
 const t = useTranslations(locale);
 const displayName = "Hadouin";
 const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75, format: "webp" });
+// Phones drive the same effect from the tilt sensor at a lower canvas DPR, so they
+// get lighter textures instead of the multi-megabyte desktop pair.
+const heroTextureCompact = await getImage({
+  src: heroPortrait,
+  width: 900,
+  quality: 68,
+  format: "webp",
+});
 ---
 
 <section
@@ -24,6 +33,8 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     data-chromatic-portrait
     data-image-src={heroTexture.src}
     data-edge-src={heroEdges.src}
+    data-image-src-compact={heroTextureCompact.src}
+    data-edge-src-compact={heroEdgesCompact.src}
     data-image-width={heroPortrait.width}
     data-image-height={heroPortrait.height}
   >
@@ -170,7 +181,7 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     }
   }
 
-  @media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
+  @media (prefers-reduced-motion: reduce) {
     .hero-chromatic-canvas {
       display: none;
     }
@@ -240,13 +251,16 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     const hero = document.querySelector<HTMLElement>("[data-dark-hero]");
     const portrait = document.querySelector<HTMLElement>("[data-chromatic-portrait]");
     const canvas = portrait?.querySelector<HTMLCanvasElement>(".hero-chromatic-canvas");
-    const imageSrc = portrait?.dataset.imageSrc;
-    const edgeSrc = portrait?.dataset.edgeSrc;
+    const compact = window.matchMedia("(max-width: 767px)").matches;
+    const imageSrc = (compact && portrait?.dataset.imageSrcCompact) || portrait?.dataset.imageSrc;
+    const edgeSrc = (compact && portrait?.dataset.edgeSrcCompact) || portrait?.dataset.edgeSrc;
     const imageWidth = Number(portrait?.dataset.imageWidth);
     const imageHeight = Number(portrait?.dataset.imageHeight);
     const referenceImage = portrait?.querySelector<HTMLImageElement>("img");
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    // Touch devices get the same effect, driven by the orientation sensor instead.
+    const hasTiltSensor = typeof (window as any).DeviceOrientationEvent !== "undefined";
 
     if (
       !hero ||
@@ -260,7 +274,7 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
       imageWidth < 1 ||
       imageHeight < 1 ||
       reduceMotion ||
-      !finePointer
+      (!finePointer && !hasTiltSensor)
     ) {
       (window as any).__chromaticHeroCleanup = undefined;
       return;

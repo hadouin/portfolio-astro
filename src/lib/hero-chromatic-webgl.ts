@@ -1,3 +1,5 @@
+import { initDeviceTilt } from "./device-tilt";
+
 type Vec2 = [number, number];
 
 type HeroChromaticOptions = {
@@ -356,9 +358,13 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   let recentMove = 0;
   let splatStrength = 0;
   let hasPointer = false;
+  let tiltActive = false;
+  let onScreen = true;
   let lastPointerX = 0;
   let lastPointerY = 0;
   let objectPosition: Vec2 = readObjectPosition(referenceImage);
+
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
 
   const syncObjectPosition = () => {
     objectPosition = readObjectPosition(referenceImage);
@@ -414,7 +420,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
 
     syncObjectPosition();
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, coarsePointer ? 1.5 : 2);
     width = Math.max(1, Math.round(rect.width * dpr));
     height = Math.max(1, Math.round(rect.height * dpr));
 
@@ -509,6 +515,14 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   const animate = (frameTime: number) => {
     if (disposed) return;
 
+    // Tilt keeps the effect permanently "hovered", so idleFrames never trips on
+    // mobile — park the loop whenever nobody can see it.
+    if (!onScreen || document.hidden) {
+      animationFrame = 0;
+      lastFrameTime = 0;
+      return;
+    }
+
     const delta = lastFrameTime ? Math.min((frameTime - lastFrameTime) / 1000, 0.034) : 1 / 60;
     lastFrameTime = frameTime;
     time += delta;
@@ -582,10 +596,19 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   };
 
   const startAnimation = () => {
-    if (!animationFrame) {
+    if (!animationFrame && onScreen && !document.hidden) {
       lastFrameTime = 0;
       animationFrame = requestAnimationFrame(animate);
     }
+  };
+
+  const energize = (deltaX: number, deltaY: number, gain: number, splatFloor: number) => {
+    pendingVel[0] = clamp(pendingVel[0] * 0.35 + deltaX * gain, -0.14, 0.14);
+    pendingVel[1] = clamp(pendingVel[1] * 0.35 + deltaY * gain, -0.14, 0.14);
+    const moveMag = Math.hypot(deltaX, deltaY);
+    recentMove = clamp(Math.max(recentMove, moveMag * 1.4), 0, 0.35);
+    splatStrength += clamp(moveMag * 52, splatFloor, 0.45);
+    startAnimation();
   };
 
   const updateMouseFromEvent = (event: PointerEvent) => {
@@ -611,12 +634,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     lastPointerX = event.clientX;
     lastPointerY = event.clientY;
 
-    pendingVel[0] = clamp(pendingVel[0] * 0.35 + deltaX * 1.35, -0.14, 0.14);
-    pendingVel[1] = clamp(pendingVel[1] * 0.35 + deltaY * 1.35, -0.14, 0.14);
-    const moveMag = Math.hypot(deltaX, deltaY);
-    recentMove = clamp(Math.max(recentMove, moveMag * 1.4), 0, 0.35);
-    splatStrength += clamp(moveMag * 52, 0.04, 0.45);
-    startAnimation();
+    energize(deltaX, deltaY, 1.35, 0.04);
   };
 
   const handlePointerMove = (event: PointerEvent) => {
@@ -624,8 +642,29 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   };
 
   const handlePointerLeave = () => {
-    hasPointer = false;
+    hasPointer = tiltActive;
     startAnimation();
+  };
+
+  // Phone tilt is the touch-device stand-in for the pointer: the focus point
+  // follows the device's attitude, so the colour split leans with the screen.
+  const handleTilt = (sample: { x: number; y: number }) => {
+    const x = clamp(0.5 + sample.x * 0.44, 0, 1);
+    const y = clamp(0.5 - sample.y * 0.44, 0, 1);
+    const deltaX = x - mouseUv[0];
+    const deltaY = y - mouseUv[1];
+    mouseUv = [x, y];
+
+    if (!tiltActive) {
+      tiltActive = true;
+      hasPointer = true;
+      splatStrength += 0.22;
+      recentMove = 0.08;
+      startAnimation();
+      return;
+    }
+
+    energize(deltaX, deltaY, 1.6, 0);
   };
 
   const resizeObserver = new ResizeObserver(() => {
@@ -687,9 +726,25 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     startAnimation();
   };
 
+  const visibilityObserver = new IntersectionObserver(
+    (entries) => {
+      onScreen = entries.some((entry) => entry.isIntersecting);
+      if (onScreen) startAnimation();
+    },
+    { threshold: 0 },
+  );
+
+  const handleDocumentVisibility = () => {
+    if (!document.hidden) startAnimation();
+  };
+
   resizeObserver.observe(container);
+  visibilityObserver.observe(container);
+  document.addEventListener("visibilitychange", handleDocumentVisibility);
   hero.addEventListener("pointermove", handlePointerMove, { passive: true });
   hero.addEventListener("pointerleave", handlePointerLeave, { passive: true });
+
+  const tiltCleanup = initDeviceTilt({ onTilt: handleTilt, gestureTarget: hero });
 
   void initTextures().catch((error) => {
     console.warn("[hero-chromatic] Init failed", error);
@@ -699,6 +754,9 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   return () => {
     disposed = true;
     resizeObserver.disconnect();
+    visibilityObserver.disconnect();
+    tiltCleanup?.();
+    document.removeEventListener("visibilitychange", handleDocumentVisibility);
     hero.removeEventListener("pointermove", handlePointerMove);
     hero.removeEventListener("pointerleave", handlePointerLeave);
     if (animationFrame) cancelAnimationFrame(animationFrame);
