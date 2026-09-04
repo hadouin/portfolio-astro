@@ -144,6 +144,30 @@ export function createFactoryScene({ canvas, plan, onSpotChange }: FactorySceneO
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 400);
 
+  // ── framing ──
+  // The FOV is vertical, so a narrow (portrait) canvas crops the shot horizontally.
+  // Widen the lens a little and pull the camera back along the same viewing angle, so
+  // phones keep the desktop composition — same spots, same follow, just zoomed out.
+  const BASE_FOV = 42;
+  const NARROW_FOV = 52;
+  const BASE_ASPECT = 16 / 9;
+  let framingDist = 1;
+
+  function framingFor(aspect: number) {
+    const k = Math.max(1, BASE_ASPECT / aspect); // 1 on wide screens, ~3.9 on an upright phone
+    const t = Math.min(1, (k - 1) / 2.5);
+    return {
+      fov: BASE_FOV + (NARROW_FOV - BASE_FOV) * t,
+      dist: Math.min(2.6, 1 + (Math.sqrt(k) - 1) * 1.5),
+      lift: 0.12 * t, // shift the subject up, clear of the caption block
+    };
+  }
+
+  /** Push `pos` away from `target` by the framing distance, in place. */
+  function pullBack(pos: THREE.Vector3, target: THREE.Vector3, scale = framingDist) {
+    return pos.sub(target).multiplyScalar(scale).add(target);
+  }
+
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
@@ -246,6 +270,7 @@ export function createFactoryScene({ canvas, plan, onSpotChange }: FactorySceneO
     tgtFrom.copy(controls.target);
     camTo.set(...s.position);
     tgtTo.set(...s.target);
+    pullBack(camTo, tgtTo);
     tween = instant ? 1 : 0;
     if (instant) {
       camera.position.copy(camTo);
@@ -267,11 +292,29 @@ export function createFactoryScene({ canvas, plan, onSpotChange }: FactorySceneO
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     if (w === 0 || h === 0) return;
-    if (canvas.width !== Math.floor(w * renderer.getPixelRatio()) || canvas.height !== Math.floor(h * renderer.getPixelRatio())) {
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
+    const aspect = w / h;
+    const sized =
+      canvas.width !== Math.floor(w * renderer.getPixelRatio()) ||
+      canvas.height !== Math.floor(h * renderer.getPixelRatio());
+    if (sized) renderer.setSize(w, h, false);
+
+    const f = framingFor(aspect);
+    if (!sized && aspect === camera.aspect && f.dist === framingDist) return;
+
+    // Keep the shot that is playing: rescale every camera vector around its own target.
+    const ratio = f.dist / framingDist;
+    if (ratio !== 1) {
+      pullBack(camera.position, controls.target, ratio);
+      pullBack(camFrom, tgtFrom, ratio);
+      pullBack(camTo, tgtTo, ratio);
     }
+    framingDist = f.dist;
+
+    camera.aspect = aspect;
+    camera.fov = f.fov;
+    if (f.lift > 0) camera.setViewOffset(w, h, 0, h * f.lift, w, h);
+    else camera.clearViewOffset();
+    camera.updateProjectionMatrix();
   }
   const ro = new ResizeObserver(resize);
   ro.observe(canvas);
@@ -306,7 +349,7 @@ export function createFactoryScene({ canvas, plan, onSpotChange }: FactorySceneO
       if (ideaTime >= follow.until) {
         follow = null;
       } else if (ideaTime >= 0) {
-        followCam.copy(idea.position).add(follow.offset);
+        followCam.copy(idea.position).addScaledVector(follow.offset, framingDist);
         camTo.copy(followCam);
         tgtTo.copy(idea.position);
       }

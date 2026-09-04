@@ -8,15 +8,17 @@
 <section class="factory-scene relative z-10 bg-[#1a1a19] text-white" data-factory-scene aria-label="Factory 3D scene">
   <canvas class="factory-canvas block h-[100svh] w-full" data-factory-canvas></canvas>
 
-  <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 py-6 pl-20 pr-16 md:py-10 md:pl-24 md:pr-24">
-    <div class="pointer-events-auto max-w-md">
+  <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-48 bg-gradient-to-t from-[#1a1a19] via-[#1a1a19]/70 to-transparent"></div>
+
+  <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 px-5 py-6 md:py-10 md:pl-24 md:pr-24">
+    <div class="pointer-events-auto min-w-0 max-w-md">
       <p class="mb-1 text-xs font-semibold uppercase tracking-[0.24em] text-[#c7c7c0]">
         <span data-factory-spot-index>1</span>/<span data-factory-spot-count>1</span>
       </p>
       <h2 class="text-2xl font-bold sm:text-3xl" data-factory-spot-title>Factory</h2>
       <p class="mt-1 font-inter text-sm text-[#a8a8a2]" data-factory-spot-note></p>
     </div>
-    <div class="pointer-events-auto flex gap-2">
+    <div class="pointer-events-auto flex shrink-0 gap-2">
       <button
         type="button"
         class="factory-btn rounded-full border border-white/25 px-4 py-2 text-sm font-semibold transition hover:bg-white hover:text-[#1a1a19]"
@@ -32,7 +34,7 @@
     </div>
   </div>
 
-  <p class="pointer-events-none absolute left-20 top-4 z-10 text-xs text-[#8b8b85] md:left-24 md:top-6">Drag to orbit</p>
+  <p class="pointer-events-none absolute left-5 top-4 z-10 text-xs text-[#8b8b85] md:left-24 md:top-6">Drag to orbit</p>
 </section>
 
 <script>
