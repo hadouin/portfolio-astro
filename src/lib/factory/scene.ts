@@ -1,137 +1,125 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { BELT_H, C, type CameraSpot, type Conveyor, type FactoryPlan, type Part } from "./plan";
+import {
+  BOAT, C, CONVEYORS, DECK_CRATES, DELIVERY_BELT, DOCK_EDGE_Z, FORKLIFT_START, HOPPER_POS, H_EXIT_POS, IDEA_SEEDS,
+  LANES, PARTS, RAMP, TOWER_X, UNDER_Y,
+} from "./plan";
+import {
+  COVER_OPEN, LEVER_ON, LEVER_REST, makeBeltTexture, makeConveyor, makeCrate, makeFloors, makeGridTexture,
+  makeHazardTexture, makeIdea, makeLever, makePart, type IdeaBuild,
+} from "./build";
+import { Forklift } from "./forklift";
+import { CargoSystem } from "./cargo";
+import { buildCameraKeys, CameraRail, CRATE_KEYS, GATES, IDEA_KEYS, pieceKeys, RANGES, samplePos, smoothstep } from "./timeline";
 
-export interface FactorySceneHandle {
-  goToSpot: (index: number) => void;
-  spotCount: number;
-  dispose: () => void;
+export type Phase = "grab" | "lever" | "popping" | "scroll" | "drive-fp" | "drive-tp";
+
+export interface FactoryState {
+  phase: Phase;
+  progress: number;
+  title: string;
+  hint: string;
+  /** True while the page scroll is held by the scene (interaction required). */
+  held: boolean;
 }
 
 export interface FactorySceneOptions {
   canvas: HTMLCanvasElement;
-  plan: FactoryPlan;
-  onSpotChange?: (spot: CameraSpot, index: number) => void;
+  /** Tall scroll section. The scene sets its height; the canvas lives in a sticky child. */
+  section: HTMLElement;
+  onState?: (s: FactoryState) => void;
 }
 
-const deg = THREE.MathUtils.degToRad;
+export interface FactorySceneHandle {
+  dispose: () => void;
+  skip: () => void;
+  setKey: (code: string, down: boolean) => void;
+}
 
-function geometryFor(shape: Part["shape"], [w, h, d]: Part["size"]) {
-  switch (shape) {
-    case "cylinder":
-      return new THREE.CylinderGeometry(w / 2, w / 2, h, 24);
-    case "cone":
-      return new THREE.ConeGeometry(w / 2, h, 24);
-    case "sphere":
-      return new THREE.SphereGeometry(w / 2, 20, 14);
-    case "torus":
-      return new THREE.TorusGeometry(w / 2, h, 12, 40);
-    case "octa":
-      return new THREE.OctahedronGeometry(w / 2, 0);
-    default:
-      return new THREE.BoxGeometry(w, h, d);
+/** Scroll distance (px) that drives the whole timeline once the lever is pulled. */
+const SCROLL_LENGTH = 9000;
+const ESCAPE_PX = 380;
+const TOWER_W_SAFE = 5.2; // forklift cannot drive into the tower base
+// Front-on shots, like the storyboard: camera looks along -z, the belt runs left → right.
+const GRAB_CAM = { cam: new THREE.Vector3(-25.5, 5.2, 21), look: new THREE.Vector3(-25.5, 4.2, 0) };
+const LEVER_CAM = { cam: new THREE.Vector3(-24, 4.6, 14.5), look: new THREE.Vector3(-24, 3.4, 0) };
+const POP_CAM = { cam: new THREE.Vector3(-21, 4.6, 15), look: new THREE.Vector3(-21, 2.6, 0) };
+
+type Gesture = { deltaY: number; event: Event & { lenisStopPropagation?: boolean } };
+type LenisLike = {
+  stop: () => void;
+  start: () => void;
+  scrollTo: (t: number, o?: Record<string, unknown>) => void;
+  on: (ev: string, cb: (...a: any[]) => void) => void;
+  off: (ev: string, cb: (...a: any[]) => void) => void;
+  isStopped: boolean;
+};
+
+/**
+ * Thin adapter over the site's Lenis instance (falls back to native scrolling when Lenis is
+ * absent, e.g. prefers-reduced-motion). Holding = `lenis.stop()`; gestures come from Lenis'
+ * own `virtual-scroll` event so nothing fights its wheel/touch handling.
+ */
+function createScroller(onGesture: (g: Gesture) => void) {
+  const lenis = (window as any).lenis as LenisLike | undefined;
+  let held = false;
+  if (lenis) {
+    const cb = (g: Gesture) => onGesture(g);
+    lenis.on("virtual-scroll", cb);
+    return {
+      lenis: true,
+      get held() { return held; },
+      hold(y?: number) {
+        held = true;
+        if (y !== undefined) lenis.scrollTo(y, { immediate: true, force: true });
+        lenis.stop();
+      },
+      release() { held = false; lenis.start(); },
+      /** Re-assert a hold if something (the first-load loader) restarted Lenis behind our back. */
+      enforce() { if (held && !lenis.isStopped) lenis.stop(); },
+      snapTo(y: number) { lenis.scrollTo(y, { immediate: true, force: true }); },
+      scrollTo(y: number) { lenis.scrollTo(y, { duration: 1.1, force: true }); },
+      dispose() { lenis.off("virtual-scroll", cb); if (held) lenis.start(); },
+    };
   }
+  const html = document.documentElement;
+  const onWheel = (e: WheelEvent) => {
+    onGesture({ deltaY: e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY, event: e });
+    if (held && e.cancelable) e.preventDefault();
+  };
+  let touchY = 0;
+  const onTouchStart = (e: TouchEvent) => { touchY = e.touches[0].clientY; };
+  const onTouchMove = (e: TouchEvent) => {
+    const y = e.touches[0].clientY;
+    onGesture({ deltaY: (touchY - y) * 2, event: e });
+    touchY = y;
+    if (held && e.cancelable) e.preventDefault();
+  };
+  window.addEventListener("wheel", onWheel, { passive: false });
+  window.addEventListener("touchstart", onTouchStart, { passive: true });
+  window.addEventListener("touchmove", onTouchMove, { passive: false });
+  return {
+    lenis: false,
+    get held() { return held; },
+    hold(y?: number) { held = true; if (y !== undefined) window.scrollTo(0, y); html.classList.add("factory-locked"); },
+    release() { held = false; html.classList.remove("factory-locked"); },
+    enforce() { /* nothing can restart native holds */ },
+    snapTo(y: number) { window.scrollTo(0, y); },
+    scrollTo(y: number) { window.scrollTo({ top: y, behavior: "smooth" }); },
+    dispose() {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      html.classList.remove("factory-locked");
+    },
+  };
 }
 
-function makePart(p: Part): THREE.Mesh {
-  const geo = geometryFor(p.shape, p.size);
-  const glass = p.opacity !== undefined && p.opacity < 1;
-  const mat = new THREE.MeshStandardMaterial({
-    color: p.color ?? C.machine,
-    roughness: glass ? 0.2 : 0.7,
-    metalness: 0.15,
-    emissive: p.emissive ?? "#000000",
-    emissiveIntensity: p.emissive ? 0.9 : 0,
-    transparent: glass,
-    opacity: glass ? p.opacity : 1,
-    depthWrite: !glass,
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  const [x, y, z] = p.position;
-  const h = p.size[1];
-  // Torus / octa are centred; boxes, cylinders, cones, spheres sit on `y`.
-  const centreOffset = p.shape === "torus" || p.shape === "octa" ? 0 : h / 2;
-  mesh.position.set(x, y + centreOffset, z);
-  if (p.rotation) mesh.rotation.set(deg(p.rotation[0]), deg(p.rotation[1]), deg(p.rotation[2]));
-  if (p.shape === "octa") mesh.scale.y = p.size[1] / p.size[0];
-  mesh.castShadow = !glass;
-  mesh.receiveShadow = !glass;
-  if (glass) mesh.renderOrder = 10;
-  if (p.id) mesh.name = p.id;
-  return mesh;
-}
+export function createFactoryScene({ canvas, section, onState }: FactorySceneOptions): FactorySceneHandle {
+  section.style.height = `calc(100svh + ${SCROLL_LENGTH}px)`;
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--factory-bg").trim() || C.bg;
 
-function makeConveyor(c: Conveyor): THREE.Group {
-  const g = new THREE.Group();
-  const width = c.width ?? 3;
-  const top = (c.base ?? 0) + BELT_H;
-  const dx = c.to[0] - c.from[0];
-  const dz = c.to[1] - c.from[1];
-  const len = Math.hypot(dx, dz);
-  const angle = Math.atan2(-dz, dx);
-
-  const belt = new THREE.Mesh(
-    new THREE.BoxGeometry(len, 0.25, width),
-    new THREE.MeshStandardMaterial({ color: C.belt, roughness: 0.9 }),
-  );
-  belt.position.y = top - 0.125;
-  belt.castShadow = true;
-  belt.receiveShadow = true;
-  g.add(belt);
-
-  // rails
-  const railMat = new THREE.MeshStandardMaterial({ color: C.roller, metalness: 0.4, roughness: 0.5 });
-  for (const s of [-1, 1]) {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(len, 0.35, 0.15), railMat);
-    rail.position.set(0, top, (s * width) / 2);
-    g.add(rail);
-  }
-  // rollers under the belt
-  const rollerGeo = new THREE.CylinderGeometry(0.22, 0.22, width, 10);
-  const step = 2;
-  for (let x = -len / 2 + 1; x < len / 2; x += step) {
-    const r = new THREE.Mesh(rollerGeo, railMat);
-    r.rotation.x = Math.PI / 2;
-    r.position.set(x, top - 0.5, 0);
-    g.add(r);
-  }
-  // legs
-  const legGeo = new THREE.BoxGeometry(0.2, top - 0.6, 0.2);
-  for (let x = -len / 2 + 0.5; x <= len / 2 - 0.5; x += 4) {
-    for (const s of [-1, 1]) {
-      const leg = new THREE.Mesh(legGeo, railMat);
-      leg.position.set(x, (top - 0.6) / 2, (s * width) / 2 - s * 0.2);
-      g.add(leg);
-    }
-  }
-
-  g.position.set(c.from[0] + dx / 2, 0, c.from[1] + dz / 2);
-  g.rotation.y = angle;
-  g.name = c.id;
-  return g;
-}
-
-/** Charcoal shard with a glowing gold core — the "idea". */
-function makeIdea(): THREE.Group {
-  const g = new THREE.Group();
-  const shell = new THREE.Mesh(
-    new THREE.OctahedronGeometry(0.9, 0),
-    new THREE.MeshStandardMaterial({ color: C.charcoal, roughness: 0.4, metalness: 0.3, transparent: true, opacity: 0.55, depthWrite: false }),
-  );
-  shell.scale.y = 1.4;
-  shell.castShadow = true;
-  const core = new THREE.Mesh(
-    new THREE.SphereGeometry(0.35, 12, 10),
-    new THREE.MeshStandardMaterial({ color: C.accent, emissive: C.accent, emissiveIntensity: 1.1 }),
-  );
-  const glow = new THREE.PointLight(C.accent, 6, 8, 2);
-  g.add(shell, core, glow);
-  g.name = "idea";
-  return g;
-}
-
-export function createFactoryScene({ canvas, plan, onSpotChange }: FactorySceneOptions): FactorySceneHandle {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  // ── renderer / scene / camera ──
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -139,284 +127,610 @@ export function createFactoryScene({ canvas, plan, onSpotChange }: FactorySceneO
   renderer.toneMappingExposure = 1.2;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#1a1a19");
-  scene.fog = new THREE.Fog("#1a1a19", 60, 160);
-
-  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 400);
-
-  // ── framing ──
-  // The FOV is vertical, so a narrow (portrait) canvas crops the shot horizontally.
-  // Widen the lens a little and pull the camera back along the same viewing angle, so
-  // phones keep the desktop composition — same spots, same follow, just zoomed out.
-  const BASE_FOV = 42;
-  const NARROW_FOV = 52;
-  const BASE_ASPECT = 16 / 9;
-  let framingDist = 1;
-
-  function framingFor(aspect: number) {
-    const k = Math.max(1, BASE_ASPECT / aspect); // 1 on wide screens, ~3.9 on an upright phone
-    const t = Math.min(1, (k - 1) / 2.5);
-    return {
-      fov: BASE_FOV + (NARROW_FOV - BASE_FOV) * t,
-      dist: Math.min(2.6, 1 + (Math.sqrt(k) - 1) * 1.5),
-      lift: 0.12 * t, // shift the subject up, clear of the caption block
-    };
-  }
-
-  /** Push `pos` away from `target` by the framing distance, in place. */
-  function pullBack(pos: THREE.Vector3, target: THREE.Vector3, scale = framingDist) {
-    return pos.sub(target).multiplyScalar(scale).add(target);
-  }
-
-  const controls = new OrbitControls(camera, canvas);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.enableZoom = false; // page scroll (Lenis) owns the wheel
-  controls.enablePan = false;
-  controls.maxPolarAngle = Math.PI / 2 - 0.03;
-  controls.touches.ONE = THREE.TOUCH.ROTATE;
-  controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
+  scene.background = new THREE.Color(bg);
+  scene.fog = new THREE.Fog(bg, 70, 190);
+  const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 400);
+  camera.position.copy(GRAB_CAM.cam);
+  camera.lookAt(GRAB_CAM.look);
 
   // ── lights ──
-  scene.add(new THREE.HemisphereLight("#9aa4b8", "#2a2a28", 1.1));
-  const key = new THREE.DirectionalLight("#fff1d6", 2.6);
+  scene.add(new THREE.HemisphereLight("#9aa4b8", "#141414", 1.0));
+  const key = new THREE.DirectionalLight("#fff1d6", 2.4);
   key.position.set(30, 50, 25);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
   key.shadow.bias = -0.0005;
-  const sc = key.shadow.camera;
-  sc.left = -70; sc.right = 70; sc.top = 40; sc.bottom = -40; sc.near = 1; sc.far = 160;
+  Object.assign(key.shadow.camera, { left: -70, right: 70, top: 40, bottom: -40, near: 1, far: 160 });
   scene.add(key);
-  const rim = new THREE.DirectionalLight(C.blue, 0.9);
+  const rim = new THREE.DirectionalLight(C.blue, 0.8);
   rim.position.set(-30, 20, -40);
   scene.add(rim);
-  // tower fill so the shaft interior reads
-  const towerLight = new THREE.PointLight(C.blue, 40, 60, 1.6);
-  towerLight.position.set(52, 30, 18);
-  scene.add(towerLight);
-  const towerLight2 = new THREE.PointLight(C.accent, 25, 50, 1.6);
-  towerLight2.position.set(38, 44, -14);
-  scene.add(towerLight2);
+  const front = new THREE.DirectionalLight("#ffffff", 0.7);
+  front.position.set(-24, 12, 40);
+  scene.add(front);
+  const shaftLight = new THREE.PointLight(C.blue, 60, 70, 1.6);
+  shaftLight.position.set(TOWER_X + 6, -20, 10);
+  scene.add(shaftLight);
+  for (const [x, z] of [[54, 0], [64, 6]]) {
+    const l = new THREE.PointLight("#fff4e0", 70, 45, 1.5);
+    l.position.set(x, UNDER_Y + 10, z);
+    scene.add(l);
+  }
 
-  // ── floor ──
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(plan.floor.width, plan.floor.depth),
-    new THREE.MeshStandardMaterial({ color: plan.floor.color, roughness: 0.95 }),
-  );
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.x = 15;
-  floor.receiveShadow = true;
-  scene.add(floor);
-  const grid = new THREE.GridHelper(plan.floor.width, plan.floor.width / 2, "#3c3c3a", "#2a2a28");
-  grid.position.set(15, 0.01, 0);
-  scene.add(grid);
-
-  // ── conveyors + parts ──
-  for (const c of plan.conveyors) scene.add(makeConveyor(c));
+  // ── static world ──
+  const beltTex = makeBeltTexture();
+  const hazardTex = makeHazardTexture();
+  const gridTex = makeGridTexture();
+  makeFloors(gridTex).forEach((o) => scene.add(o));
+  const beltMaps: THREE.Texture[] = [];
+  for (const c of CONVEYORS) {
+    const b = makeConveyor(c, beltTex);
+    scene.add(b.group);
+    beltMaps.push(b.beltMap);
+  }
   const named = new Map<string, THREE.Mesh>();
-  for (const p of plan.parts) {
+  const baseY = new Map<string, number>();
+  for (const p of PARTS) {
     const m = makePart(p);
     scene.add(m);
-    if (p.id) named.set(p.id, m);
-  }
-
-  // ── animated idea ──
-  const idea = makeIdea();
-  scene.add(idea);
-  // Timed segments → cumulative timeline.
-  const segStart = new Map<string, number>();
-  const segEnd = new Map<string, number>();
-  const segments = (() => {
-    let t0 = 0;
-    let from = new THREE.Vector3(...plan.ideaStart);
-    return plan.ideaPath.map((seg) => {
-      const to = new THREE.Vector3(...seg.to);
-      const out = { id: seg.id, from, to, t0, t1: t0 + seg.duration, ease: seg.ease ?? "linear" };
-      segStart.set(seg.id, t0);
-      segEnd.set(seg.id, out.t1);
-      t0 = out.t1;
-      from = to;
-      return out;
-    });
-  })();
-  const ideaCycle = segments[segments.length - 1].t1;
-  let ideaTime = 0;
-  let paused = false;
-  const easeSeg = (k: number, e: string) =>
-    e === "in" ? k * k * k : e === "out" ? 1 - Math.pow(1 - k, 3) : k;
-  function ideaAt(time: number, out: THREE.Vector3) {
-    const t = ((time % ideaCycle) + ideaCycle) % ideaCycle;
-    const seg = segments.find((s) => t < s.t1) ?? segments[segments.length - 1];
-    const k = Math.min(1, Math.max(0, (t - seg.t0) / (seg.t1 - seg.t0)));
-    out.lerpVectors(seg.from, seg.to, easeSeg(k, seg.ease));
-    return seg;
-  }
-
-  // ── camera spots ──
-  let spotIndex = 0;
-  const camFrom = new THREE.Vector3();
-  const camTo = new THREE.Vector3();
-  const tgtFrom = new THREE.Vector3();
-  const tgtTo = new THREE.Vector3();
-  let tween = 1; // 0..1
-  const TWEEN_S = 1.4;
-  let follow: { offset: THREE.Vector3; until: number } | null = null;
-  const followCam = new THREE.Vector3();
-
-  function goToSpot(i: number, instant = false) {
-    spotIndex = ((i % plan.spots.length) + plan.spots.length) % plan.spots.length;
-    const s = plan.spots[spotIndex];
-    camFrom.copy(camera.position);
-    tgtFrom.copy(controls.target);
-    camTo.set(...s.position);
-    tgtTo.set(...s.target);
-    pullBack(camTo, tgtTo);
-    tween = instant ? 1 : 0;
-    if (instant) {
-      camera.position.copy(camTo);
-      controls.target.copy(tgtTo);
+    if (p.id) {
+      named.set(p.id, m);
+      baseY.set(p.id, m.position.y);
     }
-    if (s.follow) {
-      // Rewind the idea to the start of the followed segment so the shot plays from the top.
-      ideaTime = (segStart.get(s.follow.fromSegment) ?? 0) - TWEEN_S * 0.6;
-      follow = { offset: new THREE.Vector3(...s.follow.offset), until: segEnd.get(s.follow.toSegment) ?? ideaCycle };
-    } else {
-      follow = null;
-    }
-    onSpotChange?.(s, spotIndex);
   }
-  goToSpot(0, true);
+  const robot = new THREE.Group();
+  robot.position.set(18, 4.5, LANES[2] + 4);
+  {
+    const steel = new THREE.MeshStandardMaterial({ color: C.roller, metalness: 0.4, roughness: 0.5 });
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 4.4), steel);
+    arm.position.z = -2.2;
+    const wrist = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.3), new THREE.MeshStandardMaterial({ color: C.accent, emissive: C.accent, emissiveIntensity: 0.8 }));
+    wrist.position.set(0, -0.7, -4.2);
+    arm.castShadow = wrist.castShadow = true;
+    robot.add(arm, wrist);
+  }
+  scene.add(robot);
 
-  // ── resize ──
+  const lever = makeLever(hazardTex);
+  scene.add(lever.group);
+
+  // ── dynamic actors ──
+  const seeds: IdeaBuild[] = IDEA_SEEDS.map((pos, i) => {
+    const s = makeIdea(0.6, false, false);
+    s.group.position.set(...pos);
+    s.group.userData.seedIndex = i;
+    s.group.userData.home = new THREE.Vector3(...pos);
+    scene.add(s.group);
+    return s;
+  });
+  const idea = makeIdea(0.9, true, true);
+  idea.group.visible = false;
+  scene.add(idea.group);
+  const pieces: IdeaBuild[] = [0, 1, 2].map(() => {
+    const p = makeIdea(0.45, false, true);
+    p.light.intensity = 2;
+    p.group.visible = false;
+    scene.add(p.group);
+    return p;
+  });
+  const pieceKeySets = [0, 1, 2].map(pieceKeys);
+  const crate = makeCrate();
+  crate.visible = false;
+  scene.add(crate);
+  const forklift = new Forklift();
+  forklift.place(FORKLIFT_START.position, FORKLIFT_START.heading);
+  scene.add(forklift.group);
+
+  // ── underground terrain: floor, gangway ramp, boat deck, water (blocked) ──
+  const onDeck = (x: number, z: number) =>
+    x > BOAT.x - BOAT.length / 2 + 0.6 && x < BOAT.x + BOAT.length / 2 - 0.6 && z > BOAT.z - BOAT.width / 2 + 0.4 && z < BOAT.z + BOAT.width / 2 - 0.6;
+  const onRamp = (x: number, z: number) => Math.abs(x - RAMP.x) < RAMP.width / 2 - 0.3 && z >= RAMP.zStart - 1.5 && z <= RAMP.zEnd + 0.5;
+  const deckH = BOAT.deckY - UNDER_Y;
+  const groundAt = (x: number, z: number): number | null => {
+    if (onRamp(x, z)) return deckH * THREE.MathUtils.clamp((z - RAMP.zStart) / (RAMP.zEnd - RAMP.zStart), 0, 1);
+    if (onDeck(x, z)) return deckH;
+    if (z > DOCK_EDGE_Z - 1.6) return null; // water
+    if (z < -33 || x < TOWER_X + TOWER_W_SAFE || x > 98) return null; // cavern walls / tower base
+    return 0;
+  };
+  const supportAt = (x: number, z: number): number | null => {
+    if (x > DELIVERY_BELT.x0 - 0.5 && x < DELIVERY_BELT.x1 + 0.5 && Math.abs(z) < DELIVERY_BELT.halfW + 0.5) return DELIVERY_BELT.top - UNDER_Y;
+    return groundAt(x, z);
+  };
+  const cargo = new CargoSystem(scene, supportAt, UNDER_Y);
+  const mainCargo = cargo.add(crate);
+  for (const pos of DECK_CRATES) {
+    const c = makeCrate();
+    c.position.set(...pos);
+    c.rotation.y = (pos[0] * 7 + pos[2] * 3) % 0.6 - 0.3;
+    scene.add(c);
+    cargo.add(c);
+  }
+
+  const eye = forklift.eye(new THREE.Vector3());
+  const eyeLook = eye.clone().add(forklift.forward(new THREE.Vector3()).multiplyScalar(10)).add(new THREE.Vector3(0, -2.2, 0));
+  const rail = new CameraRail(buildCameraKeys(eye.toArray() as [number, number, number], eyeLook.toArray() as [number, number, number]));
+
+  // ── state ──
+  let phase: Phase = "grab";
+  let progress = 0;
+  let scratchDone = false;
+  let coverOpen = false;
+  let finished = false;
+  let shipped = false;
+  let armed = true;
+  let escapeAcc = 0;
+  let interacting = false;
+  let phaseTime = 0;
+  let releasedAt = 0;
+  const camGoal = GRAB_CAM.cam.clone();
+  const lookGoal = GRAB_CAM.look.clone();
+  const lookCurrent = GRAB_CAM.look.clone();
+  let camSnap = false;
+  let lastState: FactoryState | null = null;
+
+  const sectionTop = () => window.scrollY + section.getBoundingClientRect().top;
+  const endY = () => sectionTop() + SCROLL_LENGTH;
+  const gateY = () => sectionTop() + GATES.scratch * SCROLL_LENGTH;
+  const rawProgress = () => THREE.MathUtils.clamp((window.scrollY - sectionTop()) / SCROLL_LENGTH, 0, 1);
+
+  // ── scroll plumbing (built on Lenis) ──
+  const scroller = createScroller(({ deltaY, event }) => {
+    if (interacting) return;
+    if (scroller.held) {
+      if (phase === "grab") {
+        // scrolling up at the very start lets the visitor leave
+        escapeAcc = deltaY < 0 ? escapeAcc + deltaY : 0;
+        if (escapeAcc < -ESCAPE_PX) releaseHold("up");
+      } else if (phase === "drive-tp") {
+        if (deltaY < 0) releaseHold("up");
+        else if ((escapeAcc += deltaY) > ESCAPE_PX) releaseHold("down");
+      }
+      return;
+    }
+    // scratch gate: never let Lenis scroll past it until the shard is scratched
+    if (phase === "scroll" && !scratchDone && deltaY > 0 && window.scrollY + deltaY >= gateY() - 1) {
+      event.lenisStopPropagation = true;
+      scroller.snapTo(gateY());
+    }
+  });
+
+  function releaseHold(dir: "up" | "down") {
+    if (!scroller.held) return;
+    scroller.release();
+    armed = false;
+    releasedAt = performance.now();
+    escapeAcc = 0;
+    if (dir === "down") {
+      finished = true;
+      scroller.scrollTo(sectionTop() + section.offsetHeight);
+    } else if (phase === "grab") {
+      scroller.scrollTo(Math.max(0, sectionTop() - window.innerHeight * 0.7));
+    }
+    emit();
+  }
+
+  function setPhase(next: Phase) {
+    phase = next;
+    phaseTime = 0;
+    escapeAcc = 0;
+    if (next === "grab") { camGoal.copy(GRAB_CAM.cam); lookGoal.copy(GRAB_CAM.look); }
+    if (next === "lever") { camGoal.copy(LEVER_CAM.cam); lookGoal.copy(LEVER_CAM.look); }
+    if (next === "popping") { camGoal.copy(POP_CAM.cam); lookGoal.copy(POP_CAM.look); }
+    canvas.style.cursor = "";
+    emit();
+  }
+
+  function stateOf(): FactoryState {
+    let title = "";
+    let hint = "";
+    const p = progress;
+    switch (phase) {
+      case "grab": title = "Grab an idea"; hint = "Drag a shard from the cloud into the hopper of the H machine"; break;
+      case "lever": title = "Ideas switch"; hint = coverOpen ? "Throw the big lever" : "Lift the safety cover"; break;
+      case "popping": title = "Ideas switch"; hint = ""; break;
+      case "scroll":
+        if (p < RANGES.scratchZoom[0]) { title = "Raw idea"; hint = "Scroll to follow your idea down the line"; }
+        else if (p < RANGES.scratchZoom[1] + 0.02) { title = "Your idea is already gold"; hint = scratchDone ? "Keep scrolling" : "Scratch the charcoal to reveal the gold inside"; }
+        else if (p < RANGES.shatter) { title = "Refinement"; hint = "Look inside the refiner"; }
+        else if (p < RANGES.splitter[0]) { title = "Shattered"; hint = "One idea, many pieces"; }
+        else if (p < RANGES.machining[0]) { title = "Splitter"; hint = "Choose a lane: three fields, three paths"; }
+        else if (p < RANGES.machining[1]) { title = "Machining"; hint = "Every piece gets worked on"; }
+        else if (p < 0.865) { title = "Assembly tower"; hint = "Everything comes together"; }
+        else if (p < RANGES.crate[0]) { title = "The drop"; hint = "Down to the delivery line"; }
+        else { title = "Delivery"; hint = "A fresh crate, version 1.0"; }
+        break;
+      case "drive-fp": title = "Drive to ship!"; hint = "Arrow keys: drive to the crate"; break;
+      case "drive-tp":
+        if (shipped) { title = "Shipped!"; hint = "Your idea is on the boat · scroll down to leave"; }
+        else { title = "Playable transpalette"; hint = "↑ ↓ drive · ← → steer · W / S forks · drive the crate up the ramp onto the boat"; }
+        break;
+    }
+    return { phase, progress, title, hint, held: scroller.held };
+  }
+
+  function emit() {
+    const s = stateOf();
+    if (
+      !lastState || lastState.phase !== s.phase || lastState.title !== s.title || lastState.hint !== s.hint ||
+      lastState.held !== s.held || Math.abs(lastState.progress - s.progress) > 0.003
+    ) {
+      lastState = s;
+      onState?.(s);
+    }
+  }
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    const drive = phase === "drive-fp" || phase === "drive-tp";
+    if (drive && scroller.held && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "ShiftLeft", "ShiftRight", "PageUp", "PageDown", ...Forklift.LIFT_UP, ...Forklift.LIFT_DOWN].includes(e.code)) {
+      e.preventDefault();
+      forklift.keys.add(e.code);
+    }
+  };
+  const onKeyUp = (e: KeyboardEvent) => { forklift.keys.delete(e.code); };
+  const onLoaderDone = () => scroller.enforce();
+  const onScroll = () => {
+    const rect = section.getBoundingClientRect();
+    const vh = window.innerHeight;
+    document.body.classList.toggle("factory-active", rect.top < vh * 0.5 && rect.bottom > vh * 0.5);
+    if (scroller.held) { scroller.enforce(); return; }
+    // entering from above while the machine still needs an idea: hold at the top of the section
+    if (phase === "grab" && !finished) {
+      if (rect.top > 40) armed = true;
+      if (armed && performance.now() - releasedAt > 1200 && rect.top <= 0 && rect.top > -vh) scroller.hold(sectionTop());
+    }
+  };
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keyup", onKeyUp);
+  window.addEventListener("scroll", onScroll, { passive: true });
+  document.addEventListener("hadouin:loader-done", onLoaderDone);
+
+  // ── pointer interactions ──
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  const dragPlane = new THREE.Plane();
+  const tmp = new THREE.Vector3();
+  const tmp2 = new THREE.Vector3();
+  let dragging: IdeaBuild | null = null;
+  let scratching = false;
+  let strokes = 0;
+  let inserting: { seed: IdeaBuild; from: THREE.Vector3; t: number } | null = null;
+  let leverT = -1;
+  let coverT = -1;
+
+  function updatePointer(e: PointerEvent) {
+    const r = canvas.getBoundingClientRect();
+    pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    raycaster.setFromCamera(pointer, camera);
+  }
+  const inScratchWindow = () => phase === "scroll" && !scratchDone && progress >= RANGES.scratchZoom[0] - 0.01;
+
+  function paintScratch(uv: THREE.Vector2) {
+    const s = idea.scratch!;
+    s.ctx.fillStyle = "#000";
+    s.ctx.beginPath();
+    s.ctx.arc(uv.x * 256, (1 - uv.y) * 256, 20, 0, Math.PI * 2);
+    s.ctx.fill();
+    s.texture.needsUpdate = true;
+    if (++strokes % 5 === 0 && s.ratio() > 0.38) {
+      scratchDone = true;
+      scratching = false;
+      canvas.style.cursor = "";
+      emit();
+    }
+  }
+
+  const onPointerDown = (e: PointerEvent) => {
+    updatePointer(e);
+    if (phase === "grab" && !inserting) {
+      const hit = raycaster.intersectObjects(seeds.map((s) => s.shell), false)[0];
+      if (hit) {
+        dragging = seeds.find((s) => s.shell === hit.object)!;
+        interacting = true;
+        camera.getWorldDirection(tmp);
+        dragPlane.setFromNormalAndCoplanarPoint(tmp.negate(), dragging.group.position);
+        canvas.setPointerCapture(e.pointerId);
+        canvas.style.cursor = "grabbing";
+      }
+    } else if (phase === "lever") {
+      if (!coverOpen && coverT < 0 && raycaster.intersectObject(lever.cover, false).length) {
+        coverT = 0;
+      } else if (coverOpen && leverT < 0 && raycaster.intersectObject(lever.hit, false).length) {
+        leverT = 0;
+      }
+      canvas.style.cursor = "";
+    } else if (inScratchWindow()) {
+      const hit = raycaster.intersectObject(idea.shell, false)[0];
+      if (hit?.uv) {
+        scratching = true;
+        interacting = true;
+        canvas.setPointerCapture(e.pointerId);
+        paintScratch(hit.uv);
+      }
+    }
+  };
+  const onPointerMove = (e: PointerEvent) => {
+    updatePointer(e);
+    if (dragging) {
+      if (raycaster.ray.intersectPlane(dragPlane, tmp)) {
+        tmp.y = Math.max(0.8, tmp.y);
+        dragging.group.position.copy(tmp);
+      }
+      return;
+    }
+    if (scratching) {
+      const hit = raycaster.intersectObject(idea.shell, false)[0];
+      if (hit?.uv) paintScratch(hit.uv);
+      return;
+    }
+    let cursor = "";
+    if (phase === "grab" && !inserting && raycaster.intersectObjects(seeds.map((s) => s.shell), false).length) cursor = "grab";
+    else if (phase === "lever" && !coverOpen && coverT < 0 && raycaster.intersectObject(lever.cover, false).length) cursor = "pointer";
+    else if (phase === "lever" && coverOpen && leverT < 0 && raycaster.intersectObject(lever.hit, false).length) cursor = "pointer";
+    else if (inScratchWindow() && raycaster.intersectObject(idea.shell, false).length) cursor = "crosshair";
+    canvas.style.cursor = cursor;
+  };
+  const onPointerUp = (e: PointerEvent) => {
+    if (dragging) {
+      updatePointer(e);
+      if (raycaster.ray.distanceToPoint(tmp2.set(...HOPPER_POS)) < 3.2) {
+        inserting = { seed: dragging, from: dragging.group.position.clone(), t: 0 };
+      } else {
+        dragging.group.userData.returning = true;
+      }
+      dragging = null;
+      canvas.style.cursor = "";
+    }
+    scratching = false;
+    interacting = false;
+    try { canvas.releasePointerCapture(e.pointerId); } catch { /* not captured */ }
+  };
+  canvas.addEventListener("pointerdown", onPointerDown);
+  canvas.addEventListener("pointermove", onPointerMove);
+  canvas.addEventListener("pointerup", onPointerUp);
+  canvas.addEventListener("pointercancel", onPointerUp);
+
+  // ── resize / visibility ──
   function resize() {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     if (w === 0 || h === 0) return;
-    const aspect = w / h;
-    const sized =
-      canvas.width !== Math.floor(w * renderer.getPixelRatio()) ||
-      canvas.height !== Math.floor(h * renderer.getPixelRatio());
-    if (sized) renderer.setSize(w, h, false);
-
-    const f = framingFor(aspect);
-    if (!sized && aspect === camera.aspect && f.dist === framingDist) return;
-
-    // Keep the shot that is playing: rescale every camera vector around its own target.
-    const ratio = f.dist / framingDist;
-    if (ratio !== 1) {
-      pullBack(camera.position, controls.target, ratio);
-      pullBack(camFrom, tgtFrom, ratio);
-      pullBack(camTo, tgtTo, ratio);
+    const pr = renderer.getPixelRatio();
+    if (canvas.width !== Math.floor(w * pr) || canvas.height !== Math.floor(h * pr)) {
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
     }
-    framingDist = f.dist;
-
-    camera.aspect = aspect;
-    camera.fov = f.fov;
-    if (f.lift > 0) camera.setViewOffset(w, h, 0, h * f.lift, w, h);
-    else camera.clearViewOffset();
-    camera.updateProjectionMatrix();
   }
   const ro = new ResizeObserver(resize);
   ro.observe(canvas);
   resize();
-
-  // Only render while on screen.
   let visible = true;
   const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0 });
   io.observe(canvas);
+  onScroll();
 
-  // ── loop ──
+  // ── per-frame ──
   const clock = new THREE.Clock();
-  const ease = (t: number) => 1 - Math.pow(1 - t, 3);
-  const tmp = new THREE.Vector3();
+  const pieceAct = new THREE.Vector3();
+  const hopper = new THREE.Vector3(...HOPPER_POS);
+  const hExit = new THREE.Vector3(...H_EXIT_POS);
+  const ideaStart = new THREE.Vector3(...IDEA_KEYS[0].pos);
+  const chaseCam = new THREE.Vector3();
+  const chaseLook = new THREE.Vector3();
   let raf = 0;
+
+  function animateMachines(t: number, dt: number) {
+    const p = progress;
+    const act = phase === "scroll" ? smoothstep(RANGES.machining[0] - 0.03, RANGES.machining[0] + 0.02, p) * (1 - smoothstep(RANGES.machining[1], RANGES.machining[1] + 0.03, p)) : 0;
+    const bob = (f: number, ph = 0) => 0.5 + 0.5 * Math.sin(t * f + ph);
+    const set = (id: string, fn: (m: THREE.Mesh, base: number) => void) => { const m = named.get(id); if (m) fn(m, baseY.get(id)!); };
+    set("press-head", (m, b) => { m.position.y = b - act * bob(4) * 1.3; });
+    set("drill-bit", (m, b) => { m.rotation.y += dt * 24 * act; m.position.y = b - act * bob(3, 1) * 0.7; });
+    set("shaper-blade", (m) => { m.rotation.y = Math.sin(t * 3) * 0.7 * act; });
+    set("code-ring", (m) => { m.rotation.z += dt * 2.5 * act; });
+    set("stamp-head", (m, b) => { m.position.y = b - act * bob(4, 2) * 1.1; });
+    robot.rotation.y = Math.sin(t * 2) * 0.6 * act;
+    robot.rotation.x = Math.max(0, Math.sin(t * 4)) * 0.25 * act;
+
+    const ref = phase === "scroll" ? smoothstep(RANGES.refine[0] - 0.02, RANGES.refine[0] + 0.02, p) * (1 - smoothstep(RANGES.refine[1], RANGES.refine[1] + 0.03, p)) : 0;
+    set("gear-1", (m) => { m.rotation.z += dt * (0.4 + 3 * ref); });
+    set("gear-2", (m) => { m.rotation.z -= dt * (0.6 + 4.5 * ref); });
+    set("piston", (m, b) => { m.position.y = b - ref * bob(6) * 1.2; });
+    set("refine-roller", (m) => { m.rotation.x += dt * (0.5 + 4 * ref); });
+    for (let i = 0; i < 3; i++) set(`refine-light-${i}`, (m) => {
+      (m.material as THREE.MeshStandardMaterial).emissiveIntensity = ref > 0.1 ? (Math.sin(t * 8 + i * 2) > 0 ? 1.8 : 0.15) : 0.9;
+    });
+    set("hopper-ring", (m) => {
+      (m.material as THREE.MeshStandardMaterial).emissiveIntensity = phase === "grab" ? 0.6 + 0.6 * Math.sin(t * 4) : 0.4;
+    });
+    set("switch-light", (m) => {
+      const mat = m.material as THREE.MeshStandardMaterial;
+      if (phase === "lever") { mat.color.set(C.accent); mat.emissive.set(C.accent); mat.emissiveIntensity = 0.6 + 0.8 * bob(6); }
+      else if (phase !== "grab") { mat.color.set("#7ee2a0"); mat.emissive.set("#7ee2a0"); mat.emissiveIntensity = 1.2; }
+    });
+  }
 
   function frame() {
     raf = requestAnimationFrame(frame);
-    const dt = Math.min(clock.getDelta(), 0.1);
+    const dt = Math.min(clock.getDelta(), 0.05);
     const t = clock.elapsedTime;
     if (!visible) return;
+    phaseTime += dt;
+    scroller.enforce();
 
-    // idea travelling along the path
-    if (!paused) ideaTime += dt;
-    ideaAt(ideaTime, tmp);
-    idea.position.copy(tmp);
-    idea.rotation.y = t * 1.5;
-    idea.rotation.z = Math.sin(t * 2) * 0.15;
+    for (const m of beltMaps) m.offset.x -= dt * 0.7;
 
-    // follow shot: camera rides with the idea, then holds where it stopped
-    if (follow) {
-      if (ideaTime >= follow.until) {
-        follow = null;
-      } else if (ideaTime >= 0) {
-        followCam.copy(idea.position).addScaledVector(follow.offset, framingDist);
-        camTo.copy(followCam);
-        tgtTo.copy(idea.position);
+    seeds.forEach((s, i) => {
+      if (s === dragging || s === inserting?.seed || !s.group.visible) return;
+      const home = s.group.userData.home as THREE.Vector3;
+      if (s.group.userData.returning) {
+        s.group.position.lerp(home, 1 - Math.pow(0.001, dt));
+        if (s.group.position.distanceTo(home) < 0.05) s.group.userData.returning = false;
+      } else {
+        s.group.position.y = home.y + Math.sin(t * 1.2 + i) * 0.3;
       }
-    }
-
-    // camera tween
-    if (tween < 1) {
-      tween = Math.min(1, tween + dt / TWEEN_S);
-      const k = ease(tween);
-      camera.position.lerpVectors(camFrom, camTo, k);
-      controls.target.lerpVectors(tgtFrom, tgtTo, k);
-    } else if (follow) {
-      const k = 1 - Math.pow(0.001, dt); // smooth chase
-      camera.position.lerp(camTo, k);
-      controls.target.lerp(tgtTo, k);
-    }
-    controls.update();
-
-    // floating idea seeds bob
-    for (let i = 0; i < 6; i++) {
-      const m = named.get(`idea-${i}`);
-      if (m) {
-        m.position.y = plan.parts.find((p) => p.id === `idea-${i}`)!.position[1] + Math.sin(t * 1.2 + i) * 0.3;
-        m.rotation.y = t * 0.6 + i;
-      }
-    }
-
-    // forklift patrol
-    const fk = ["forklift-body", "forklift-mast", "forklift-fork-l", "forklift-fork-r", "forklift-wheel-0", "forklift-wheel-1", "forklift-wheel-2", "forklift-wheel-3"];
-    const wobble = Math.sin(t * 0.5) * 2.5;
-    fk.forEach((id) => {
-      const m = named.get(id);
-      if (!m) return;
-      const base = plan.parts.find((p) => p.id === id)!.position;
-      m.position.x = base[0] + wobble;
+      s.group.rotation.y = t * 0.6 + i;
     });
 
+    if (inserting) {
+      inserting.t += dt / 0.9;
+      const k = Math.min(1, inserting.t);
+      inserting.seed.group.position.lerpVectors(inserting.from, hopper, Math.min(1, k * 1.6));
+      if (k > 0.55) inserting.seed.group.position.y = hopper.y - (k - 0.55) * 8;
+      inserting.seed.group.scale.setScalar(1 - k * k * 0.6);
+      if (k >= 1) {
+        inserting.seed.group.visible = false;
+        inserting = null;
+        setPhase("lever");
+      }
+    }
+
+    // cover lifts, then the lever throws, then the idea pops out
+    if (coverT >= 0) {
+      coverT += dt / 0.6;
+      const k = Math.min(1, coverT);
+      lever.hinge.rotation.x = COVER_OPEN * (1 - Math.pow(1 - k, 3));
+      if (k >= 1) { coverOpen = true; coverT = -1; emit(); }
+    }
+    if (leverT >= 0) {
+      leverT += dt / 0.55;
+      const k = Math.min(1, leverT);
+      lever.handle.rotation.z = THREE.MathUtils.lerp(LEVER_REST, LEVER_ON, 1 - Math.pow(1 - k, 3));
+      if (k >= 1 && phase === "lever") { setPhase("popping"); leverT = -1; }
+    }
+    if (phase === "popping") {
+      const k = Math.min(1, phaseTime / 1.1);
+      idea.group.visible = true;
+      idea.group.position.lerpVectors(hExit, ideaStart, k);
+      idea.group.position.y += Math.sin(k * Math.PI) * 1.2;
+      idea.group.scale.setScalar(0.4 + 0.6 * Math.min(1, k * 2));
+      lookGoal.copy(idea.group.position);
+      if (k >= 1) {
+        setPhase("scroll");
+        scroller.release(); // from here the page scroll drives the timeline
+        armed = false;
+      }
+    }
+
+    if (phase === "scroll") {
+      const raw = rawProgress();
+      // safety net for native touch momentum that Lenis cannot intercept
+      if (!scratchDone && window.scrollY > gateY() + 2) scroller.snapTo(gateY());
+      progress += (Math.min(raw, scratchDone ? 1 : GATES.scratch) - progress) * (1 - Math.pow(0.0005, dt));
+      const p = progress;
+      rail.sample(p, camGoal, lookGoal);
+      const showIdea = samplePos(IDEA_KEYS, p, tmp);
+      idea.group.visible = showIdea;
+      if (showIdea) {
+        idea.group.position.copy(tmp);
+        idea.group.scale.setScalar(1);
+        idea.group.rotation.y = p >= RANGES.scratchZoom[0] && p <= RANGES.scratchZoom[1] ? 0.4 : t * 1.2;
+      }
+      pieces.forEach((pc, i) => {
+        const on = samplePos(pieceKeySets[i], p, pieceAct);
+        pc.group.visible = on;
+        if (on) {
+          pc.group.position.copy(pieceAct);
+          pc.group.rotation.y = t * 2 + i;
+          if (p > RANGES.fall[0]) pc.group.rotation.x = t * 3;
+        }
+      });
+      const crateOn = samplePos(CRATE_KEYS, p, tmp);
+      crate.visible = crateOn || p >= RANGES.crate[1];
+      if (crateOn) {
+        crate.position.copy(tmp);
+        crate.scale.setScalar(Math.max(0.001, smoothstep(RANGES.crate[0], RANGES.crate[0] + 0.012, p)));
+      }
+      if (raw >= 0.999 && p >= 0.995 && !finished) {
+        crate.scale.setScalar(1);
+        crate.position.set(...CRATE_KEYS[CRATE_KEYS.length - 1].pos);
+        setPhase("drive-fp");
+        scroller.hold(endY()); // stay pinned while driving
+      }
+    }
+
+    if (phase === "drive-fp" || phase === "drive-tp") {
+      // released and scrolled back up: rewind into the timeline
+      if (!scroller.held && rawProgress() < 0.98) {
+        setPhase("scroll");
+      } else {
+        forklift.update(dt, scroller.held, groundAt);
+        cargo.update(dt, forklift, forklift.liftInput);
+        if (!shipped && !mainCargo.carried && onDeck(crate.position.x, crate.position.z)) { shipped = true; emit(); }
+        forklift.eye(tmp);
+        forklift.forward(tmp2);
+        if (phase === "drive-fp") {
+          camGoal.copy(tmp);
+          lookGoal.copy(tmp).addScaledVector(tmp2, 10).add(new THREE.Vector3(0, -2.2, 0));
+          camSnap = phaseTime > 1.2;
+          if (phaseTime > 0.5 && forklift.group.position.distanceTo(crate.getWorldPosition(new THREE.Vector3())) < 9) {
+            camSnap = false;
+            setPhase("drive-tp");
+          }
+        } else {
+          chaseCam.copy(forklift.group.position).addScaledVector(tmp2, -13).add(new THREE.Vector3(0, 7, 0));
+          chaseLook.copy(forklift.group.position).add(new THREE.Vector3(0, 1.5, 0));
+          camGoal.copy(chaseCam);
+          lookGoal.copy(chaseLook);
+        }
+      }
+    }
+
+    animateMachines(t, dt);
+
+    const k = camSnap ? 1 : 1 - Math.pow(0.002, dt);
+    camera.position.lerp(camGoal, k);
+    lookCurrent.lerp(lookGoal, k);
+    camera.lookAt(lookCurrent);
+
+    emit();
     renderer.render(scene, camera);
   }
   frame();
 
-  if (import.meta.env.DEV) {
-  (window as any).__factoryPause = (t?: number) => {
-    paused = t !== undefined;
-    if (t !== undefined) ideaTime = t;
-  };
-  (window as any).__factoryDebug = () => ({
-    ideaTime,
-    ideaCycle,
-    follow: follow ? { until: follow.until } : null,
-    tween,
-    cam: camera.position.toArray(),
-    target: controls.target.toArray(),
-    idea: idea.position.toArray(),
-    chuteStart: segStart.get("chute"),
-    spotIndex,
-  });
+  if ((import.meta as any).env?.DEV) {
+    const project = (v: THREE.Vector3) => {
+      const r = canvas.getBoundingClientRect();
+      const n = v.clone().project(camera);
+      return { x: r.left + ((n.x + 1) / 2) * r.width, y: r.top + ((1 - n.y) / 2) * r.height };
+    };
+    (window as any).__factory = {
+      state: () => ({ phase, progress, raw: rawProgress(), scratchDone, coverOpen, held: scroller.held, lenis: scroller.lenis, shipped, cam: camera.position.toArray(), forklift: forklift.group.position.toArray(), heading: forklift.heading, fork: forklift.forkHeight, carried: mainCargo.carried, crate: crate.getWorldPosition(new THREE.Vector3()).toArray() }),
+      seed: (i: number) => project(seeds[i].group.position),
+      hopper: () => project(hopper),
+      cover: () => project(lever.cover.getWorldPosition(new THREE.Vector3())),
+      lever: () => project(lever.hit.getWorldPosition(new THREE.Vector3())),
+      idea: () => project(idea.group.position),
+      gateY, endY, sectionTop,
+      scratch: (v: boolean) => { scratchDone = v; },
+    };
   }
 
   return {
-    goToSpot,
-    spotCount: plan.spots.length,
+    skip() {
+      finished = true;
+      if (scroller.held) scroller.release();
+      scroller.scrollTo(sectionTop() + section.offsetHeight);
+      emit();
+    },
+    setKey(code, down) { if (down) forklift.keys.add(code); else forklift.keys.delete(code); },
     dispose() {
       cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
-      controls.dispose();
+      scroller.dispose();
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("hadouin:loader-done", onLoaderDone);
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointercancel", onPointerUp);
+      document.body.classList.remove("factory-active");
+      section.style.height = "";
+      forklift.dispose();
       scene.traverse((o) => {
         if (o instanceof THREE.Mesh) {
           o.geometry.dispose();

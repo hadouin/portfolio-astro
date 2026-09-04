@@ -26,7 +26,7 @@ export const RANGES = {
 
 export function buildCameraKeys(forkliftEye: V3, forkliftLook: V3): CamKey[] {
   const keys: CamKey[] = [
-    { p: 0.0, cam: [-17, 4.5, 9], look: [-19, 1.9, 0] },
+    { p: 0.0, cam: [-18, 4.6, 13], look: [-18.5, 2.2, 0] },
     { p: 0.08, cam: [-12.5, 4.5, 9], look: [-14, 1.9, 0] },
     { p: 0.1, cam: [-13.2, 3.4, 4.6], look: [-14, 1.9, 0] },
     { p: 0.14, cam: [-13.2, 3.4, 4.6], look: [-14, 1.9, 0] },

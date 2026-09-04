@@ -59,10 +59,21 @@ export const UNDER_Y = -TOWER_DEPTH; // underground floor level
 
 export const HOPPER_POS: [number, number, number] = [-24, 7.6, 0];
 export const H_EXIT_POS: [number, number, number] = [-20.4, 2.4, 0];
-export const LEVER_PIVOT: [number, number, number] = [-21.3, 5.4, 3.4];
+export const LEVER_PIVOT: [number, number, number] = [-24, 3.1, 3.3];
 export const CRATE_START: [number, number, number] = [50.6, UNDER_Y + BELT_H, 0];
 export const CRATE_END: [number, number, number] = [56.5, UNDER_Y + BELT_H, 0];
-export const FORKLIFT_START = { position: [67, UNDER_Y, 9] as [number, number, number], heading: Math.PI };
+export const FORKLIFT_START = { position: [68, UNDER_Y, 3] as [number, number, number], heading: Math.PI };
+
+// ─── dock / boat (underground level) ────────────────────────────────────────
+export const DOCK_EDGE_Z = 18; // floor ends here, water beyond
+export const WATER_Y = UNDER_Y - 1.4;
+export const BOAT = { x: 70, z: 31, length: 26, width: 12, deckY: UNDER_Y + 1.5 };
+export const RAMP = { x: BOAT.x, width: 10, zStart: DOCK_EDGE_Z - 2.5, zEnd: BOAT.z - BOAT.width / 2 + 0.6 };
+/** Crates already loaded on the deck. */
+export const DECK_CRATES: [number, number, number][] = [
+  [63, BOAT.deckY, 29], [65.5, BOAT.deckY, 29], [63, BOAT.deckY, 33], [65.5, BOAT.deckY, 33], [76, BOAT.deckY, 33.5], [78.5, BOAT.deckY, 33.5],
+];
+export const DELIVERY_BELT = { x0: TOWER_X + TOWER_W / 2 + 0.2, x1: 57.5, halfW: 1.5, top: UNDER_Y + BELT_H };
 
 export const IDEA_SEEDS: [number, number, number][] = [
   [-30, 3, -2], [-32, 4.5, 1.5], [-29, 5.5, 2], [-33, 2.5, -1], [-31, 6.5, -1.5], [-28, 2.2, 0.5],
@@ -95,9 +106,9 @@ const add = (p: Part) => parts.push(p);
 add({ station: "switch", shape: "box", position: [-24, 0, 0], size: [7, 6, 6], color: C.machine });
 add({ station: "switch", shape: "cone", position: [-24, 6, 0], size: [4.4, 2.4, 4.4], rotation: [180, 0, 0], color: C.machineLight }); // hopper
 add({ id: "hopper-ring", station: "switch", shape: "torus", position: [-24, 8.4, 0], size: [4.4, 0.18, 4.4], rotation: [90, 0, 0], color: C.red, emissive: C.red });
-add({ station: "switch", shape: "box", position: [-24, 1.2, 3.05], size: [3, 3, 0.1], color: C.white }); // H plate
-add({ station: "switch", shape: "box", position: [-26.5, 0.5, 3.05], size: [0.4, 2.5, 0.1], color: C.machineLight });
-add({ station: "switch", shape: "box", position: [-27.2, 0.5, 3.05], size: [0.4, 2.5, 0.1], color: C.machineLight });
+add({ station: "switch", shape: "box", position: [-26.6, 0.35, 3.05], size: [1.5, 1.5, 0.1], color: C.white }); // H plate (lower left)
+add({ station: "switch", shape: "box", position: [-21.5, 0.35, 3.05], size: [0.35, 1.6, 0.1], color: C.machineLight }); // vents (lower right)
+add({ station: "switch", shape: "box", position: [-22.1, 0.35, 3.05], size: [0.35, 1.6, 0.1], color: C.machineLight });
 add({ station: "switch", shape: "box", position: [-20.45, 1.2, 0], size: [0.1, 2.6, 2.6], color: C.charcoal }); // exit mouth
 add({ id: "switch-light", station: "switch", shape: "sphere", position: [-26, 6.2, 2.2], size: [0.6, 0.6, 0.6], color: C.red, emissive: C.red });
 
@@ -186,6 +197,30 @@ add({ station: "delivery", shape: "box", position: [60, UNDER_Y + 12, 1], size: 
 [0, 2.5, 5].forEach((y) => add({ station: "delivery", shape: "box", position: [55, UNDER_Y + y, -8.5], size: [5, 0.3, 1.5], color: C.machineLight }));
 add({ station: "delivery", shape: "cylinder", position: [68, UNDER_Y, 13], size: [0.15, 8, 0.15], color: C.roller });
 add({ station: "delivery", shape: "box", position: [69.2, UNDER_Y + 6.8, 13], size: [2.4, 1.2, 0.1], color: C.accent, emissive: C.accent });
+// dock: water, boat hull with a pointed bow, cabin, funnel, mast, gangway ramp, bollards
+add({ station: "dock", shape: "box", position: [65, WATER_Y - 0.2, 32], size: [80, 0.2, 30], color: "#1d3a5c", emissive: "#0b1c30", opacity: 0.85 });
+add({ station: "dock", shape: "box", position: [65, UNDER_Y - 3, DOCK_EDGE_Z - 0.5], size: [80, 3, 1], color: C.charcoal }); // quay wall
+[58, 66, 82].forEach((x) => add({ station: "dock", shape: "cylinder", position: [x, UNDER_Y, DOCK_EDGE_Z - 1.2], size: [0.6, 1.1, 0.6], color: C.charcoal }));
+add({ id: "boat-hull", station: "dock", shape: "box", position: [BOAT.x, WATER_Y - 0.6, BOAT.z], size: [BOAT.length, BOAT.deckY - WATER_Y + 0.6, BOAT.width], color: "#7a2e2e" });
+add({ station: "dock", shape: "box", position: [BOAT.x + BOAT.length / 2 + 1.2, WATER_Y - 0.6, BOAT.z], size: [BOAT.width * 0.71, BOAT.deckY - WATER_Y + 0.6, BOAT.width * 0.71], rotation: [0, 45, 0], color: "#7a2e2e" }); // bow
+add({ station: "dock", shape: "box", position: [BOAT.x, BOAT.deckY - 0.3, BOAT.z], size: [BOAT.length, 0.3, BOAT.width], color: "#5a4632" }); // deck
+add({ station: "dock", shape: "box", position: [BOAT.x, BOAT.deckY, BOAT.z + BOAT.width / 2 - 0.2], size: [BOAT.length, 1.0, 0.3], color: "#7a2e2e" }); // far gunwale
+add({ station: "dock", shape: "box", position: [BOAT.x - BOAT.length / 2 + 0.2, BOAT.deckY, BOAT.z], size: [0.3, 1.0, BOAT.width], color: "#7a2e2e" }); // stern gunwale
+add({ station: "dock", shape: "box", position: [BOAT.x - 9, BOAT.deckY, BOAT.z + 1], size: [5, 4, 7], color: C.white }); // cabin
+add({ station: "dock", shape: "box", position: [BOAT.x - 9, BOAT.deckY + 2.2, BOAT.z + 4.55], size: [3.2, 1.2, 0.05], color: "#274b6e", emissive: "#274b6e" }); // window
+add({ station: "dock", shape: "cylinder", position: [BOAT.x - 11.5, BOAT.deckY + 4, BOAT.z + 1], size: [1.4, 3, 1.4], color: C.red }); // funnel
+add({ station: "dock", shape: "cylinder", position: [BOAT.x + 6, BOAT.deckY, BOAT.z + 4], size: [0.25, 9, 0.25], color: C.roller }); // mast
+add({ station: "dock", shape: "box", position: [BOAT.x + 6.9, BOAT.deckY + 8, BOAT.z + 4], size: [1.8, 1.1, 0.06], color: C.accent, emissive: C.accent }); // flag
+{
+  const len = Math.hypot(RAMP.zEnd - RAMP.zStart, BOAT.deckY - UNDER_Y);
+  const tilt = -Math.atan2(BOAT.deckY - UNDER_Y, RAMP.zEnd - RAMP.zStart) * (180 / Math.PI);
+  add({ id: "ramp", station: "dock", shape: "box", position: [RAMP.x, (BOAT.deckY + UNDER_Y) / 2 - 0.15, (RAMP.zStart + RAMP.zEnd) / 2], size: [RAMP.width, 0.3, len], rotation: [tilt, 0, 0], color: C.machineLight });
+  for (const sx of [-1, 1]) add({ station: "dock", shape: "box", position: [RAMP.x + (sx * RAMP.width) / 2, (BOAT.deckY + UNDER_Y) / 2 + 0.3, (RAMP.zStart + RAMP.zEnd) / 2], size: [0.2, 0.9, len], rotation: [tilt, 0, 0], color: C.hazardYellow });
+}
+add({ station: "dock", shape: "box", position: [BOAT.x, BOAT.deckY + 2.6, DOCK_EDGE_Z + 1.5], size: [7, 1.2, 0.15], color: C.white }); // "SHIP" sign
+add({ station: "dock", shape: "cylinder", position: [BOAT.x - 4, UNDER_Y, DOCK_EDGE_Z + 1.4], size: [0.15, 5, 0.15], color: C.roller });
+add({ station: "dock", shape: "cylinder", position: [BOAT.x + 4, UNDER_Y, DOCK_EDGE_Z + 1.4], size: [0.15, 5, 0.15], color: C.roller });
+
 // underground ceiling lights
 [[52, -6], [52, 8], [62, -6], [62, 8]].forEach(([x, z], i) =>
   add({ id: `under-lamp-${i}`, station: "delivery", shape: "box", position: [x, UNDER_Y + 11.4, z], size: [3, 0.2, 0.6], color: C.white, emissive: C.white }),

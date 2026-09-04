@@ -106,8 +106,11 @@ export class Forklift {
     g.traverse((o) => { if (o instanceof THREE.Mesh) o.castShadow = true; });
   }
 
+  baseY = 0;
+
   place(position: [number, number, number], heading: number) {
     this.group.position.set(...position);
+    this.baseY = position[1];
     this.heading = heading;
     this.group.rotation.y = heading;
   }
@@ -118,15 +121,25 @@ export class Forklift {
 
   /** Driver's eye, in world space. */
   eye(out: THREE.Vector3) {
-    out.set(-0.45, 3.05, 0);
+    out.set(-0.8, 3.75, 0);
     return this.group.localToWorld(out);
   }
 
-  update(dt: number, active: boolean) {
+  /** Lift input this frame: +1 raising, -1 lowering. */
+  liftInput = 0;
+
+  static LIFT_UP = ["KeyW", "PageUp", "KeyE"];
+  static LIFT_DOWN = ["KeyS", "PageDown", "KeyQ"];
+
+  update(dt: number, active: boolean, groundAt?: (x: number, z: number) => number | null) {
     const k = this.keys;
-    const throttle = active ? (k.has("ArrowUp") ? 1 : 0) - (k.has("ArrowDown") ? 1 : 0) : 0;
+    const shift = k.has("ShiftLeft") || k.has("ShiftRight");
+    const liftUp = Forklift.LIFT_UP.some((c) => k.has(c)) || (shift && k.has("ArrowUp"));
+    const liftDown = Forklift.LIFT_DOWN.some((c) => k.has(c)) || (shift && k.has("ArrowDown"));
+    const throttle = active && !shift ? (k.has("ArrowUp") ? 1 : 0) - (k.has("ArrowDown") ? 1 : 0) : 0;
     const steerIn = active ? (k.has("ArrowLeft") ? 1 : 0) - (k.has("ArrowRight") ? 1 : 0) : 0;
-    const liftIn = active ? (k.has("KeyW") ? 1 : 0) - (k.has("KeyS") ? 1 : 0) : 0;
+    const liftIn = active ? (liftUp ? 1 : 0) - (liftDown ? 1 : 0) : 0;
+    this.liftInput = liftIn;
 
     this.speed += throttle * 8 * dt;
     this.speed -= this.speed * 1.6 * dt; // drag
@@ -137,7 +150,23 @@ export class Forklift {
     this.heading += this.steer * this.speed * 0.35 * dt;
 
     const f = this.forward(new THREE.Vector3());
+    const prev = this.group.position.clone();
     this.group.position.addScaledVector(f, this.speed * dt);
+    if (groundAt) {
+      let g = groundAt(this.group.position.x, this.group.position.z);
+      if (g === null) {
+        // blocked (water / walls): slide along the obstacle, else stay put
+        const nx = this.group.position.x;
+        const nz = this.group.position.z;
+        if (groundAt(nx, prev.z) !== null) { this.group.position.z = prev.z; g = groundAt(nx, prev.z); }
+        else if (groundAt(prev.x, nz) !== null) { this.group.position.x = prev.x; g = groundAt(prev.x, nz); }
+        else { this.group.position.copy(prev); this.speed = 0; }
+      }
+      if (g !== null) {
+        const targetY = this.baseY + g;
+        this.group.position.y += (targetY - this.group.position.y) * Math.min(1, dt * 12);
+      }
+    }
     this.group.rotation.y = this.heading;
 
     this.forkHeight = THREE.MathUtils.clamp(this.forkHeight + liftIn * 1.6 * dt, 0, Forklift.MAX_FORK);
@@ -146,31 +175,6 @@ export class Forklift {
     const spin = (this.speed * dt) / 0.5;
     for (const w of this.wheels) w.rotation.y -= spin;
     this.steeringWheel.rotation.z = -this.steer * 1.2;
-  }
-
-  /** Pick the crate when the forks slide under it; drop it when lowered to the ground. */
-  handleCrate(crate: THREE.Object3D, scene: THREE.Scene, groundY: number) {
-    const tmp = new THREE.Vector3();
-    if (!this.carrying) {
-      crate.getWorldPosition(tmp);
-      const local = this.group.worldToLocal(tmp.clone());
-      const forkY = this.forkHeight + 0.22;
-      const crateBottom = tmp.y - this.group.position.y;
-      const under = local.x > 1.9 && local.x < 4.1 && Math.abs(local.z) < 1.1;
-      if (under && forkY > crateBottom - 0.05 && forkY < crateBottom + 0.5) {
-        this.carrying = crate;
-        this.carriage.add(crate);
-        crate.position.set(3.0, 0.22, 0);
-        crate.rotation.set(0, 0, 0);
-      }
-    } else if (this.forkHeight <= 0.01 && this.keys.has("KeyS")) {
-      crate.getWorldPosition(tmp);
-      this.carriage.remove(crate);
-      scene.add(crate);
-      crate.position.set(tmp.x, groundY, tmp.z);
-      crate.rotation.y = this.heading;
-      this.carrying = null;
-    }
   }
 
   dispose() {

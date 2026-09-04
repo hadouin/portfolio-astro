@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { BELT_H, C, LEVER_PIVOT, TOWER_D, TOWER_W, TOWER_X, UNDER_Y, type Conveyor, type Part } from "./plan";
+import { BELT_H, C, DOCK_EDGE_Z, LEVER_PIVOT, TOWER_D, TOWER_W, TOWER_X, UNDER_Y, type Conveyor, type Part } from "./plan";
 
 const deg = THREE.MathUtils.degToRad;
 
@@ -168,9 +168,9 @@ export function makeFloors(gridTex: THREE.Texture): THREE.Object3D[] {
   ground.receiveShadow = true;
 
   // underground floor
-  const under = new THREE.Mesh(new THREE.PlaneGeometry(90, 70), mat);
+  const under = new THREE.Mesh(new THREE.PlaneGeometry(90, 35 + DOCK_EDGE_Z), mat);
   under.rotation.x = -Math.PI / 2;
-  under.position.set(55, UNDER_Y, 0);
+  under.position.set(55, UNDER_Y, (DOCK_EDGE_Z - 35) / 2);
   under.receiveShadow = true;
 
   // underground back walls (so the cavern has an edge)
@@ -182,44 +182,79 @@ export function makeFloors(gridTex: THREE.Texture): THREE.Object3D[] {
   return [ground, under, back, side];
 }
 
-// ─── safety lever ───────────────────────────────────────────────────────────
-export interface LeverBuild { group: THREE.Group; handle: THREE.Group; hit: THREE.Mesh }
-export const LEVER_REST = -1.0;
-export const LEVER_ON = 0.95;
+// ─── big danger lever with a glass cover ────────────────────────────────────
+export interface LeverBuild { group: THREE.Group; handle: THREE.Group; hinge: THREE.Group; cover: THREE.Mesh; hit: THREE.Mesh }
+// Rest points up-right, throw pulls it down (90° clockwise from a side-to-side swing).
+export const LEVER_REST = 0.95 - Math.PI / 2;
+export const LEVER_ON = -0.95 - Math.PI / 2;
+export const COVER_OPEN = -1.75;
 
 export function makeLever(hazardTex: THREE.Texture): LeverBuild {
   const g = new THREE.Group();
   g.position.set(...LEVER_PIVOT);
-  const plate = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.6, 0.2), new THREE.MeshStandardMaterial({ color: C.charcoal, roughness: 0.8 }));
-  plate.position.z = -0.3;
+  const dark = new THREE.MeshStandardMaterial({ color: C.charcoal, roughness: 0.8 });
+  const steel = new THREE.MeshStandardMaterial({ color: C.roller, metalness: 0.5, roughness: 0.4 });
+  const hazard = new THREE.MeshStandardMaterial({ map: hazardTex, roughness: 0.6 });
+
+  // back plate with a hazard-striped frame
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(3.6, 3.6, 0.25), dark);
+  plate.position.z = -0.2;
   g.add(plate);
-  const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.35, 0.22), new THREE.MeshStandardMaterial({ map: hazardTex }));
-  stripe.position.set(0, -1.35, -0.3);
-  g.add(stripe);
-  const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.8, 16), new THREE.MeshStandardMaterial({ color: C.roller, metalness: 0.5, roughness: 0.4 }));
+  for (const [w, h, x, y] of [[4.0, 0.32, 0, 1.84], [4.0, 0.32, 0, -1.84], [0.32, 3.4, 1.84, 0], [0.32, 3.4, -1.84, 0]]) {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.3), hazard);
+    bar.position.set(x, y, -0.15);
+    g.add(bar);
+  }
+  const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.9, 16), steel);
   axle.rotation.x = Math.PI / 2;
+  axle.position.z = 0.1;
   g.add(axle);
 
+  // the lever itself: striped bar + red knob, swings sideways in the plane of the face
   const handle = new THREE.Group();
   const hz = hazardTex.clone();
   hz.needsUpdate = true;
   hz.repeat.set(1, 3);
-  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.34, 2.4, 0.34), new THREE.MeshStandardMaterial({ map: hz, roughness: 0.6 }));
-  bar.position.y = 1.2;
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.7, 0.3), new THREE.MeshStandardMaterial({ map: hz, roughness: 0.6 }));
+  bar.position.y = 0.85;
   bar.castShadow = true;
-  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 12), new THREE.MeshStandardMaterial({ color: C.red, roughness: 0.4 }));
-  knob.position.y = 2.5;
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.36, 16, 12), new THREE.MeshStandardMaterial({ color: C.red, roughness: 0.4 }));
+  knob.position.y = 1.75;
   knob.castShadow = true;
   handle.add(bar, knob);
-  handle.position.z = 0.3;
+  handle.position.z = 0.35;
   handle.rotation.z = LEVER_REST;
   g.add(handle);
 
-  // generous invisible hit target
-  const hit = new THREE.Mesh(new THREE.SphereGeometry(2.2, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
-  hit.position.set(0, 0.8, 0.3);
+  // glass cover hinged at the top edge
+  const hinge = new THREE.Group();
+  hinge.position.set(0, 1.85, 0.05);
+  const cover = new THREE.Mesh(
+    new THREE.BoxGeometry(3.7, 3.7, 1.4),
+    new THREE.MeshStandardMaterial({ color: "#9fc0e8", transparent: true, opacity: 0.22, roughness: 0.1, metalness: 0.1, depthWrite: false, side: THREE.DoubleSide }),
+  );
+  cover.position.set(0, -1.85, 0.7);
+  cover.renderOrder = 10;
+  hinge.add(cover);
+  const edge = (w: number, h: number, d: number, x: number, y: number, z: number) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), dark);
+    m.position.set(x, y, z);
+    hinge.add(m);
+  };
+  edge(3.8, 0.12, 0.12, 0, 0, 1.4);
+  edge(3.8, 0.12, 0.12, 0, -3.7, 1.4);
+  edge(0.12, 3.8, 0.12, 1.85, -1.85, 1.4);
+  edge(0.12, 3.8, 0.12, -1.85, -1.85, 1.4);
+  edge(0.12, 0.12, 1.4, 1.85, -3.7, 0.7);
+  edge(0.12, 0.12, 1.4, -1.85, -3.7, 0.7);
+  edge(3.9, 0.16, 0.16, 0, 0, 0); // hinge rod
+  g.add(hinge);
+
+  // generous invisible hit target for the lever
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(1.6, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
+  hit.position.set(0.7, 0, 0.4);
   g.add(hit);
-  return { group: g, handle, hit };
+  return { group: g, handle, hinge, cover, hit };
 }
 
 // ─── ideas ──────────────────────────────────────────────────────────────────
@@ -263,10 +298,10 @@ export function makeIdea(radius = 0.9, scratchable = false, withLight = true): I
   shell.scale.y = 1.4;
   shell.castShadow = true;
   const core = new THREE.Mesh(
-    new THREE.OctahedronGeometry(radius * 0.72, 1),
-    new THREE.MeshStandardMaterial({ color: C.accent, emissive: C.accent, emissiveIntensity: 1.2, roughness: 0.3, metalness: 0.6 }),
+    new THREE.OctahedronGeometry(radius * 0.5, 1),
+    new THREE.MeshStandardMaterial({ color: C.accent, emissive: C.accent, emissiveIntensity: 0.55, roughness: 0.35, metalness: 0.5 }),
   );
-  core.scale.y = 1.3;
+  core.scale.y = 1.35;
   const light = new THREE.PointLight(C.accent, withLight ? 5 : 0, 7, 2);
   g.add(shell, core, light);
   return { group: g, shell, core, light, scratch };

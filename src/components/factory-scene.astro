@@ -1,45 +1,99 @@
 ---
 /**
- * 3D factory scene (Three.js, basic shapes). Placed right after the hero.
- * Camera "spots" follow the storyboard order; prev/next buttons step through them.
+ * Scroll-locked, full-screen 3D factory (Three.js, basic shapes). Sits right after the hero.
+ * Interactions: drag an idea into the hopper, pull the lever, scroll the timeline, scratch the
+ * charcoal, then drive the forklift with the keyboard.
  */
 ---
 
-<section class="factory-scene relative z-10 bg-[#1a1a19] text-white" data-factory-scene aria-label="Factory 3D scene">
-  <canvas class="factory-canvas block h-[100svh] w-full" data-factory-canvas></canvas>
+<section class="factory-scene relative z-10 text-white" data-factory-scene aria-label="Factory 3D scene">
+  <div class="sticky top-0 h-[100svh] w-full overflow-hidden">
+    <canvas class="block h-full w-full touch-none" data-factory-canvas></canvas>
 
-  <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-48 bg-gradient-to-t from-[#1a1a19] via-[#1a1a19]/70 to-transparent"></div>
-
-  <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 px-5 py-6 md:py-10 md:pl-24 md:pr-24">
-    <div class="pointer-events-auto min-w-0 max-w-md">
-      <p class="mb-1 text-xs font-semibold uppercase tracking-[0.24em] text-[#c7c7c0]">
-        <span data-factory-spot-index>1</span>/<span data-factory-spot-count>1</span>
-      </p>
-      <h2 class="text-2xl font-bold sm:text-3xl" data-factory-spot-title>Factory</h2>
-      <p class="mt-1 font-inter text-sm text-[#a8a8a2]" data-factory-spot-note></p>
+    <div class="pointer-events-none absolute inset-x-0 top-0 z-10 h-[3px] bg-white/10">
+      <div class="h-full w-0 bg-[#F0C477] transition-[width] duration-150" data-factory-progress></div>
     </div>
-    <div class="pointer-events-auto flex shrink-0 gap-2">
-      <button
-        type="button"
-        class="factory-btn rounded-full border border-white/25 px-4 py-2 text-sm font-semibold transition hover:bg-white hover:text-[#1a1a19]"
-        data-factory-prev
-        aria-label="Previous spot"
-      >←</button>
-      <button
-        type="button"
-        class="factory-btn rounded-full border border-white/25 px-4 py-2 text-sm font-semibold transition hover:bg-white hover:text-[#1a1a19]"
-        data-factory-next
-        aria-label="Next spot"
-      >→</button>
+
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 px-5 py-6 md:py-10 md:pl-24 md:pr-24">
+      <div class="min-w-0 max-w-md">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-[0.24em] text-[#c7c7c0]" data-factory-phase>Factory</p>
+        <h2 class="text-2xl font-bold sm:text-3xl" data-factory-title>Grab an idea</h2>
+        <p class="mt-1 font-inter text-sm text-[#a8a8a2]" data-factory-hint></p>
+      </div>
+      <div class="pointer-events-auto flex shrink-0 flex-col items-end gap-3">
+        <div class="factory-pad hidden grid-cols-3 gap-1 text-lg" data-factory-pad>
+          <button type="button" class="factory-key" data-key="KeyW" aria-label="Raise forks">⤒</button>
+          <button type="button" class="factory-key" data-key="ArrowUp" aria-label="Forward">↑</button>
+          <button type="button" class="factory-key" data-key="KeyS" aria-label="Lower forks">⤓</button>
+          <button type="button" class="factory-key" data-key="ArrowLeft" aria-label="Left">←</button>
+          <button type="button" class="factory-key" data-key="ArrowDown" aria-label="Reverse">↓</button>
+          <button type="button" class="factory-key" data-key="ArrowRight" aria-label="Right">→</button>
+        </div>
+        <button
+          type="button"
+          class="rounded-full border border-white/25 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition hover:bg-white hover:text-black"
+          data-factory-skip
+        >Skip the factory</button>
+      </div>
     </div>
   </div>
-
-  <p class="pointer-events-none absolute left-5 top-4 z-10 text-xs text-[#8b8b85] md:left-24 md:top-6">Drag to orbit</p>
 </section>
 
+<style is:global>
+  :root {
+    /* one colour for the scene, the section, the page and the header while the factory is on screen */
+    --factory-bg: #000000;
+  }
+  .factory-scene {
+    background: var(--factory-bg);
+  }
+  html:has(body.factory-active) {
+    background-color: var(--factory-bg) !important;
+  }
+  body.factory-active .navbar-root,
+  body.factory-active .navbar-root[data-home="true"] {
+    background: var(--factory-bg) !important;
+    color: #fff;
+  }
+  body.factory-active .navbar-root .navbar-menu,
+  body.factory-active .navbar-root[data-home="true"] .navbar-menu {
+    background: var(--factory-bg) !important;
+  }
+  body.factory-active .navbar-root a,
+  body.factory-active .navbar-root button,
+  body.factory-active .navbar-root .navbar-menu-toggle svg,
+  body.factory-active .navbar-root .navbar-dropdown-toggle svg,
+  body.factory-active .navbar-root .navbar-logo-svg {
+    color: #fff !important;
+  }
+  body.factory-active .side-rail,
+  body.factory-active .socials-side {
+    color: #9a9a94;
+  }
+  html.factory-locked {
+    overflow: hidden;
+  }
+  .factory-key {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(255 255 255 / 0.25);
+    background: rgb(0 0 0 / 0.5);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+  .factory-key:active {
+    background: #fff;
+    color: #000;
+  }
+  .factory-pad.is-visible {
+    display: grid;
+  }
+</style>
+
 <script>
-  import { createFactoryScene } from "@lib/factory/scene";
-  import { FACTORY_PLAN } from "@lib/factory/plan";
+  import { createFactoryScene, type FactoryState } from "@lib/factory/scene";
 
   function initFactoryScene() {
     const previousCleanup = (window as any).__factorySceneCleanup as (() => void) | undefined;
@@ -49,38 +103,66 @@
     const canvas = root?.querySelector<HTMLCanvasElement>("[data-factory-canvas]");
     if (!root || !canvas) return;
 
-    const title = root.querySelector<HTMLElement>("[data-factory-spot-title]")!;
-    const note = root.querySelector<HTMLElement>("[data-factory-spot-note]")!;
-    const idx = root.querySelector<HTMLElement>("[data-factory-spot-index]")!;
-    const count = root.querySelector<HTMLElement>("[data-factory-spot-count]")!;
-    const prev = root.querySelector<HTMLButtonElement>("[data-factory-prev]")!;
-    const next = root.querySelector<HTMLButtonElement>("[data-factory-next]")!;
+    const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+    const title = q("[data-factory-title]");
+    const hint = q("[data-factory-hint]");
+    const phaseEl = q("[data-factory-phase]");
+    const bar = q("[data-factory-progress]");
+    const skip = q<HTMLButtonElement>("[data-factory-skip]");
+    const pad = q("[data-factory-pad]");
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
 
-    let current = 0;
+    const PHASE_LABEL: Record<FactoryState["phase"], string> = {
+      grab: "Step 1 · Ideas",
+      lever: "Step 2 · Switch",
+      popping: "Step 2 · Switch",
+      scroll: "Scroll to continue",
+      "drive-fp": "Step 17 · Cockpit",
+      "drive-tp": "Step 18 · Free play",
+    };
+
     const handle = createFactoryScene({
       canvas,
-      plan: FACTORY_PLAN,
-      onSpotChange(spot, i) {
-        current = i;
-        title.textContent = spot.title;
-        note.textContent = spot.note ?? "";
-        idx.textContent = String(i + 1);
+      section: root,
+      onState(s) {
+        title.textContent = s.title;
+        hint.textContent = s.hint;
+        phaseEl.textContent = s.held ? PHASE_LABEL[s.phase] : s.phase === "scroll" ? "Scroll to continue" : s.phase === "grab" ? "Scroll into the factory" : "The factory";
+        bar.style.width = `${Math.round(s.progress * 100)}%`;
+        pad.classList.toggle("is-visible", coarse && (s.phase === "drive-fp" || s.phase === "drive-tp"));
       },
     });
-    count.textContent = String(handle.spotCount);
 
-    const onPrev = () => handle.goToSpot(current - 1);
-    const onNext = () => handle.goToSpot(current + 1);
-    prev.addEventListener("click", onPrev);
-    next.addEventListener("click", onNext);
+    const onSkip = () => handle.skip();
+    skip.addEventListener("click", onSkip);
+
+    const padHandlers: Array<() => void> = [];
+    pad.querySelectorAll<HTMLButtonElement>("[data-key]").forEach((btn) => {
+      const code = btn.dataset.key!;
+      const down = (e: Event) => { e.preventDefault(); handle.setKey(code, true); };
+      const up = () => handle.setKey(code, false);
+      btn.addEventListener("pointerdown", down);
+      btn.addEventListener("pointerup", up);
+      btn.addEventListener("pointercancel", up);
+      btn.addEventListener("pointerleave", up);
+      padHandlers.push(() => {
+        btn.removeEventListener("pointerdown", down);
+        btn.removeEventListener("pointerup", up);
+        btn.removeEventListener("pointercancel", up);
+        btn.removeEventListener("pointerleave", up);
+      });
+    });
 
     (window as any).__factorySceneCleanup = () => {
-      prev.removeEventListener("click", onPrev);
-      next.removeEventListener("click", onNext);
+      skip.removeEventListener("click", onSkip);
+      padHandlers.forEach((f) => f());
       handle.dispose();
       (window as any).__factorySceneCleanup = undefined;
     };
   }
 
   document.addEventListener("astro:page-load", initFactoryScene);
+  document.addEventListener("astro:before-swap", () => {
+    ((window as any).__factorySceneCleanup as (() => void) | undefined)?.();
+  });
 </script>
