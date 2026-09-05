@@ -43,8 +43,6 @@ type DeviceTiltOptions = {
   gestureTarget?: HTMLElement;
   /** Degrees of tilt that map to full deflection. */
   range?: number;
-  /** Time constant for drifting the neutral posture toward how the phone is actually held. */
-  recenterSeconds?: number;
   /** 0..1 exponential smoothing applied per sample to tame sensor jitter. */
   smoothing?: number;
 };
@@ -66,20 +64,14 @@ function screenAngleDegrees() {
 export function initDeviceTilt(options: DeviceTiltOptions): DeviceTiltHandle | null {
   if (typeof window === "undefined") return null;
 
-  const {
-    onTilt,
-    onDebug,
-    gestureTarget,
-    range = 26,
-    recenterSeconds = 9,
-    smoothing = 0.22,
-  } = options;
+  const { onTilt, onDebug, gestureTarget, range = 26, smoothing = 0.22 } = options;
 
   const OrientationEvent = (window as any).DeviceOrientationEvent as
     | (typeof DeviceOrientationEvent & { requestPermission?: () => Promise<string> })
     | undefined;
 
   let baseline: TiltSample | null = null;
+  let baselineAngle: number | null = null;
   let smoothed: TiltSample | null = null;
   let events = 0;
   let status: TiltStatus = "unsupported";
@@ -104,7 +96,6 @@ export function initDeviceTilt(options: DeviceTiltOptions): DeviceTiltHandle | n
 
   let disposed = false;
   let listening = false;
-  let lastTime = 0;
 
   const handleOrientation = (event: DeviceOrientationEvent) => {
     if (disposed) return;
@@ -116,23 +107,21 @@ export function initDeviceTilt(options: DeviceTiltOptions): DeviceTiltHandle | n
     events += 1;
 
     // Rotate the raw pitch/roll pair into screen space so landscape feels like portrait.
-    const angle = screenAngleDegrees() * (Math.PI / 180);
+    const screenAngle = screenAngleDegrees();
+    const angle = screenAngle * (Math.PI / 180);
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
     const rawX = gamma * cos - beta * sin;
     const rawY = beta * cos + gamma * sin;
 
-    const now = event.timeStamp || performance.now();
-    const delta = lastTime ? Math.min((now - lastTime) / 1000, 0.5) : 0;
-    lastTime = now;
-
-    if (!baseline) {
+    // The neutral is captured once and only moves on an explicit recenter, so a
+    // posture held steady keeps reading as tilted instead of quietly becoming level.
+    // Turning the phone to landscape is the exception: the posture it was captured
+    // in no longer exists, so the first reading in the new orientation replaces it.
+    if (!baseline || screenAngle !== baselineAngle) {
       baseline = { x: rawX, y: rawY };
-    } else if (delta > 0) {
-      // Whatever posture the phone settles into becomes the new centre.
-      const ease = 1 - Math.exp(-delta / recenterSeconds);
-      baseline.x += (rawX - baseline.x) * ease;
-      baseline.y += (rawY - baseline.y) * ease;
+      baselineAngle = screenAngle;
+      smoothed = null;
     }
 
     const target = {
@@ -206,6 +195,7 @@ export function initDeviceTilt(options: DeviceTiltOptions): DeviceTiltHandle | n
       // Dropping both makes the next reading define the neutral outright, with no
       // smoothing tail from the posture being replaced.
       baseline = null;
+      baselineAngle = null;
       smoothed = null;
     },
     dispose: () => {

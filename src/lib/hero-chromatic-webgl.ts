@@ -80,6 +80,7 @@ const COMPOSITE_FRAGMENT_SHADER = `
   uniform vec2 uObjectPosition;
   uniform vec2 uMouse;
   uniform vec2 uMouseVel;
+  uniform vec2 uTilt;
   uniform float uTime;
   uniform float uStrength;
   uniform float uIntensity;
@@ -147,9 +148,15 @@ const COMPOSITE_FRAGMENT_SHADER = `
     float split = uStrength * drive * (0.005 + edge * 0.02) * (0.35 + mouseMask * 0.65);
     float velBoost = length(uMouseVel) * uStrength * drive * 0.11;
 
-    vec2 offsetR = waveOffset + chromaDir * (split + velBoost) * coverScale;
+    // Tilt holds the channels apart across the whole portrait for as long as the
+    // phone is held over. Unlike the motion terms it never decays on its own: the
+    // separation is a function of the angle, so only levelling out closes it.
+    float tiltMag = min(length(uTilt), 1.0);
+    vec2 tiltSplit = uTilt * uStrength * (0.004 + edge * 0.016) * coverScale;
+
+    vec2 offsetR = waveOffset + chromaDir * (split + velBoost) * coverScale + tiltSplit;
     vec2 offsetG = waveOffset;
-    vec2 offsetB = waveOffset - chromaDir * (split + velBoost) * coverScale;
+    vec2 offsetB = waveOffset - chromaDir * (split + velBoost) * coverScale - tiltSplit;
 
     float r = texture2D(uImage, uv + offsetR).r;
     float g = texture2D(uImage, uv + offsetG).g;
@@ -157,7 +164,7 @@ const COMPOSITE_FRAGMENT_SHADER = `
 
     vec3 base = texture2D(uImage, uv).rgb;
     float mixAmount = clamp(
-      mouseMask * 0.9 + abs(wave) * 14.0 + length(uMouseVel) * 30.0,
+      mouseMask * 0.9 + abs(wave) * 14.0 + length(uMouseVel) * 30.0 + tiltMag * 0.9,
       0.0,
       1.0
     );
@@ -346,6 +353,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     uObjectPosition: gl.getUniformLocation(compositeProgram, "uObjectPosition"),
     uMouse: gl.getUniformLocation(compositeProgram, "uMouse"),
     uMouseVel: gl.getUniformLocation(compositeProgram, "uMouseVel"),
+    uTilt: gl.getUniformLocation(compositeProgram, "uTilt"),
     uTime: gl.getUniformLocation(compositeProgram, "uTime"),
     uStrength: gl.getUniformLocation(compositeProgram, "uStrength"),
     uIntensity: gl.getUniformLocation(compositeProgram, "uIntensity"),
@@ -389,6 +397,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   let objectPosition: Vec2 = readObjectPosition(referenceImage);
   let tiltHandle: DeviceTiltHandle | null = null;
   let tiltOffset: Vec2 = [0, 0];
+  let smoothTilt: Vec2 = [0, 0];
   let anchor: Vec2 = [0.5, 0.5];
   let bubblePos: Vec2 = [0.5, 0.5];
   let bubbleVel: Vec2 = [0, 0];
@@ -537,6 +546,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     gl.uniform2f(compositeLocations.uObjectPosition, objectPosition[0], objectPosition[1]);
     gl.uniform2f(compositeLocations.uMouse, mouseUv[0], mouseUv[1]);
     gl.uniform2f(compositeLocations.uMouseVel, smoothVel[0], smoothVel[1]);
+    gl.uniform2f(compositeLocations.uTilt, smoothTilt[0], smoothTilt[1]);
     gl.uniform1f(compositeLocations.uTime, time);
     gl.uniform1f(compositeLocations.uStrength, 1);
     gl.uniform1f(compositeLocations.uIntensity, effectIntensity);
@@ -587,6 +597,11 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
       }
     }
 
+    // Follow the held angle rather than decaying toward zero like the motion terms.
+    const tiltEase = 1 - Math.exp(-6 * delta);
+    smoothTilt[0] += ((tiltActive ? tiltOffset[0] : 0) - smoothTilt[0]) * tiltEase;
+    smoothTilt[1] += ((tiltActive ? tiltOffset[1] : 0) - smoothTilt[1]) * tiltEase;
+
     const velDecay = Math.exp(-1.8 * delta);
     const inputMag = Math.hypot(pendingVel[0], pendingVel[1]);
     const velAttack = 1 - Math.exp(-9 * delta);
@@ -612,10 +627,11 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     smoothVel[1] += (targetVel[1] - smoothVel[1]) * velEaseY;
 
     const motionMag = Math.hypot(smoothVel[0], smoothVel[1]);
+    const tiltMag = Math.min(Math.hypot(smoothTilt[0], smoothTilt[1]), 1);
     let intensityTarget = 0;
     if (hasPointer) {
       intensityTarget = clamp(
-        0.55 + Math.max(recentMove * 14, inputMag * 10, motionMag * 18),
+        0.55 + Math.max(recentMove * 14, inputMag * 10, motionMag * 18, tiltMag * 0.45),
         0.55,
         1,
       );
