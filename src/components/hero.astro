@@ -4,6 +4,7 @@ import Link from "@components/ui/link.astro";
 import { localizedPath, useTranslations, type Locale } from "@i18n/utils";
 import heroPortrait from "@assets/hadouin-hero.jpg";
 import heroEdges from "@assets/hadouin-hero-edges.webp";
+import heroEdgesCompact from "@assets/hadouin-hero-edges-compact.webp";
 
 interface Props {
   locale: Locale;
@@ -13,6 +14,14 @@ const { locale } = Astro.props;
 const t = useTranslations(locale);
 const displayName = "Hadouin";
 const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75, format: "webp" });
+// Phones drive the same effect from the tilt sensor at a lower canvas DPR, so they
+// get lighter textures instead of the multi-megabyte desktop pair.
+const heroTextureCompact = await getImage({
+  src: heroPortrait,
+  width: 900,
+  quality: 68,
+  format: "webp",
+});
 ---
 
 <section
@@ -24,6 +33,8 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     data-chromatic-portrait
     data-image-src={heroTexture.src}
     data-edge-src={heroEdges.src}
+    data-image-src-compact={heroTextureCompact.src}
+    data-edge-src-compact={heroEdgesCompact.src}
     data-image-width={heroPortrait.width}
     data-image-height={heroPortrait.height}
   >
@@ -170,7 +181,7 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     }
   }
 
-  @media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
+  @media (prefers-reduced-motion: reduce) {
     .hero-chromatic-canvas {
       display: none;
     }
@@ -178,7 +189,10 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
 </style>
 
 <script>
-  import { initHeroChromaticWebGL } from "../lib/hero-chromatic-webgl";
+  import {
+    initHeroChromaticWebGL,
+    type HeroChromaticDebug,
+  } from "../lib/hero-chromatic-webgl";
 
   const letters = "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&?@:/}{()*+-#$&";
   const scrambleColors = ["#8BA6F3", "#F0C477", "#EE8D8D"];
@@ -233,23 +247,90 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     scramble();
   }
 
+  // The tilt readout has to be usable on a real phone against a real build, so it
+  // is gated on a #dev hash rather than on the dev server.
+  const debugRequested = () => window.location.hash.toLowerCase().startsWith("#dev");
+  let debugPanelActive = false;
+
+  function initTiltDebugPanel(hero: HTMLElement) {
+    hero.querySelector(".hero-tilt-debug")?.remove();
+
+    const panel = document.createElement("pre");
+    panel.className = "hero-tilt-debug";
+    panel.setAttribute("aria-hidden", "true");
+    panel.style.cssText = [
+      "position:absolute",
+      "left:12px",
+      "bottom:12px",
+      "z-index:40",
+      "margin:0",
+      "padding:8px 10px",
+      "border-radius:6px",
+      "background:rgb(12 12 11 / 0.72)",
+      "color:#deded8",
+      "font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace",
+      "white-space:pre",
+      "pointer-events:none",
+      "backdrop-filter:blur(4px)",
+    ].join(";");
+    hero.appendChild(panel);
+
+    const num = (value: number | null | undefined, digits = 2) =>
+      value === null || value === undefined || Number.isNaN(value)
+        ? "  —".padStart(digits + 4)
+        : value.toFixed(digits).padStart(digits + 4);
+
+    return (debug: HeroChromaticDebug | string) => {
+      if (typeof debug === "string") {
+        panel.textContent = `tilt   effect off · ${debug}`;
+        return;
+      }
+
+      const { tilt } = debug;
+      const sensor = tilt
+        ? `${tilt.status} · ${tilt.events} evt${
+            tilt.status === "awaiting-gesture" ? " · tap hero to allow" : ""
+          }${tilt.status === "listening" && tilt.events === 0 ? " · no sensor data" : ""}`
+        : "no sensor";
+
+      panel.textContent = [
+        `tilt   ${sensor}`,
+        tilt
+          ? `raw    b${num(tilt.raw.beta, 1)}  g${num(tilt.raw.gamma, 1)}  a${num(tilt.raw.alpha, 1)}`
+          : "raw    —",
+        tilt
+          ? `screen ${tilt.screenAngle}deg  neutral${num(tilt.neutral?.x, 1)} /${num(tilt.neutral?.y, 1)}`
+          : "screen —",
+        tilt ? `sample x${num(tilt.sample.x)}  y${num(tilt.sample.y)}` : "sample —",
+        `bubble x${num(debug.focus[0])}  y${num(debug.focus[1])}`,
+        `anchor x${num(debug.anchor[0])}  y${num(debug.anchor[1])}`,
+        `drive  vel${num(debug.velocity[0], 3)} /${num(debug.velocity[1], 3)}  int${num(debug.intensity)}`,
+        `source ${debug.source}`,
+      ].join("\n");
+    };
+  }
+
   function initChromaticPortrait() {
     const previousCleanup = (window as any).__chromaticHeroCleanup as (() => void) | undefined;
     previousCleanup?.();
+    document.querySelector(".hero-tilt-debug")?.remove();
+    debugPanelActive = debugRequested();
 
     const hero = document.querySelector<HTMLElement>("[data-dark-hero]");
     const portrait = document.querySelector<HTMLElement>("[data-chromatic-portrait]");
     const canvas = portrait?.querySelector<HTMLCanvasElement>(".hero-chromatic-canvas");
-    const imageSrc = portrait?.dataset.imageSrc;
-    const edgeSrc = portrait?.dataset.edgeSrc;
+    const compact = window.matchMedia("(max-width: 767px)").matches;
+    const imageSrc = (compact && portrait?.dataset.imageSrcCompact) || portrait?.dataset.imageSrc;
+    const edgeSrc = (compact && portrait?.dataset.edgeSrcCompact) || portrait?.dataset.edgeSrc;
     const imageWidth = Number(portrait?.dataset.imageWidth);
     const imageHeight = Number(portrait?.dataset.imageHeight);
     const referenceImage = portrait?.querySelector<HTMLImageElement>("img");
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    // Touch devices get the same effect, driven by the orientation sensor instead.
+    const hasTiltSensor = typeof (window as any).DeviceOrientationEvent !== "undefined";
 
-    if (
-      !hero ||
+    const missingAssets =
       !portrait ||
       !canvas ||
       !imageSrc ||
@@ -258,13 +339,19 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
       !Number.isFinite(imageWidth) ||
       !Number.isFinite(imageHeight) ||
       imageWidth < 1 ||
-      imageHeight < 1 ||
-      reduceMotion ||
-      !finePointer
-    ) {
+      imageHeight < 1;
+
+    if (!hero || missingAssets || reduceMotion || (!finePointer && !hasTiltSensor)) {
       (window as any).__chromaticHeroCleanup = undefined;
+      if (debugPanelActive && hero) {
+        initTiltDebugPanel(hero)(
+          missingAssets ? "missing assets" : reduceMotion ? "reduce-motion" : "no input source"
+        );
+      }
       return;
     }
+
+    const renderDebug = debugPanelActive ? initTiltDebugPanel(hero) : undefined;
 
     // Hold the first-load preloader until the hero textures are in cache, so
     // the reveal never lands on an un-rendered portrait. No-op after first load.
@@ -293,6 +380,7 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
       hero,
       imageSize: [imageWidth, imageHeight],
       referenceImage,
+      onDebug: renderDebug,
     });
 
     (window as any).__chromaticHeroCleanup = cleanup ?? undefined;
@@ -324,6 +412,11 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     (window as any).__heroThemeObserver = observer;
     updateTheme();
   }
+
+  // Toggling #dev on or off rebuilds the effect so the readout can attach or detach.
+  window.addEventListener("hashchange", () => {
+    if (debugRequested() !== debugPanelActive) initChromaticPortrait();
+  });
 
   initHero();
   initChromaticPortrait();
