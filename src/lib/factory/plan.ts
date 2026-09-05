@@ -1,10 +1,17 @@
 /**
- * Factory world data — from the storyboard.
+ * Factory world data — from the storyboard (boards 1 → 18).
  *
- * Flow (left → right, +x):
- *   Ideas cloud → H machine (hopper + safety lever) → belt → Refine (open top) → belt →
- *   Splitter → 3 machining lanes → belts over the tower opening → shaft goes BELOW ground →
- *   underground delivery line + hangar + forklift.
+ * Flow (left → right, +x, one ground level — the boards never leave the hall):
+ *   1  ideas cloud + overhead claw ("GRAB AN IDEA", "IDEA HERE!")
+ *   2  H machine, hopper + safety lever, the idea pops back out
+ *   3  belt, charcoal raw idea
+ *   4  "your idea is already gold" (scratch the charcoal)
+ *   5-6 refining press, open top, lights and switches
+ *   7-10 splitter → "CHOOSE" → three lanes
+ *   11 machining lanes (press, drill, shaper, stamp, robot)
+ *   12-14 lanes converge into the ASSEMBLY machine
+ *   15-16 the finished crate rolls out between two pillars, "PROJET" sign
+ *   17-18 shipping bay: drive the transpalette, load the crate on the truck
  *
  * Units: metres. Y up. `position` = footprint centre; y = bottom of the part (torus/octa centred).
  */
@@ -49,31 +56,36 @@ export const C = {
 
 export const BELT_H = 1.0;
 export const LANES = [-9, 0, 9] as const;
-export const LANE_END_Z = [-2.5, 0, 2.5] as const;
 
-export const TOWER_X = 45;
-export const TOWER_W = 9;
-export const TOWER_D = 12;
-export const TOWER_DEPTH = 44; // shaft goes from y=0 down to -TOWER_DEPTH
-export const UNDER_Y = -TOWER_DEPTH; // underground floor level
+// ─── assembly / delivery / shipping (all at ground level) ───────────────────
+export const MERGE_X = 39.5; // the three lanes meet here
+export const ASM = { x: 46, w: 10, d: 14, h: 7 };
+export const ASM_IN_X = ASM.x - ASM.w / 2; // 41
+export const ASM_OUT_X = ASM.x + ASM.w / 2; // 51
+export const OUT_BELT = { x0: ASM_OUT_X, x1: 64, halfW: 1.5, top: BELT_H };
+/** Framing pillars of the reveal shot (board 15). */
+export const REVEAL_PILLARS: [number, number][] = [[52.5, 9], [66, 9]];
 
 export const HOPPER_POS: [number, number, number] = [-24, 7.6, 0];
 export const H_EXIT_POS: [number, number, number] = [-20.4, 2.4, 0];
 export const LEVER_PIVOT: [number, number, number] = [-24, 3.1, 3.3];
-export const CRATE_START: [number, number, number] = [50.6, UNDER_Y + BELT_H, 0];
-export const CRATE_END: [number, number, number] = [56.5, UNDER_Y + BELT_H, 0];
-export const FORKLIFT_START = { position: [68, UNDER_Y, 3] as [number, number, number], heading: Math.PI };
+export const CRATE_START: [number, number, number] = [52.5, BELT_H, 0];
+export const CRATE_END: [number, number, number] = [62.5, BELT_H, 0];
+export const FORKLIFT_START = { position: [73, 0, 1] as [number, number, number], heading: Math.PI };
 
-// ─── dock / boat (underground level) ────────────────────────────────────────
-export const DOCK_EDGE_Z = 18; // floor ends here, water beyond
-export const WATER_Y = UNDER_Y - 1.4;
-export const BOAT = { x: 70, z: 31, length: 26, width: 12, deckY: UNDER_Y + 1.5 };
-export const RAMP = { x: BOAT.x, width: 10, zStart: DOCK_EDGE_Z - 2.5, zEnd: BOAT.z - BOAT.width / 2 + 0.6 };
-/** Crates already loaded on the deck. */
-export const DECK_CRATES: [number, number, number][] = [
-  [63, BOAT.deckY, 29], [65.5, BOAT.deckY, 29], [63, BOAT.deckY, 33], [65.5, BOAT.deckY, 33], [76, BOAT.deckY, 33.5], [78.5, BOAT.deckY, 33.5],
+/** Shipping bay (boards 17-18): hall columns, hanging lamps, truck + loading ramp. */
+export const BAY = { x0: 52, x1: 96, halfZ: 20, columnZ: 16, ceiling: 15 };
+export const TRUCK = { x: 86, bedY: 1.3, length: 12, width: 7 };
+export const RAMP = {
+  z: 0,
+  width: 6,
+  xStart: TRUCK.x - TRUCK.length / 2 - 3.2,
+  xEnd: TRUCK.x - TRUCK.length / 2 + 0.4,
+};
+/** Scenery crates already stacked in the bay. */
+export const BAY_CRATES: [number, number, number][] = [
+  [72, 0, -14], [74.5, 0, -14], [72, 0, -17], [80, 0, 15], [82.5, 0, 15],
 ];
-export const DELIVERY_BELT = { x0: TOWER_X + TOWER_W / 2 + 0.2, x1: 57.5, halfW: 1.5, top: UNDER_Y + BELT_H };
 
 export const IDEA_SEEDS: [number, number, number][] = [
   [-30, 3, -2], [-32, 4.5, 1.5], [-29, 5.5, 2], [-33, 2.5, -1], [-31, 6.5, -1.5], [-28, 2.2, 0.5],
@@ -90,17 +102,30 @@ export const CONVEYORS: Conveyor[] = [
   { id: "lane-top", from: [14, LANES[0]], to: [34, LANES[0]] },
   { id: "lane-mid", from: [14, LANES[1]], to: [34, LANES[1]] },
   { id: "lane-bot", from: [14, LANES[2]], to: [34, LANES[2]] },
-  // feeds run over the tower opening and stop above the funnel
-  { id: "c-feed-top", from: [34, LANES[0]], to: [43.5, LANE_END_Z[0]] },
-  { id: "c-feed-mid", from: [34, LANES[1]], to: [43.5, LANE_END_Z[1]] },
-  { id: "c-feed-bot", from: [34, LANES[2]], to: [43.5, LANE_END_Z[2]] },
-  // underground delivery line from the shaft base
-  { id: "c-delivery", from: [TOWER_X + TOWER_W / 2 + 0.2, 0], to: [57.5, 0], base: UNDER_Y },
+  // the three lanes converge on the assembly machine (board 12)
+  { id: "c-merge-top", from: [34, LANES[0]], to: [MERGE_X, 0] },
+  { id: "c-merge-mid", from: [34, LANES[1]], to: [MERGE_X, 0] },
+  { id: "c-merge-bot", from: [34, LANES[2]], to: [MERGE_X, 0] },
+  { id: "c-asm-in", from: [MERGE_X, 0], to: [ASM_IN_X + 1.5, 0] },
+  // finished crate rolls out of the assembly machine (boards 15-16)
+  { id: "c-out", from: [OUT_BELT.x0, 0], to: [OUT_BELT.x1, 0] },
 ];
 
 // ─── parts ──────────────────────────────────────────────────────────────────
 const parts: Part[] = [];
 const add = (p: Part) => parts.push(p);
+
+// Overhead claw over the ideas cloud + "IDEA HERE!" arrow over the hopper (board 1)
+add({ station: "grab", shape: "box", position: [-32, 13, -5], size: [14, 0.7, 0.7], color: C.machineLight }); // gantry rail
+for (const x of [-38.5, -25.5]) add({ station: "grab", shape: "box", position: [x, 0, -5], size: [0.7, 13, 0.7], color: C.roller }); // rail legs
+add({ station: "grab", shape: "box", position: [-30.5, 12.9, -2.5], size: [1.2, 0.5, 5.6], color: C.machineLight }); // trolley bridge
+add({ station: "grab", shape: "box", position: [-30.5, 12.2, 0], size: [2.4, 0.8, 2.4], color: C.machine }); // trolley
+add({ station: "grab", shape: "cylinder", position: [-30.5, 9.4, 0], size: [0.12, 3, 0.12], color: C.roller }); // cable
+add({ id: "claw", station: "grab", shape: "cone", position: [-30.5, 7.6, 0], size: [2.2, 1.8, 2.2], rotation: [180, 0, 0], color: C.machineLight });
+for (const [dx, dz] of [[-0.9, 0], [0.9, 0], [0, -0.9], [0, 0.9]])
+  add({ id: `claw-jaw-${dx}-${dz}`, station: "grab", shape: "box", position: [-30.5 + dx, 6.2, dz], size: [0.35, 1.6, 0.35], rotation: [dz * 20, 0, -dx * 20], color: C.roller });
+add({ id: "idea-arrow-shaft", station: "grab", shape: "box", position: [-24, 11.2, 0], size: [0.6, 2.2, 0.6], color: C.red, emissive: C.red });
+add({ id: "idea-arrow-head", station: "grab", shape: "cone", position: [-24, 9.4, 0], size: [2.2, 1.8, 2.2], rotation: [180, 0, 0], color: C.red, emissive: C.red });
 
 // H machine (ideas switch): body, hopper funnel on top, H plate, vents, exit mouth
 add({ station: "switch", shape: "box", position: [-24, 0, 0], size: [7, 6, 6], color: C.machine });
@@ -138,6 +163,9 @@ add({ station: "splitter", shape: "box", position: [6, 0, 0], size: [3.2, 5, 5],
 [-1.2, 0, 1.2].forEach((dz, i) =>
   add({ station: "splitter", shape: "box", position: [6, 3 - i * 1.2, dz], size: [3.4, 0.3, 0.3], rotation: [0, (i - 1) * 25, 0], color: C.blue, emissive: C.blue }),
 );
+// "CHOOSE" sign over the splitter (board 9)
+add({ station: "splitter", shape: "box", position: [6, 7.4, -2.4], size: [6, 1.4, 0.2], color: C.white });
+add({ station: "splitter", shape: "cylinder", position: [6, 5, -2.4], size: [0.25, 2.4, 0.25], color: C.roller });
 
 // Machining lanes
 // Press (top lane): base + column + moving head over the belt
@@ -167,64 +195,74 @@ add({ id: "stamp-head", station: "machining", shape: "box", position: [25, 3.6, 
 add({ station: "machining", shape: "box", position: [31, 5, LANES[2] + 4], size: [5, 1.4, 0.2], color: C.white });
 add({ station: "machining", shape: "cylinder", position: [31, 0, LANES[2] + 4], size: [0.2, 5, 0.2], color: C.roller });
 
-// Assembler tower: opening at ground level, shaft goes underground
-add({ id: "tower-glass", station: "assembler", shape: "box", position: [TOWER_X, UNDER_Y, 0], size: [TOWER_W, TOWER_DEPTH, TOWER_D], color: "#9fc0e8", opacity: 0.14 });
-[[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(([sx, sz]) =>
-  add({ station: "assembler", shape: "box", position: [TOWER_X + (sx * TOWER_W) / 2, UNDER_Y, (sz * TOWER_D) / 2], size: [0.8, TOWER_DEPTH + 1.2, 0.8], color: C.charcoal }),
-);
-for (let y = UNDER_Y + 8; y < 0; y += 8) {
-  for (const sz of [-1, 1]) add({ station: "assembler", shape: "box", position: [TOWER_X, y, (sz * TOWER_D) / 2], size: [TOWER_W + 0.6, 0.5, 0.6], color: C.machine });
-  for (const sx of [-1, 1]) add({ station: "assembler", shape: "box", position: [TOWER_X + (sx * TOWER_W) / 2, y, 0], size: [0.6, 0.5, TOWER_D + 0.6], color: C.machine });
-}
-// crown at ground level + funnel hanging into the shaft
-for (const sz of [-1, 1]) add({ station: "assembler", shape: "box", position: [TOWER_X, 0, (sz * (TOWER_D + 0.6)) / 2], size: [TOWER_W + 1.4, 1.2, 0.8], color: C.machine });
-for (const sx of [-1, 1]) add({ station: "assembler", shape: "box", position: [TOWER_X + (sx * (TOWER_W + 0.6)) / 2, 0, 0], size: [0.8, 1.2, TOWER_D + 1.4], color: C.machine });
-add({ station: "assembler", shape: "cone", position: [TOWER_X, -4.5, 0], size: [8, 4.5, 8], rotation: [180, 0, 0], color: C.machineLight, opacity: 0.85 });
-add({ station: "assembler", shape: "sphere", position: [TOWER_X, 1.4, TOWER_D / 2 + 0.5], size: [0.9, 0.9, 0.9], color: C.red, emissive: C.red }); // beacon
-// base block at the bottom with the exit mouth on +x
-add({ station: "assembler", shape: "box", position: [TOWER_X, UNDER_Y, 0], size: [TOWER_W + 1, 3, TOWER_D + 1], color: C.machine });
-add({ station: "assembler", shape: "box", position: [TOWER_X + TOWER_W / 2 + 0.35, UNDER_Y + 0.4, 0], size: [0.7, 2.8, 3.6], color: C.charcoal });
-add({ station: "assembler", shape: "box", position: [TOWER_X + TOWER_W / 2 + 0.75, UNDER_Y + 3.4, 0], size: [0.3, 0.6, 3.8], color: C.accent, emissive: C.accent }); // exit light
+// ─── assembly machine (boards 12-14) ────────────────────────────────────────
+add({ station: "assembly", shape: "box", position: [ASM.x, 0, 0], size: [ASM.w, ASM.h, ASM.d], color: C.machine });
+add({ station: "assembly", shape: "box", position: [ASM.x, ASM.h, 0], size: [ASM.w + 1.4, 1, ASM.d + 1.4], color: C.machineLight }); // roof slab
+// roof vents (board 13)
+for (let i = 0; i < 6; i++)
+  add({ station: "assembly", shape: "box", position: [ASM.x - 3.2 + i * 1.3, ASM.h + 1, 0], size: [0.5, 0.4, ASM.d * 0.6], color: C.charcoal });
+// in / out mouths
+add({ station: "assembly", shape: "box", position: [ASM_IN_X - 0.05, 0.4, 0], size: [0.2, 3, 4.6], color: C.charcoal });
+add({ station: "assembly", shape: "box", position: [ASM_OUT_X + 0.05, 0.4, 0], size: [0.2, 3.4, 4.6], color: C.charcoal });
+add({ id: "asm-exit-light", station: "assembly", shape: "box", position: [ASM_OUT_X + 0.2, 3.9, 0], size: [0.2, 0.4, 4.8], color: C.accent, emissive: C.accent });
+// front face: three lit windows + a long panel (board 14)
+for (let i = 0; i < 3; i++)
+  add({ id: `asm-window-${i}`, station: "assembly", shape: "box", position: [ASM.x - 3 + i * 3, 4.4, ASM.d / 2 + 0.06], size: [2.2, 1.6, 0.1], color: C.blue, emissive: C.blue });
+add({ station: "assembly", shape: "box", position: [ASM.x, 2.2, ASM.d / 2 + 0.06], size: [8, 1.4, 0.1], color: C.machineLight });
+add({ id: "asm-drum", station: "assembly", shape: "torus", position: [ASM.x - 2.6, 6.2, ASM.d / 2 + 0.2], size: [2.6, 0.3, 2.6], color: C.roller });
+add({ id: "asm-piston", station: "assembly", shape: "box", position: [ASM.x + 2.4, ASM.h + 1, 0], size: [1.6, 2.2, 1.6], color: C.accent, emissive: "#3a2a00" });
+// "ASSEMBLY" sign hanging off the right shoulder (board 12)
+add({ station: "assembly", shape: "box", position: [ASM.x + 7.6, 7.4, -3], size: [7, 1.8, 0.25], color: C.white });
+add({ station: "assembly", shape: "cylinder", position: [ASM.x + 5, 8.2, -3], size: [0.18, 1.6, 0.18], color: C.roller });
+add({ station: "assembly", shape: "cylinder", position: [ASM.x + 10, 8.2, -3], size: [0.18, 1.6, 0.18], color: C.roller });
 [C.accent, C.blue, C.red].forEach((col, i) =>
-  add({ station: "assembler", shape: "box", position: [TOWER_X - TOWER_W / 2 - 0.55, UNDER_Y + 2, 4 - i * 1.2], size: [0.1, 0.6, 0.6], color: col, emissive: col }),
+  add({ id: `asm-lamp-${i}`, station: "assembly", shape: "sphere", position: [ASM.x - 4.2, 5.4 - i * 1.1, ASM.d / 2 + 0.3], size: [0.5, 0.5, 0.5], color: col, emissive: col }),
 );
 
-// Underground hangar around the delivery line
-[[54, -10], [54, 12], [66, -10], [66, 12]].forEach(([x, z]) =>
-  add({ station: "delivery", shape: "cylinder", position: [x, UNDER_Y, z], size: [0.6, 12, 0.6], color: C.roller }),
-);
-add({ station: "delivery", shape: "box", position: [60, UNDER_Y + 12, 1], size: [14, 0.5, 24], color: C.machineLight });
-[0, 2.5, 5].forEach((y) => add({ station: "delivery", shape: "box", position: [55, UNDER_Y + y, -8.5], size: [5, 0.3, 1.5], color: C.machineLight }));
-add({ station: "delivery", shape: "cylinder", position: [68, UNDER_Y, 13], size: [0.15, 8, 0.15], color: C.roller });
-add({ station: "delivery", shape: "box", position: [69.2, UNDER_Y + 6.8, 13], size: [2.4, 1.2, 0.1], color: C.accent, emissive: C.accent });
-// dock: water, boat hull with a pointed bow, cabin, funnel, mast, gangway ramp, bollards
-add({ station: "dock", shape: "box", position: [65, WATER_Y - 0.2, 32], size: [80, 0.2, 30], color: "#1d3a5c", emissive: "#0b1c30", opacity: 0.85 });
-add({ station: "dock", shape: "box", position: [65, UNDER_Y - 3, DOCK_EDGE_Z - 0.5], size: [80, 3, 1], color: C.charcoal }); // quay wall
-[58, 66, 82].forEach((x) => add({ station: "dock", shape: "cylinder", position: [x, UNDER_Y, DOCK_EDGE_Z - 1.2], size: [0.6, 1.1, 0.6], color: C.charcoal }));
-add({ id: "boat-hull", station: "dock", shape: "box", position: [BOAT.x, WATER_Y - 0.6, BOAT.z], size: [BOAT.length, BOAT.deckY - WATER_Y + 0.6, BOAT.width], color: "#7a2e2e" });
-add({ station: "dock", shape: "box", position: [BOAT.x + BOAT.length / 2 + 1.2, WATER_Y - 0.6, BOAT.z], size: [BOAT.width * 0.71, BOAT.deckY - WATER_Y + 0.6, BOAT.width * 0.71], rotation: [0, 45, 0], color: "#7a2e2e" }); // bow
-add({ station: "dock", shape: "box", position: [BOAT.x, BOAT.deckY - 0.3, BOAT.z], size: [BOAT.length, 0.3, BOAT.width], color: "#5a4632" }); // deck
-add({ station: "dock", shape: "box", position: [BOAT.x, BOAT.deckY, BOAT.z + BOAT.width / 2 - 0.2], size: [BOAT.length, 1.0, 0.3], color: "#7a2e2e" }); // far gunwale
-add({ station: "dock", shape: "box", position: [BOAT.x - BOAT.length / 2 + 0.2, BOAT.deckY, BOAT.z], size: [0.3, 1.0, BOAT.width], color: "#7a2e2e" }); // stern gunwale
-add({ station: "dock", shape: "box", position: [BOAT.x - 9, BOAT.deckY, BOAT.z + 1], size: [5, 4, 7], color: C.white }); // cabin
-add({ station: "dock", shape: "box", position: [BOAT.x - 9, BOAT.deckY + 2.2, BOAT.z + 4.55], size: [3.2, 1.2, 0.05], color: "#274b6e", emissive: "#274b6e" }); // window
-add({ station: "dock", shape: "cylinder", position: [BOAT.x - 11.5, BOAT.deckY + 4, BOAT.z + 1], size: [1.4, 3, 1.4], color: C.red }); // funnel
-add({ station: "dock", shape: "cylinder", position: [BOAT.x + 6, BOAT.deckY, BOAT.z + 4], size: [0.25, 9, 0.25], color: C.roller }); // mast
-add({ station: "dock", shape: "box", position: [BOAT.x + 6.9, BOAT.deckY + 8, BOAT.z + 4], size: [1.8, 1.1, 0.06], color: C.accent, emissive: C.accent }); // flag
-{
-  const len = Math.hypot(RAMP.zEnd - RAMP.zStart, BOAT.deckY - UNDER_Y);
-  const tilt = -Math.atan2(BOAT.deckY - UNDER_Y, RAMP.zEnd - RAMP.zStart) * (180 / Math.PI);
-  add({ id: "ramp", station: "dock", shape: "box", position: [RAMP.x, (BOAT.deckY + UNDER_Y) / 2 - 0.15, (RAMP.zStart + RAMP.zEnd) / 2], size: [RAMP.width, 0.3, len], rotation: [tilt, 0, 0], color: C.machineLight });
-  for (const sx of [-1, 1]) add({ station: "dock", shape: "box", position: [RAMP.x + (sx * RAMP.width) / 2, (BOAT.deckY + UNDER_Y) / 2 + 0.3, (RAMP.zStart + RAMP.zEnd) / 2], size: [0.2, 0.9, len], rotation: [tilt, 0, 0], color: C.hazardYellow });
+// ─── reveal: framing pillars + "PROJET" sign (boards 15-16) ─────────────────
+for (const [x, z] of REVEAL_PILLARS) {
+  add({ station: "reveal", shape: "box", position: [x, 0, z], size: [1.3, 16, 1.3], color: C.machine });
+  add({ station: "reveal", shape: "box", position: [x, 15.6, z], size: [2.1, 0.5, 2.1], color: C.machineLight });
 }
-add({ station: "dock", shape: "box", position: [BOAT.x, BOAT.deckY + 2.6, DOCK_EDGE_Z + 1.5], size: [7, 1.2, 0.15], color: C.white }); // "SHIP" sign
-add({ station: "dock", shape: "cylinder", position: [BOAT.x - 4, UNDER_Y, DOCK_EDGE_Z + 1.4], size: [0.15, 5, 0.15], color: C.roller });
-add({ station: "dock", shape: "cylinder", position: [BOAT.x + 4, UNDER_Y, DOCK_EDGE_Z + 1.4], size: [0.15, 5, 0.15], color: C.roller });
+add({ station: "reveal", shape: "box", position: [63, 4.4, -7.4], size: [12, 3.2, 0.3], color: C.white });
+for (const x of [58, 68]) add({ station: "reveal", shape: "cylinder", position: [x, 0, -7.4], size: [0.22, 4.4, 0.22], color: C.roller });
 
-// underground ceiling lights
-[[52, -6], [52, 8], [62, -6], [62, 8]].forEach(([x, z], i) =>
-  add({ id: `under-lamp-${i}`, station: "delivery", shape: "box", position: [x, UNDER_Y + 11.4, z], size: [3, 0.2, 0.6], color: C.white, emissive: C.white }),
-);
+// ─── shipping bay: columns, roof beams, hanging lamps (board 17) ────────────
+for (const x of [62, 74, 86]) {
+  for (const sz of [-1, 1])
+    add({ station: "bay", shape: "box", position: [x, 0, sz * BAY.columnZ], size: [1.1, BAY.ceiling, 1.1], color: C.machine });
+  add({ station: "bay", shape: "box", position: [x, BAY.ceiling, 0], size: [1.1, 0.7, BAY.columnZ * 2 + 1.1], color: C.machineLight });
+}
+add({ station: "bay", shape: "box", position: [74, BAY.ceiling - 1.4, 9], size: [30, 0.16, 0.16], color: C.roller }); // lamp cable
+for (const x of [62, 68, 74, 80, 86])
+  add({ id: `bay-lamp-${x}`, station: "bay", shape: "box", position: [x, BAY.ceiling - 2.2, 9], size: [2.6, 0.25, 0.9], color: C.white, emissive: C.white });
+
+// ─── truck + loading ramp (boards 17-18) ────────────────────────────────────
+add({ station: "ship", shape: "box", position: [TRUCK.x, TRUCK.bedY - 0.3, 0], size: [TRUCK.length, 0.3, TRUCK.width], color: C.machineLight }); // bed
+add({ station: "ship", shape: "box", position: [TRUCK.x, 0.35, 0], size: [TRUCK.length - 1.5, 0.65, TRUCK.width - 1.4], color: C.charcoal }); // chassis
+for (const sz of [-1, 1])
+  add({ station: "ship", shape: "box", position: [TRUCK.x, TRUCK.bedY, (sz * TRUCK.width) / 2], size: [TRUCK.length, 2.4, 0.3], color: C.red });
+add({ station: "ship", shape: "box", position: [TRUCK.x + TRUCK.length / 2, TRUCK.bedY, 0], size: [0.3, 3, TRUCK.width], color: C.red }); // headboard
+add({ station: "ship", shape: "box", position: [TRUCK.x + TRUCK.length / 2 + 2, 0, 0], size: [3.6, 4.2, TRUCK.width - 0.6], color: C.white }); // cab
+add({ station: "ship", shape: "box", position: [TRUCK.x + TRUCK.length / 2 + 3.85, 2.4, 0], size: [0.1, 1.2, 4.4], color: "#274b6e", emissive: "#274b6e" }); // windscreen
+for (const x of [TRUCK.x - 4, TRUCK.x + 2, TRUCK.x + 7])
+  for (const sz of [-1, 1])
+    add({ station: "ship", shape: "cylinder", position: [x, 0.9, (sz * (TRUCK.width - 0.6)) / 2], size: [1.8, 0.6, 1.8], rotation: [90, 0, 0], color: C.charcoal });
+// pallet on the bed — where the crate goes
+add({ id: "pallet", station: "ship", shape: "box", position: [TRUCK.x - 2.5, TRUCK.bedY, 0], size: [3, 0.25, 3], color: "#5a4632" });
+for (const dz of [-1, 0, 1])
+  add({ station: "ship", shape: "box", position: [TRUCK.x - 2.5, TRUCK.bedY + 0.25, dz * 1.1], size: [3, 0.12, 0.5], color: "#6b543c" });
+// loading ramp
+{
+  const len = Math.hypot(RAMP.xEnd - RAMP.xStart, TRUCK.bedY);
+  const tilt = Math.atan2(TRUCK.bedY, RAMP.xEnd - RAMP.xStart) * (180 / Math.PI);
+  add({ id: "ramp", station: "ship", shape: "box", position: [(RAMP.xStart + RAMP.xEnd) / 2, TRUCK.bedY / 2 - 0.15, RAMP.z], size: [len, 0.3, RAMP.width], rotation: [0, 0, tilt], color: C.machineLight });
+  for (const sz of [-1, 1])
+    add({ station: "ship", shape: "box", position: [(RAMP.xStart + RAMP.xEnd) / 2, TRUCK.bedY / 2 + 0.3, RAMP.z + (sz * RAMP.width) / 2], size: [len, 0.5, 0.2], rotation: [0, 0, tilt], color: C.hazardYellow });
+}
+// "DRIVE TO SHIP!" sign next to the ramp
+add({ station: "ship", shape: "box", position: [78, 5.4, -8], size: [8, 1.6, 0.25], color: C.white });
+add({ station: "ship", shape: "cylinder", position: [78, 0, -8], size: [0.22, 5.4, 0.22], color: C.roller });
 
 export const PARTS = parts;
 
@@ -234,11 +272,6 @@ export interface CameraSpot {
   target: [number, number, number];
   title: string;
   note?: string;
-  follow?: {
-    fromSegment: string;
-    toSegment: string;
-    offset: [number, number, number];
-  };
 }
 
 export interface IdeaSegment {
@@ -269,23 +302,10 @@ const sceneParts: Part[] = [
     color: C.charcoal,
     emissive: C.accent,
   })),
-  // simplified forklift meshes (scene nudges them on x)
-  { id: "forklift-body", shape: "box", position: [67, UNDER_Y + 1.1, 9], size: [2.8, 1.2, 2], color: C.accent },
-  { id: "forklift-mast", shape: "box", position: [68.65, UNDER_Y + 2.5, 9], size: [0.18, 4.4, 0.18], color: C.roller },
-  { id: "forklift-fork-l", shape: "box", position: [70, UNDER_Y + 0.16, 8.5], size: [2.2, 0.12, 0.26], color: C.roller },
-  { id: "forklift-fork-r", shape: "box", position: [70, UNDER_Y + 0.16, 9.5], size: [2.2, 0.12, 0.26], color: C.roller },
-  ...([0, 1, 2, 3] as const).map((i) => ({
-    id: `forklift-wheel-${i}`,
-    shape: "cylinder" as const,
-    position: [67 + (i < 2 ? 1 : -1.1), UNDER_Y + 0.5, 9 + (i % 2 ? 1.1 : -1.1)],
-    size: [1, 0.4, 1] as [number, number, number],
-    rotation: [90, 0, 0] as [number, number, number],
-    color: C.charcoal,
-  })),
 ];
 
 export const FACTORY_PLAN: FactoryPlan = {
-  floor: { width: 160, depth: 90, color: C.floor },
+  floor: { width: 190, depth: 100, color: C.floor },
   conveyors: CONVEYORS,
   parts: sceneParts,
   ideaStart: [-19, IDEA_Y, 0],
@@ -294,24 +314,17 @@ export const FACTORY_PLAN: FactoryPlan = {
     { id: "refine", to: [-7, IDEA_Y, 0], duration: 4, ease: "in" },
     { id: "splitter", to: [6, IDEA_Y, 0], duration: 3 },
     { id: "lanes", to: [34, IDEA_Y, 0], duration: 5 },
-    { id: "feeds", to: [43.5, IDEA_Y, 0], duration: 3 },
-    { id: "chute", to: [TOWER_X, -3, 0], duration: 4, ease: "in" },
-    { id: "shaft", to: [TOWER_X, UNDER_Y + 2, 0], duration: 3, ease: "out" },
-    { id: "delivery", to: [CRATE_START[0], CRATE_START[1], 0], duration: 4 },
+    { id: "merge", to: [MERGE_X, IDEA_Y, 0], duration: 2 },
+    { id: "assembly", to: [ASM.x, IDEA_Y, 0], duration: 3, ease: "in" },
+    { id: "delivery", to: [CRATE_END[0], CRATE_END[1], 0], duration: 4 },
   ],
   spots: [
     { position: [-17, 4.5, 9], target: [-19, 1.9, 0], title: "Ideas Switch", note: "Raw ideas enter the hopper." },
     { position: [-9.5, 12, 3.5], target: [-8, 2, 0], title: "Refine", note: "Open-top machine — look inside." },
     { position: [2, 4, 8], target: [4, 1.9, 0], title: "Splitter", note: "One stream becomes three lanes." },
     { position: [16, 9, 22], target: [20, 1.5, 0], title: "Machining", note: "Press, drill, shaper, stamp." },
-    {
-      position: [69, 10, 18],
-      target: [TOWER_X, 0, 0],
-      title: "Assembler Tower",
-      note: "Parts fall through the shaft.",
-      follow: { fromSegment: "chute", toSegment: "shaft", offset: [8, 6, 10] },
-    },
-    { position: [56, UNDER_Y + 4, 10], target: [50, UNDER_Y + 1.5, 0], title: "Underground Delivery", note: "Crate rolls out on the belt." },
-    { position: [64, UNDER_Y + 3, 14], target: [67, UNDER_Y + 1.5, 9], title: "Forklift", note: "Pick up and carry the crate." },
+    { position: [40, 7, 17], target: [ASM.x, 3, 0], title: "Assembly", note: "The three lanes come back together." },
+    { position: [56, 4.5, 13], target: [59, 2, 0], title: "Project", note: "The finished crate rolls out." },
+    { position: [72, 5, 14], target: [78, 1.5, 0], title: "Drive to ship", note: "Load the crate onto the truck." },
   ],
 };

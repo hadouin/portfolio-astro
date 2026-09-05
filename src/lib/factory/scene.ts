@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {
-  BOAT, C, CONVEYORS, DECK_CRATES, DELIVERY_BELT, DOCK_EDGE_Z, FORKLIFT_START, HOPPER_POS, H_EXIT_POS, IDEA_SEEDS,
-  LANES, PARTS, RAMP, TOWER_X, UNDER_Y,
+  ASM, BAY, BAY_CRATES, C, CONVEYORS, FORKLIFT_START, HOPPER_POS, H_EXIT_POS, IDEA_SEEDS,
+  LANES, OUT_BELT, PARTS, RAMP, TRUCK,
 } from "./plan";
 import {
   COVER_OPEN, LEVER_ON, LEVER_REST, makeBeltTexture, makeConveyor, makeCrate, makeFloors, makeGridTexture,
@@ -38,7 +38,6 @@ export interface FactorySceneHandle {
 /** Scroll distance (px) that drives the whole timeline once the lever is pulled. */
 const SCROLL_LENGTH = 9000;
 const ESCAPE_PX = 380;
-const TOWER_W_SAFE = 5.2; // forklift cannot drive into the tower base
 // Front-on shots, like the storyboard: camera looks along -z, the belt runs left → right.
 const GRAB_CAM = { cam: new THREE.Vector3(-25.5, 5.2, 21), look: new THREE.Vector3(-25.5, 4.2, 0) };
 const LEVER_CAM = { cam: new THREE.Vector3(-24, 4.6, 14.5), look: new THREE.Vector3(-24, 3.4, 0) };
@@ -148,12 +147,13 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
   const front = new THREE.DirectionalLight("#ffffff", 0.7);
   front.position.set(-24, 12, 40);
   scene.add(front);
-  const shaftLight = new THREE.PointLight(C.blue, 60, 70, 1.6);
-  shaftLight.position.set(TOWER_X + 6, -20, 10);
-  scene.add(shaftLight);
-  for (const [x, z] of [[54, 0], [64, 6]]) {
-    const l = new THREE.PointLight("#fff4e0", 70, 45, 1.5);
-    l.position.set(x, UNDER_Y + 10, z);
+  // assembly + shipping bay pools of light
+  const asmLight = new THREE.PointLight(C.blue, 45, 40, 1.6);
+  asmLight.position.set(ASM.x, 9, 6);
+  scene.add(asmLight);
+  for (const x of [64, 76, 88]) {
+    const l = new THREE.PointLight("#fff4e0", 60, 45, 1.5);
+    l.position.set(x, BAY.ceiling - 3, 6);
     scene.add(l);
   }
 
@@ -221,25 +221,27 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
   forklift.place(FORKLIFT_START.position, FORKLIFT_START.heading);
   scene.add(forklift.group);
 
-  // ── underground terrain: floor, gangway ramp, boat deck, water (blocked) ──
-  const onDeck = (x: number, z: number) =>
-    x > BOAT.x - BOAT.length / 2 + 0.6 && x < BOAT.x + BOAT.length / 2 - 0.6 && z > BOAT.z - BOAT.width / 2 + 0.4 && z < BOAT.z + BOAT.width / 2 - 0.6;
-  const onRamp = (x: number, z: number) => Math.abs(x - RAMP.x) < RAMP.width / 2 - 0.3 && z >= RAMP.zStart - 1.5 && z <= RAMP.zEnd + 0.5;
-  const deckH = BOAT.deckY - UNDER_Y;
+  // ── shipping bay terrain: hall floor, loading ramp, truck bed, walls ──
+  const onBed = (x: number, z: number) =>
+    x > TRUCK.x - TRUCK.length / 2 + 0.6 && x < TRUCK.x + TRUCK.length / 2 - 0.6 && Math.abs(z) < TRUCK.width / 2 - 0.7;
+  const onRamp = (x: number, z: number) =>
+    Math.abs(z - RAMP.z) < RAMP.width / 2 - 0.3 && x >= RAMP.xStart - 1.5 && x <= RAMP.xEnd + 0.5;
   const groundAt = (x: number, z: number): number | null => {
-    if (onRamp(x, z)) return deckH * THREE.MathUtils.clamp((z - RAMP.zStart) / (RAMP.zEnd - RAMP.zStart), 0, 1);
-    if (onDeck(x, z)) return deckH;
-    if (z > DOCK_EDGE_Z - 1.6) return null; // water
-    if (z < -33 || x < TOWER_X + TOWER_W_SAFE || x > 98) return null; // cavern walls / tower base
+    if (onRamp(x, z)) return TRUCK.bedY * THREE.MathUtils.clamp((x - RAMP.xStart) / (RAMP.xEnd - RAMP.xStart), 0, 1);
+    if (onBed(x, z)) return TRUCK.bedY;
+    // truck body: sides, headboard and cab are solid (the bed and ramp are handled above)
+    if (x > TRUCK.x - TRUCK.length / 2 - 0.6 && x < TRUCK.x + TRUCK.length / 2 + 5 && Math.abs(z) < TRUCK.width / 2 + 0.8) return null;
+    if (x < BAY.x0 || x > BAY.x1 || Math.abs(z) > BAY.halfZ) return null; // hall walls / assembly machine
     return 0;
   };
   const supportAt = (x: number, z: number): number | null => {
-    if (x > DELIVERY_BELT.x0 - 0.5 && x < DELIVERY_BELT.x1 + 0.5 && Math.abs(z) < DELIVERY_BELT.halfW + 0.5) return DELIVERY_BELT.top - UNDER_Y;
+    if (x > OUT_BELT.x0 - 0.5 && x < OUT_BELT.x1 + 0.5 && Math.abs(z) < OUT_BELT.halfW + 0.5) return OUT_BELT.top;
+    if (Math.abs(x - (TRUCK.x - 2.5)) < 1.5 && Math.abs(z) < 1.5) return TRUCK.bedY + 0.37; // pallet on the bed
     return groundAt(x, z);
   };
-  const cargo = new CargoSystem(scene, supportAt, UNDER_Y);
+  const cargo = new CargoSystem(scene, supportAt, 0);
   const mainCargo = cargo.add(crate);
-  for (const pos of DECK_CRATES) {
+  for (const pos of BAY_CRATES) {
     const c = makeCrate();
     c.position.set(...pos);
     c.rotation.y = (pos[0] * 7 + pos[2] * 3) % 0.6 - 0.3;
@@ -336,14 +338,14 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
         else if (p < RANGES.splitter[0]) { title = "Shattered"; hint = "One idea, many pieces"; }
         else if (p < RANGES.machining[0]) { title = "Splitter"; hint = "Choose a lane: three fields, three paths"; }
         else if (p < RANGES.machining[1]) { title = "Machining"; hint = "Every piece gets worked on"; }
-        else if (p < 0.865) { title = "Assembly tower"; hint = "Everything comes together"; }
-        else if (p < RANGES.crate[0]) { title = "The drop"; hint = "Down to the delivery line"; }
-        else { title = "Delivery"; hint = "A fresh crate, version 1.0"; }
+        else if (p < RANGES.assemble[1]) { title = "Assembly"; hint = "The three lanes come back together"; }
+        else if (p < 0.93) { title = "Out of the machine"; hint = "The finished crate rolls out"; }
+        else { title = "Your project"; hint = "A fresh crate, version 1.0"; }
         break;
       case "drive-fp": title = "Drive to ship!"; hint = "Arrow keys: drive to the crate"; break;
       case "drive-tp":
-        if (shipped) { title = "Shipped!"; hint = "Your idea is on the boat · scroll down to leave"; }
-        else { title = "Playable transpalette"; hint = "↑ ↓ drive · ← → steer · W / S forks · drive the crate up the ramp onto the boat"; }
+        if (shipped) { title = "Shipped!"; hint = "Your project is loaded · scroll down to leave"; }
+        else { title = "Playable transpalette"; hint = "↑ ↓ drive · ← → steer · W / S forks · take the crate up the ramp onto the truck"; }
         break;
     }
     return { phase, progress, title, hint, held: scroller.held };
@@ -541,6 +543,24 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
     for (let i = 0; i < 3; i++) set(`refine-light-${i}`, (m) => {
       (m.material as THREE.MeshStandardMaterial).emissiveIntensity = ref > 0.1 ? (Math.sin(t * 8 + i * 2) > 0 ? 1.8 : 0.15) : 0.9;
     });
+    const asm = phase === "scroll" ? smoothstep(RANGES.assemble[0] - 0.03, RANGES.assemble[0] + 0.02, p) * (1 - smoothstep(RANGES.crate[0], RANGES.crate[0] + 0.03, p)) : 0;
+    set("asm-piston", (m, b) => { m.position.y = b + asm * bob(5) * 1.2; });
+    set("asm-drum", (m) => { m.rotation.z += dt * (0.3 + 3.5 * asm); });
+    for (let i = 0; i < 3; i++) set(`asm-window-${i}`, (m) => {
+      (m.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.35 + asm * (0.6 + 0.9 * bob(5, i * 1.4));
+    });
+    for (let i = 0; i < 3; i++) set(`asm-lamp-${i}`, (m) => {
+      (m.material as THREE.MeshStandardMaterial).emissiveIntensity = asm > 0.1 ? (Math.sin(t * 7 + i * 2) > 0 ? 1.8 : 0.15) : 0.7;
+    });
+
+    // overhead claw + "idea here" arrow only live during the grab (board 1)
+    const grab = phase === "grab" ? 1 : 0;
+    set("claw", (m, b) => { m.position.y = b + Math.sin(t * 0.9) * 0.5 * grab; });
+    set("idea-arrow-head", (m, b) => { m.position.y = b - 0.4 + Math.abs(Math.sin(t * 2)) * 0.8 * grab; });
+    for (const id of ["idea-arrow-shaft", "idea-arrow-head"]) set(id, (m) => {
+      (m.material as THREE.MeshStandardMaterial).emissiveIntensity = grab ? 0.7 + 0.5 * bob(3) : 0.25;
+    });
+
     set("hopper-ring", (m) => {
       (m.material as THREE.MeshStandardMaterial).emissiveIntensity = phase === "grab" ? 0.6 + 0.6 * Math.sin(t * 4) : 0.4;
     });
@@ -633,7 +653,7 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
         if (on) {
           pc.group.position.copy(pieceAct);
           pc.group.rotation.y = t * 2 + i;
-          if (p > RANGES.fall[0]) pc.group.rotation.x = t * 3;
+          if (p > RANGES.assemble[0]) pc.group.rotation.x = t * 3;
         }
       });
       const crateOn = samplePos(CRATE_KEYS, p, tmp);
@@ -657,7 +677,7 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
       } else {
         forklift.update(dt, scroller.held, groundAt);
         cargo.update(dt, forklift, forklift.liftInput);
-        if (!shipped && !mainCargo.carried && onDeck(crate.position.x, crate.position.z)) { shipped = true; emit(); }
+        if (!shipped && !mainCargo.carried && onBed(crate.position.x, crate.position.z)) { shipped = true; emit(); }
         forklift.eye(tmp);
         forklift.forward(tmp2);
         if (phase === "drive-fp") {

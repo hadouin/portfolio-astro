@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { BELT_H, C, DOCK_EDGE_Z, LEVER_PIVOT, TOWER_D, TOWER_W, TOWER_X, UNDER_Y, type Conveyor, type Part } from "./plan";
+import { BAY, BELT_H, C, LEVER_PIVOT, type Conveyor, type Part } from "./plan";
 
 const deg = THREE.MathUtils.degToRad;
 
@@ -147,39 +147,19 @@ export function makeFloors(gridTex: THREE.Texture): THREE.Object3D[] {
   const mat = new THREE.MeshStandardMaterial({ map: gridTex, roughness: 0.95 });
   gridTex.repeat.set(0.25, 0.25);
 
-  // ground with a hole for the shaft
-  const shape = new THREE.Shape();
-  shape.moveTo(-70, -45);
-  shape.lineTo(90, -45);
-  shape.lineTo(90, 45);
-  shape.lineTo(-70, 45);
-  shape.closePath();
-  const hole = new THREE.Path();
-  const hw = TOWER_W / 2 + 0.2;
-  const hd = TOWER_D / 2 + 0.2;
-  hole.moveTo(TOWER_X - hw, -hd);
-  hole.lineTo(TOWER_X + hw, -hd);
-  hole.lineTo(TOWER_X + hw, hd);
-  hole.lineTo(TOWER_X - hw, hd);
-  hole.closePath();
-  shape.holes.push(hole);
-  const ground = new THREE.Mesh(new THREE.ShapeGeometry(shape), mat);
+  // one continuous hall floor: the storyboard never leaves ground level
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(190, 100), mat);
   ground.rotation.x = -Math.PI / 2;
+  ground.position.set(20, 0, 0);
   ground.receiveShadow = true;
 
-  // underground floor
-  const under = new THREE.Mesh(new THREE.PlaneGeometry(90, 35 + DOCK_EDGE_Z), mat);
-  under.rotation.x = -Math.PI / 2;
-  under.position.set(55, UNDER_Y, (DOCK_EDGE_Z - 35) / 2);
-  under.receiveShadow = true;
-
-  // underground back walls (so the cavern has an edge)
+  // back wall behind the line, so the hall reads as an interior
   const wallMat = new THREE.MeshStandardMaterial({ color: "#0d0d0d", roughness: 1 });
-  const back = new THREE.Mesh(new THREE.BoxGeometry(90, 14, 1), wallMat);
-  back.position.set(55, UNDER_Y + 7, -35);
-  const side = new THREE.Mesh(new THREE.BoxGeometry(1, 14, 70), wallMat);
-  side.position.set(100, UNDER_Y + 7, 0);
-  return [ground, under, back, side];
+  const back = new THREE.Mesh(new THREE.BoxGeometry(190, 22, 1), wallMat);
+  back.position.set(20, 11, -34);
+  const end = new THREE.Mesh(new THREE.BoxGeometry(1, 22, 68), wallMat);
+  end.position.set(BAY.x1 + 6, 11, 0);
+  return [ground, back, end];
 }
 
 // ─── big danger lever with a glass cover ────────────────────────────────────
