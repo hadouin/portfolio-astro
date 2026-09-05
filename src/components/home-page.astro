@@ -5,6 +5,7 @@ import Container from "@components/container.astro";
 import Cta from "@components/cta.astro";
 import Education from "@components/education.astro";
 import Experience from "@components/experience.astro";
+import FactoryScene from "@components/factory-scene.astro";
 import Hero from "@components/hero.astro";
 import Projects from "@components/projects.astro";
 import Layout from "@layouts/Layout.astro";
@@ -174,6 +175,7 @@ const keywords =
     set:html={JSON.stringify(websiteJsonLd)}
   />
   <Hero locale={locale} />
+  <FactoryScene />
   <div class="relative z-10 bg-white">
     <Container>
       <AtAGlance locale={locale} />
