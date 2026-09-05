@@ -149,16 +149,15 @@ const COMPOSITE_FRAGMENT_SHADER = `
     float velBoost = length(uMouseVel) * uStrength * drive * 0.11;
 
     // Relative tilt is the driver on mobile, not the motion of getting there:
-    // these offsets are a pure function of the held angle. The picture shears
-    // toward the low side (edge-weighted so contours lead) with the channels
-    // split on top, and neither decays until the phone levels back out.
+    // the split is a pure function of the held angle and only closes when the
+    // phone levels back out. Like the hover effect, only the channels pull
+    // apart — the image itself stays anchored, so tilt reads as one clean cue.
     float tiltMag = min(length(uTilt), 1.0);
-    vec2 tiltWarp = uTilt * uStrength * (0.006 + edge * 0.028) * coverScale;
-    vec2 tiltSplit = uTilt * uStrength * (0.006 + edge * 0.024) * coverScale;
+    vec2 tiltSplit = uTilt * uStrength * (0.005 + edge * 0.020) * coverScale;
 
-    vec2 offsetR = waveOffset + chromaDir * (split + velBoost) * coverScale + tiltWarp + tiltSplit;
-    vec2 offsetG = waveOffset + tiltWarp;
-    vec2 offsetB = waveOffset + tiltWarp - chromaDir * (split + velBoost) * coverScale - tiltSplit;
+    vec2 offsetR = waveOffset + chromaDir * (split + velBoost) * coverScale + tiltSplit;
+    vec2 offsetG = waveOffset;
+    vec2 offsetB = waveOffset - chromaDir * (split + velBoost) * coverScale - tiltSplit;
 
     float r = texture2D(uImage, uv + offsetR).r;
     float g = texture2D(uImage, uv + offsetG).g;
@@ -166,7 +165,7 @@ const COMPOSITE_FRAGMENT_SHADER = `
 
     vec3 base = texture2D(uImage, uv).rgb;
     float mixAmount = clamp(
-      mouseMask * 0.9 + abs(wave) * 14.0 + length(uMouseVel) * 30.0 + tiltMag * 2.2,
+      mouseMask * 0.9 + abs(wave) * 14.0 + length(uMouseVel) * 30.0 + tiltMag * 1.2,
       0.0,
       1.0
     );
