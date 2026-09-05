@@ -345,7 +345,7 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
       case "drive-fp": title = "Drive to ship!"; hint = "Arrow keys: drive to the crate"; break;
       case "drive-tp":
         if (shipped) { title = "Shipped!"; hint = "Your project is loaded · scroll down to leave"; }
-        else { title = "Playable transpalette"; hint = "↑ ↓ drive · ← → steer · W / S forks · take the crate up the ramp onto the truck"; }
+        else { title = "Playable transpalette"; hint = "↑ ↓ drive · ← → steer · W / S (or shift + ↑ ↓) raise and lower the forks · take the crate up the ramp onto the truck"; }
         break;
     }
     return { phase, progress, title, hint, held: scroller.held };
@@ -364,12 +364,14 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
 
   const onKeyDown = (e: KeyboardEvent) => {
     const drive = phase === "drive-fp" || phase === "drive-tp";
-    if (drive && scroller.held && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "ShiftLeft", "ShiftRight", "PageUp", "PageDown", ...Forklift.LIFT_UP, ...Forklift.LIFT_DOWN].includes(e.code)) {
+    if (drive && scroller.held && Forklift.handles(e)) {
       e.preventDefault();
-      forklift.keys.add(e.code);
+      for (const t of Forklift.tokens(e)) forklift.keys.add(t);
     }
   };
-  const onKeyUp = (e: KeyboardEvent) => { forklift.keys.delete(e.code); };
+  const onKeyUp = (e: KeyboardEvent) => { for (const t of Forklift.tokens(e)) forklift.keys.delete(t); };
+  // a key held while the tab loses focus never fires keyup: the forks would stay stuck moving
+  const onBlur = () => forklift.keys.clear();
   const onLoaderDone = () => scroller.enforce();
   const onScroll = () => {
     const rect = section.getBoundingClientRect();
@@ -384,6 +386,7 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
   };
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
+  window.addEventListener("blur", onBlur);
   window.addEventListener("scroll", onScroll, { passive: true });
   document.addEventListener("hadouin:loader-done", onLoaderDone);
 
@@ -742,6 +745,7 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
       scroller.dispose();
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
       window.removeEventListener("scroll", onScroll);
       document.removeEventListener("hadouin:loader-done", onLoaderDone);
       canvas.removeEventListener("pointerdown", onPointerDown);

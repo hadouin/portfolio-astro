@@ -128,8 +128,26 @@ export class Forklift {
   /** Lift input this frame: +1 raising, -1 lowering. */
   liftInput = 0;
 
-  static LIFT_UP = ["KeyW", "PageUp", "KeyE"];
-  static LIFT_DOWN = ["KeyS", "PageDown", "KeyQ"];
+  static LIFT_UP = ["KeyW", "PageUp"];
+  static LIFT_DOWN = ["KeyS", "PageDown"];
+  static DRIVE = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "ShiftLeft", "ShiftRight"];
+
+  /**
+   * Tokens for a key event. `code` is a physical position, so on AZERTY the key printed W is
+   * `KeyZ` and `KeyQ` is the key printed A — matching the printed letter too keeps W / S working
+   * on any layout, and stops unrelated keys from moving the forks.
+   */
+  static tokens(e: KeyboardEvent): string[] {
+    const out = [e.code];
+    if (e.key.length === 1 && /[a-z]/i.test(e.key)) out.push(`Key${e.key.toUpperCase()}`);
+    return out;
+  }
+
+  /** True when the event maps to one of the forklift controls. */
+  static handles(e: KeyboardEvent): boolean {
+    const bound = [...Forklift.DRIVE, ...Forklift.LIFT_UP, ...Forklift.LIFT_DOWN];
+    return Forklift.tokens(e).some((t) => bound.includes(t));
+  }
 
   update(dt: number, active: boolean, groundAt?: (x: number, z: number) => number | null) {
     const k = this.keys;
@@ -155,7 +173,7 @@ export class Forklift {
     if (groundAt) {
       let g = groundAt(this.group.position.x, this.group.position.z);
       if (g === null) {
-        // blocked (water / walls): slide along the obstacle, else stay put
+        // blocked (hall walls, truck body): slide along the obstacle, else stay put
         const nx = this.group.position.x;
         const nz = this.group.position.z;
         if (groundAt(nx, prev.z) !== null) { this.group.position.z = prev.z; g = groundAt(nx, prev.z); }
