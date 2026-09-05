@@ -1,8 +1,8 @@
 ---
 /**
  * Scroll-locked, full-screen 3D factory (Three.js, basic shapes). Sits right after the hero.
- * Interactions: drag an idea into the hopper, pull the lever, scroll the timeline, scratch the
- * charcoal, then drive the forklift with the keyboard.
+ * Interactions: play the claw machine (arrows + GRAB) to drop an idea in the hopper, pull the
+ * lever, scroll the timeline, scratch the charcoal, then drive the forklift with the keyboard.
  */
 ---
 
@@ -21,13 +21,14 @@
         <p class="mt-1 font-inter text-sm text-[#a8a8a2]" data-factory-hint></p>
       </div>
       <div class="pointer-events-auto flex shrink-0 flex-col items-end gap-3">
-        <div class="factory-pad hidden grid-cols-3 gap-1 text-lg" data-factory-pad>
-          <button type="button" class="factory-key" data-key="KeyW" aria-label="Raise forks">⤒</button>
-          <button type="button" class="factory-key" data-key="ArrowUp" aria-label="Forward">↑</button>
-          <button type="button" class="factory-key" data-key="KeyS" aria-label="Lower forks">⤓</button>
+        <div class="factory-pad hidden grid-cols-3 gap-1 text-lg" data-factory-pad data-mode="claw">
+          <button type="button" class="factory-key" data-key="KeyW" data-drive-only aria-label="Raise forks">⤒</button>
+          <button type="button" class="factory-key" data-key="ArrowUp" aria-label="Up">↑</button>
+          <button type="button" class="factory-key" data-key="KeyS" data-drive-only aria-label="Lower forks">⤓</button>
           <button type="button" class="factory-key" data-key="ArrowLeft" aria-label="Left">←</button>
-          <button type="button" class="factory-key" data-key="ArrowDown" aria-label="Reverse">↓</button>
+          <button type="button" class="factory-key" data-key="ArrowDown" aria-label="Down">↓</button>
           <button type="button" class="factory-key" data-key="ArrowRight" aria-label="Right">→</button>
+          <button type="button" class="factory-key factory-grab col-span-3" data-key="Space" data-claw-only aria-label="Grab an idea">GRAB</button>
         </div>
         <button
           type="button"
@@ -90,6 +91,26 @@
   .factory-pad.is-visible {
     display: grid;
   }
+  .factory-pad[data-mode="claw"] [data-drive-only] {
+    visibility: hidden;
+  }
+  .factory-pad[data-mode="drive"] [data-claw-only] {
+    display: none;
+  }
+  .factory-grab {
+    width: auto;
+    height: 2.9rem;
+    border-radius: 999px;
+    border-color: rgb(255 138 138 / 0.7);
+    background: #c73838;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+  }
+  .factory-grab:active {
+    background: #ff5a5a;
+    color: #fff;
+  }
 </style>
 
 <script>
@@ -113,7 +134,7 @@
     const coarse = window.matchMedia("(pointer: coarse)").matches;
 
     const PHASE_LABEL: Record<FactoryState["phase"], string> = {
-      grab: "Step 1 · Ideas",
+      grab: "Step 1 · Claw machine",
       lever: "Step 2 · Switch",
       popping: "Step 2 · Switch",
       scroll: "Scroll to continue",
@@ -129,7 +150,9 @@
         hint.textContent = s.hint;
         phaseEl.textContent = s.held ? PHASE_LABEL[s.phase] : s.phase === "scroll" ? "Scroll to continue" : s.phase === "grab" ? "Scroll into the factory" : "The factory";
         bar.style.width = `${Math.round(s.progress * 100)}%`;
-        pad.classList.toggle("is-visible", coarse && (s.phase === "drive-fp" || s.phase === "drive-tp"));
+        const drive = s.phase === "drive-fp" || s.phase === "drive-tp";
+        pad.dataset.mode = s.phase === "grab" ? "claw" : "drive";
+        pad.classList.toggle("is-visible", (s.phase === "grab" && s.held) || (coarse && drive));
       },
     });
 

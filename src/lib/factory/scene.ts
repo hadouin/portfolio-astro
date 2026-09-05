@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import {
-  ASM, BAY, BAY_CRATES, C, CONVEYORS, FORKLIFT_START, HOPPER_POS, H_EXIT_POS, IDEA_SEEDS,
+  ASM, BAY, BAY_CRATES, C, CAB, CLAW, CONVEYORS, FORKLIFT_START, HOPPER_POS, H_EXIT_POS, IDEA_SEEDS,
   LANES, OUT_BELT, PARTS, RAMP, TRUCK,
 } from "./plan";
 import {
-  COVER_OPEN, LEVER_ON, LEVER_REST, makeBeltTexture, makeConveyor, makeCrate, makeFloors, makeGridTexture,
-  makeHazardTexture, makeIdea, makeLever, makePart, type IdeaBuild,
+  COVER_OPEN, LEVER_ON, LEVER_REST, makeBeltTexture, makeClawRig, makeConveyor, makeCrate, makeFloors,
+  makeGridTexture, makeHazardTexture, makeIdea, makeLever, makePart, type IdeaBuild,
 } from "./build";
 import { Forklift } from "./forklift";
 import { CargoSystem } from "./cargo";
@@ -39,7 +39,7 @@ export interface FactorySceneHandle {
 const SCROLL_LENGTH = 9000;
 const ESCAPE_PX = 380;
 // Front-on shots, like the storyboard: camera looks along -z, the belt runs left → right.
-const GRAB_CAM = { cam: new THREE.Vector3(-25.5, 5.2, 21), look: new THREE.Vector3(-25.5, 4.2, 0) };
+const GRAB_CAM = { cam: new THREE.Vector3(-30, 6.8, 20), look: new THREE.Vector3(-30, 4.6, 0) };
 const LEVER_CAM = { cam: new THREE.Vector3(-24, 4.6, 14.5), look: new THREE.Vector3(-24, 3.4, 0) };
 const POP_CAM = { cam: new THREE.Vector3(-21, 4.6, 15), look: new THREE.Vector3(-21, 2.6, 0) };
 
@@ -194,9 +194,17 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
   const lever = makeLever(hazardTex);
   scene.add(lever.group);
 
+  // playable claw over the cabinet + a warm pool of light inside the glass case
+  const claw = makeClawRig(CLAW.railY, CLAW.railZ);
+  scene.add(claw.group);
+  const cabLight = new THREE.PointLight("#ffd9a0", 26, 18, 1.8);
+  cabLight.position.set(CAB.x, 7, 1.5);
+  scene.add(cabLight);
+
   // ── dynamic actors ──
   const seeds: IdeaBuild[] = IDEA_SEEDS.map((pos, i) => {
-    const s = makeIdea(0.6, false, false);
+    const s = makeIdea(0.6, false, true);
+    s.light.intensity = 1.6; // faint glow so the shards read through the glass
     s.group.position.set(...pos);
     s.group.userData.seedIndex = i;
     s.group.userData.home = new THREE.Vector3(...pos);
@@ -271,6 +279,17 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
   let camSnap = false;
   let lastState: FactoryState | null = null;
 
+  // ── claw-machine mini-game (phase "grab") ──
+  type ClawStep = "play" | "descend" | "close" | "raise" | "carry" | "release" | "home";
+  let clawStep: ClawStep = "play";
+  const clawPos = new THREE.Vector3(CAB.x, CLAW.idleY, 0); // x/z = trolley, y = head centre
+  let clawJaw = 0.35; // 0 open … 1 closed
+  let carried: IdeaBuild | null = null;
+  let grabQueued = false;
+  let misses = 0;
+  const clawKeys = new Set<string>();
+  const CLAW_MOVE = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+
   const sectionTop = () => window.scrollY + section.getBoundingClientRect().top;
   const endY = () => sectionTop() + SCROLL_LENGTH;
   const gateY = () => sectionTop() + GATES.scratch * SCROLL_LENGTH;
@@ -328,7 +347,14 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
     let hint = "";
     const p = progress;
     switch (phase) {
-      case "grab": title = "Grab an idea"; hint = "Drag a shard from the cloud into the hopper of the H machine"; break;
+      case "grab":
+        title = "Claw machine";
+        hint = clawStep === "carry" || clawStep === "release" || clawStep === "home"
+          ? "Nice catch — into the hopper it goes"
+          : clawStep === "play"
+            ? (misses ? "Missed! Line up the claw and hit GRAB again" : "Arrows move the claw · GRAB to catch an idea")
+            : "Grabbing…";
+        break;
       case "lever": title = "Ideas switch"; hint = coverOpen ? "Throw the big lever" : "Lift the safety cover"; break;
       case "popping": title = "Ideas switch"; hint = ""; break;
       case "scroll":
@@ -363,15 +389,26 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
   }
 
   const onKeyDown = (e: KeyboardEvent) => {
+    if (phase === "grab" && scroller.held) {
+      if (CLAW_MOVE.includes(e.code)) { e.preventDefault(); clawKeys.add(e.code); return; }
+      if (e.code === "Space" || e.code === "Enter") {
+        e.preventDefault();
+        if (clawStep === "play") grabQueued = true;
+        return;
+      }
+    }
     const drive = phase === "drive-fp" || phase === "drive-tp";
     if (drive && scroller.held && Forklift.handles(e)) {
       e.preventDefault();
       for (const t of Forklift.tokens(e)) forklift.keys.add(t);
     }
   };
-  const onKeyUp = (e: KeyboardEvent) => { for (const t of Forklift.tokens(e)) forklift.keys.delete(t); };
-  // a key held while the tab loses focus never fires keyup: the forks would stay stuck moving
-  const onBlur = () => forklift.keys.clear();
+  const onKeyUp = (e: KeyboardEvent) => {
+    clawKeys.delete(e.code);
+    for (const t of Forklift.tokens(e)) forklift.keys.delete(t);
+  };
+  // a key held while the tab loses focus never fires keyup: the claw or forks would stay stuck moving
+  const onBlur = () => { forklift.keys.clear(); clawKeys.clear(); };
   const onLoaderDone = () => scroller.enforce();
   const onScroll = () => {
     const rect = section.getBoundingClientRect();
@@ -393,10 +430,8 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
   // ── pointer interactions ──
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
-  const dragPlane = new THREE.Plane();
   const tmp = new THREE.Vector3();
   const tmp2 = new THREE.Vector3();
-  let dragging: IdeaBuild | null = null;
   let scratching = false;
   let strokes = 0;
   let inserting: { seed: IdeaBuild; from: THREE.Vector3; t: number } | null = null;
@@ -425,18 +460,12 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
     }
   }
 
+  const grabBtn = named.get("grab-btn");
   const onPointerDown = (e: PointerEvent) => {
     updatePointer(e);
-    if (phase === "grab" && !inserting) {
-      const hit = raycaster.intersectObjects(seeds.map((s) => s.shell), false)[0];
-      if (hit) {
-        dragging = seeds.find((s) => s.shell === hit.object)!;
-        interacting = true;
-        camera.getWorldDirection(tmp);
-        dragPlane.setFromNormalAndCoplanarPoint(tmp.negate(), dragging.group.position);
-        canvas.setPointerCapture(e.pointerId);
-        canvas.style.cursor = "grabbing";
-      }
+    if (phase === "grab") {
+      // the big red dome on the cabinet works like the on-screen GRAB button
+      if (clawStep === "play" && grabBtn && raycaster.intersectObject(grabBtn, false).length) grabQueued = true;
     } else if (phase === "lever") {
       if (!coverOpen && coverT < 0 && raycaster.intersectObject(lever.cover, false).length) {
         coverT = 0;
@@ -456,36 +485,19 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
   };
   const onPointerMove = (e: PointerEvent) => {
     updatePointer(e);
-    if (dragging) {
-      if (raycaster.ray.intersectPlane(dragPlane, tmp)) {
-        tmp.y = Math.max(0.8, tmp.y);
-        dragging.group.position.copy(tmp);
-      }
-      return;
-    }
     if (scratching) {
       const hit = raycaster.intersectObject(idea.shell, false)[0];
       if (hit?.uv) paintScratch(hit.uv);
       return;
     }
     let cursor = "";
-    if (phase === "grab" && !inserting && raycaster.intersectObjects(seeds.map((s) => s.shell), false).length) cursor = "grab";
+    if (phase === "grab" && clawStep === "play" && grabBtn && raycaster.intersectObject(grabBtn, false).length) cursor = "pointer";
     else if (phase === "lever" && !coverOpen && coverT < 0 && raycaster.intersectObject(lever.cover, false).length) cursor = "pointer";
     else if (phase === "lever" && coverOpen && leverT < 0 && raycaster.intersectObject(lever.hit, false).length) cursor = "pointer";
     else if (inScratchWindow() && raycaster.intersectObject(idea.shell, false).length) cursor = "crosshair";
     canvas.style.cursor = cursor;
   };
   const onPointerUp = (e: PointerEvent) => {
-    if (dragging) {
-      updatePointer(e);
-      if (raycaster.ray.distanceToPoint(tmp2.set(...HOPPER_POS)) < 3.2) {
-        inserting = { seed: dragging, from: dragging.group.position.clone(), t: 0 };
-      } else {
-        dragging.group.userData.returning = true;
-      }
-      dragging = null;
-      canvas.style.cursor = "";
-    }
     scratching = false;
     interacting = false;
     try { canvas.releasePointerCapture(e.pointerId); } catch { /* not captured */ }
@@ -505,6 +517,10 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      // pull the grab camera back on narrow viewports so cabinet + hopper both stay in frame
+      const z = Math.max(20, 8.5 / (Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect));
+      GRAB_CAM.cam.set(-30, 6.8 + (z - 20) * 0.08, z);
+      if (phase === "grab") camGoal.copy(GRAB_CAM.cam);
     }
   }
   const ro = new ResizeObserver(resize);
@@ -556,12 +572,13 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
       (m.material as THREE.MeshStandardMaterial).emissiveIntensity = asm > 0.1 ? (Math.sin(t * 7 + i * 2) > 0 ? 1.8 : 0.15) : 0.7;
     });
 
-    // overhead claw + "idea here" arrow only live during the grab (board 1)
+    // claw-machine marquee strip + GRAB dome pulse while the game is live (board 1)
     const grab = phase === "grab" ? 1 : 0;
-    set("claw", (m, b) => { m.position.y = b + Math.sin(t * 0.9) * 0.5 * grab; });
-    set("idea-arrow-head", (m, b) => { m.position.y = b - 0.4 + Math.abs(Math.sin(t * 2)) * 0.8 * grab; });
-    for (const id of ["idea-arrow-shaft", "idea-arrow-head"]) set(id, (m) => {
-      (m.material as THREE.MeshStandardMaterial).emissiveIntensity = grab ? 0.7 + 0.5 * bob(3) : 0.25;
+    set("cab-light", (m) => {
+      (m.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.5 + (0.5 + 0.6 * bob(2.2)) * grab;
+    });
+    set("grab-btn", (m) => {
+      (m.material as THREE.MeshStandardMaterial).emissiveIntensity = grab && clawStep === "play" ? 0.6 + 0.8 * bob(3) : 0.25;
     });
 
     set("hopper-ring", (m) => {
@@ -572,6 +589,74 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
       if (phase === "lever") { mat.color.set(C.accent); mat.emissive.set(C.accent); mat.emissiveIntensity = 0.6 + 0.8 * bob(6); }
       else if (phase !== "grab") { mat.color.set("#7ee2a0"); mat.emissive.set("#7ee2a0"); mat.emissiveIntensity = 1.2; }
     });
+  }
+
+  /**
+   * Claw mini-game: arrows steer the trolley, GRAB runs drop → close → raise; a successful
+   * catch auto-carries the shard over the H hopper and drops it in (the `inserting` animation
+   * then swallows it and flips the phase to "lever").
+   */
+  function updateClaw(dt: number) {
+    const move = (cur: number, to: number, v: number) => cur + THREE.MathUtils.clamp(to - cur, -v * dt, v * dt);
+    const jawTo = (to: number) => { clawJaw = move(clawJaw, to, 2.5); };
+    switch (clawStep) {
+      case "play": {
+        jawTo(0.35);
+        const mx = (clawKeys.has("ArrowRight") ? 1 : 0) - (clawKeys.has("ArrowLeft") ? 1 : 0);
+        const mz = (clawKeys.has("ArrowDown") ? 1 : 0) - (clawKeys.has("ArrowUp") ? 1 : 0);
+        clawPos.x = THREE.MathUtils.clamp(clawPos.x + mx * CLAW.speed * dt, CLAW.bounds.x0, CLAW.bounds.x1);
+        clawPos.z = THREE.MathUtils.clamp(clawPos.z + mz * CLAW.speed * dt, CLAW.bounds.z0, CLAW.bounds.z1);
+        clawPos.y = move(clawPos.y, CLAW.idleY, CLAW.vSpeed);
+        if (grabQueued && phase === "grab") { clawStep = "descend"; emit(); }
+        grabQueued = false;
+        break;
+      }
+      case "descend":
+        jawTo(0);
+        clawPos.y = move(clawPos.y, CLAW.grabY, CLAW.vSpeed);
+        if (clawPos.y === CLAW.grabY) clawStep = "close";
+        break;
+      case "close":
+        jawTo(1);
+        if (clawJaw >= 1) {
+          carried = seeds.find((s) =>
+            s.group.visible && Math.hypot(s.group.position.x - clawPos.x, s.group.position.z - clawPos.z) < CLAW.catchRadius) ?? null;
+          if (!carried) misses++;
+          clawStep = "raise";
+          emit();
+        }
+        break;
+      case "raise":
+        clawPos.y = move(clawPos.y, CLAW.carryY, CLAW.vSpeed);
+        if (clawPos.y === CLAW.carryY) clawStep = carried ? "carry" : "play";
+        break;
+      case "carry":
+        clawPos.x = move(clawPos.x, HOPPER_POS[0], CLAW.speed);
+        clawPos.z = move(clawPos.z, HOPPER_POS[2], CLAW.speed);
+        if (clawPos.x === HOPPER_POS[0] && clawPos.z === HOPPER_POS[2]) clawStep = "release";
+        break;
+      case "release":
+        jawTo(0);
+        if (clawJaw <= 0 && carried) {
+          inserting = { seed: carried, from: carried.group.position.clone(), t: 0 };
+          carried = null;
+          clawStep = "home";
+        }
+        break;
+      case "home":
+        jawTo(0.35);
+        clawPos.x = move(clawPos.x, CAB.x, CLAW.speed);
+        clawPos.z = move(clawPos.z, 0, CLAW.speed);
+        if (clawPos.x === CAB.x && clawPos.z === 0) clawPos.y = move(clawPos.y, CLAW.idleY, CLAW.vSpeed);
+        break;
+    }
+    if (carried) {
+      carried.group.position.set(clawPos.x, clawPos.y - 1.4, clawPos.z);
+      carried.group.rotation.y += dt;
+    }
+    claw.update(clawPos.x, clawPos.z, clawPos.y, clawJaw);
+    // the camera pans gently with the claw so the hand-off to the hopper stays in frame
+    if (phase === "grab") lookGoal.x = THREE.MathUtils.lerp(GRAB_CAM.look.x, clawPos.x, 0.45);
   }
 
   function frame() {
@@ -585,16 +670,12 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
     for (const m of beltMaps) m.offset.x -= dt * 0.7;
 
     seeds.forEach((s, i) => {
-      if (s === dragging || s === inserting?.seed || !s.group.visible) return;
+      if (s === carried || s === inserting?.seed || !s.group.visible) return;
       const home = s.group.userData.home as THREE.Vector3;
-      if (s.group.userData.returning) {
-        s.group.position.lerp(home, 1 - Math.pow(0.001, dt));
-        if (s.group.position.distanceTo(home) < 0.05) s.group.userData.returning = false;
-      } else {
-        s.group.position.y = home.y + Math.sin(t * 1.2 + i) * 0.3;
-      }
+      s.group.position.set(home.x, home.y + Math.sin(t * 1.2 + i) * 0.25, home.z);
       s.group.rotation.y = t * 0.6 + i;
     });
+    updateClaw(dt);
 
     if (inserting) {
       inserting.t += dt / 0.9;
@@ -719,9 +800,10 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
       return { x: r.left + ((n.x + 1) / 2) * r.width, y: r.top + ((1 - n.y) / 2) * r.height };
     };
     (window as any).__factory = {
-      state: () => ({ phase, progress, raw: rawProgress(), scratchDone, coverOpen, held: scroller.held, lenis: scroller.lenis, shipped, cam: camera.position.toArray(), forklift: forklift.group.position.toArray(), heading: forklift.heading, fork: forklift.forkHeight, carried: mainCargo.carried, crate: crate.getWorldPosition(new THREE.Vector3()).toArray() }),
+      state: () => ({ phase, progress, raw: rawProgress(), scratchDone, coverOpen, held: scroller.held, lenis: scroller.lenis, shipped, clawStep, claw: clawPos.toArray(), misses, cam: camera.position.toArray(), forklift: forklift.group.position.toArray(), heading: forklift.heading, fork: forklift.forkHeight, carried: mainCargo.carried, crate: crate.getWorldPosition(new THREE.Vector3()).toArray() }),
       seed: (i: number) => project(seeds[i].group.position),
       hopper: () => project(hopper),
+      grab: () => { if (clawStep === "play") grabQueued = true; },
       cover: () => project(lever.cover.getWorldPosition(new THREE.Vector3())),
       lever: () => project(lever.hit.getWorldPosition(new THREE.Vector3())),
       idea: () => project(idea.group.position),
@@ -737,7 +819,14 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
       scroller.scrollTo(sectionTop() + section.offsetHeight);
       emit();
     },
-    setKey(code, down) { if (down) forklift.keys.add(code); else forklift.keys.delete(code); },
+    setKey(code, down) {
+      if (phase === "grab") {
+        if (code === "Space") { if (down && clawStep === "play") grabQueued = true; return; }
+        if (down) clawKeys.add(code); else clawKeys.delete(code);
+        return;
+      }
+      if (down) forklift.keys.add(code); else forklift.keys.delete(code);
+    },
     dispose() {
       cancelAnimationFrame(raf);
       ro.disconnect();

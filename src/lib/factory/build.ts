@@ -237,6 +237,61 @@ export function makeLever(hazardTex: THREE.Texture): LeverBuild {
   return { group: g, handle, hinge, cover, hit };
 }
 
+// ─── playable claw rig (bridge on the gantry rail, trolley, cable, 4 jaws) ──
+export interface ClawRig {
+  group: THREE.Group;
+  /** x/z = trolley position, headY = claw head centre, closed ∈ [0 open … 1 closed]. */
+  update: (x: number, z: number, headY: number, closed: number) => void;
+}
+
+export function makeClawRig(railY: number, railZ: number): ClawRig {
+  const g = new THREE.Group();
+  const steel = new THREE.MeshStandardMaterial({ color: C.roller, metalness: 0.5, roughness: 0.4 });
+  const light = new THREE.MeshStandardMaterial({ color: C.machineLight, roughness: 0.6 });
+
+  // bridge rides the rail (x), trolley rides the bridge (z)
+  const bridgeLen = 9.5;
+  const bridge = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.5, bridgeLen), light);
+  const trolley = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.9, 1.6), new THREE.MeshStandardMaterial({ color: C.machine, roughness: 0.7 }));
+  const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1, 8), steel);
+  bridge.castShadow = trolley.castShadow = true;
+  g.add(bridge, trolley, cable);
+
+  const head = new THREE.Group();
+  const bell = new THREE.Mesh(new THREE.ConeGeometry(1.0, 1.5, 20), steel);
+  bell.rotation.x = Math.PI;
+  bell.castShadow = true;
+  head.add(bell);
+  const jaws: THREE.Group[] = [];
+  for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+    const pivot = new THREE.Group();
+    pivot.position.set(Math.cos(a) * 0.7, -0.55, Math.sin(a) * 0.7);
+    pivot.rotation.y = -a; // local +x points outward
+    const finger = new THREE.Mesh(new THREE.BoxGeometry(0.28, 1.5, 0.28), steel);
+    finger.position.y = -0.7;
+    finger.castShadow = true;
+    const tip = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.5, 0.26), steel);
+    tip.position.set(-0.16, -1.5, 0);
+    tip.rotation.z = 0.5;
+    pivot.add(finger, tip);
+    head.add(pivot);
+    jaws.push(pivot);
+  }
+  g.add(head);
+
+  const update = (x: number, z: number, headY: number, closed: number) => {
+    bridge.position.set(x, railY - 0.55, railZ + bridgeLen / 2 - 0.5);
+    trolley.position.set(x, railY - 1.1, z);
+    head.position.set(x, headY, z);
+    const len = Math.max(0.2, railY - 1.5 - headY);
+    cable.position.set(x, headY + 0.7 + len / 2, z);
+    cable.scale.y = len;
+    for (const j of jaws) j.rotation.z = THREE.MathUtils.lerp(0.75, -0.12, closed);
+  };
+  update(0, 0, railY - 4, 0.35);
+  return { group: g, update };
+}
+
 // ─── ideas ──────────────────────────────────────────────────────────────────
 export interface IdeaBuild {
   group: THREE.Group;

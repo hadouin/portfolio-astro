@@ -2,7 +2,7 @@
  * Factory world data — from the storyboard (boards 1 → 18).
  *
  * Flow (left → right, +x, one ground level — the boards never leave the hall):
- *   1  ideas cloud + overhead claw ("GRAB AN IDEA", "IDEA HERE!")
+ *   1  "IDEA" claw machine — drive the claw with buttons, grab an idea, it drops in the hopper
  *   2  H machine, hopper + safety lever, the idea pops back out
  *   3  belt, charcoal raw idea
  *   4  "your idea is already gold" (scratch the charcoal)
@@ -67,6 +67,20 @@ export const OUT_BELT = { x0: ASM_OUT_X, x1: 64, halfW: 1.5, top: BELT_H };
 export const REVEAL_PILLARS: [number, number][] = [[52.5, 9], [66, 9]];
 
 export const HOPPER_POS: [number, number, number] = [-24, 7.6, 0];
+/** Claw-machine cabinet (board 1): a glass case full of ideas, next to the H machine. */
+export const CAB = { x: -33, z: 0, w: 10, d: 8, baseH: 1.6, glassH: 5.8 };
+/** Gantry claw: playable bounds inside the cabinet, heights, travel speeds. */
+export const CLAW = {
+  railY: 11,
+  railZ: -5,
+  idleY: 6.0,
+  grabY: 4.0,
+  carryY: 10.0,
+  speed: 3.4,
+  vSpeed: 4.5,
+  catchRadius: 1.35,
+  bounds: { x0: CAB.x - CAB.w / 2 + 1.3, x1: CAB.x + CAB.w / 2 - 1.3, z0: -2.3, z1: 2.3 },
+};
 export const H_EXIT_POS: [number, number, number] = [-20.4, 2.4, 0];
 export const LEVER_PIVOT: [number, number, number] = [-24, 3.1, 3.3];
 export const CRATE_START: [number, number, number] = [52.5, BELT_H, 0];
@@ -87,8 +101,9 @@ export const BAY_CRATES: [number, number, number][] = [
   [72, 0, -14], [74.5, 0, -14], [72, 0, -17], [80, 0, 15], [82.5, 0, 15],
 ];
 
+/** Idea shards floating inside the claw-machine cabinet (octa groups are centred on y). */
 export const IDEA_SEEDS: [number, number, number][] = [
-  [-30, 3, -2], [-32, 4.5, 1.5], [-29, 5.5, 2], [-33, 2.5, -1], [-31, 6.5, -1.5], [-28, 2.2, 0.5],
+  [-36.2, 2.5, -1.5], [-35, 2.5, 1.3], [-33.6, 2.5, -0.5], [-32.2, 2.5, 1.6], [-31.1, 2.5, -1.6], [-34.3, 2.5, -0.2],
 ];
 
 // ─── conveyors ──────────────────────────────────────────────────────────────
@@ -115,17 +130,34 @@ export const CONVEYORS: Conveyor[] = [
 const parts: Part[] = [];
 const add = (p: Part) => parts.push(p);
 
-// Overhead claw over the ideas cloud + "IDEA HERE!" arrow over the hopper (board 1)
-add({ station: "grab", shape: "box", position: [-32, 13, -5], size: [14, 0.7, 0.7], color: C.machineLight }); // gantry rail
-for (const x of [-38.5, -25.5]) add({ station: "grab", shape: "box", position: [x, 0, -5], size: [0.7, 13, 0.7], color: C.roller }); // rail legs
-add({ station: "grab", shape: "box", position: [-30.5, 12.9, -2.5], size: [1.2, 0.5, 5.6], color: C.machineLight }); // trolley bridge
-add({ station: "grab", shape: "box", position: [-30.5, 12.2, 0], size: [2.4, 0.8, 2.4], color: C.machine }); // trolley
-add({ station: "grab", shape: "cylinder", position: [-30.5, 9.4, 0], size: [0.12, 3, 0.12], color: C.roller }); // cable
-add({ id: "claw", station: "grab", shape: "cone", position: [-30.5, 7.6, 0], size: [2.2, 1.8, 2.2], rotation: [180, 0, 0], color: C.machineLight });
-for (const [dx, dz] of [[-0.9, 0], [0.9, 0], [0, -0.9], [0, 0.9]])
-  add({ id: `claw-jaw-${dx}-${dz}`, station: "grab", shape: "box", position: [-30.5 + dx, 6.2, dz], size: [0.35, 1.6, 0.35], rotation: [dz * 20, 0, -dx * 20], color: C.roller });
-add({ id: "idea-arrow-shaft", station: "grab", shape: "box", position: [-24, 11.2, 0], size: [0.6, 2.2, 0.6], color: C.red, emissive: C.red });
-add({ id: "idea-arrow-head", station: "grab", shape: "cone", position: [-24, 9.4, 0], size: [2.2, 1.8, 2.2], rotation: [180, 0, 0], color: C.red, emissive: C.red });
+// Claw-machine cabinet (board 1): base, glass case, marquee, control panel — the claw rig
+// itself (bridge / trolley / cable / jaws) is dynamic, see makeClawRig in build.ts.
+add({ station: "grab", shape: "box", position: [CAB.x, 0, CAB.z], size: [CAB.w, CAB.baseH, CAB.d], color: C.machine });
+add({ station: "grab", shape: "box", position: [CAB.x, 0.55, CAB.z + CAB.d / 2 + 0.8], size: [6.6, 0.9, 1.7], rotation: [-14, 0, 0], color: C.charcoal }); // control panel
+for (const [dx, dz] of [[-0.55, 0], [0.55, 0], [0, -0.35], [0, 0.35]])
+  add({ station: "grab", shape: "box", position: [CAB.x - 1.8 + dx, 1.28, CAB.z + CAB.d / 2 + 0.75 + dz], size: [0.42, 0.16, 0.3], color: C.machineLight }); // d-pad
+add({ id: "grab-btn", station: "grab", shape: "sphere", position: [CAB.x + 1.6, 1.15, CAB.z + CAB.d / 2 + 0.55], size: [0.85, 0.85, 0.85], color: C.red, emissive: C.red }); // GRAB dome
+// glass case (solid back wall so the shards read against it)
+add({ station: "grab", shape: "box", position: [CAB.x, CAB.baseH, CAB.z + CAB.d / 2], size: [CAB.w, CAB.glassH, 0.12], color: "#9fc0e8", opacity: 0.14 });
+add({ station: "grab", shape: "box", position: [CAB.x - CAB.w / 2, CAB.baseH, CAB.z], size: [0.12, CAB.glassH, CAB.d], color: "#9fc0e8", opacity: 0.14 });
+add({ station: "grab", shape: "box", position: [CAB.x + CAB.w / 2, CAB.baseH, CAB.z], size: [0.12, CAB.glassH, CAB.d], color: "#9fc0e8", opacity: 0.14 });
+add({ station: "grab", shape: "box", position: [CAB.x, CAB.baseH, CAB.z - CAB.d / 2], size: [CAB.w, CAB.glassH, 0.25], color: "#111114" });
+for (const sx of [-1, 1])
+  for (const sz of [-1, 1])
+    add({ station: "grab", shape: "box", position: [CAB.x + (sx * CAB.w) / 2, CAB.baseH, CAB.z + (sz * CAB.d) / 2], size: [0.45, CAB.glassH, 0.45], color: C.machineLight });
+// top rim + "IDEA" marquee with racing stripes across the front
+const RIM_Y = CAB.baseH + CAB.glassH;
+add({ station: "grab", shape: "box", position: [CAB.x, RIM_Y, CAB.z - CAB.d / 2], size: [CAB.w + 0.5, 0.35, 0.5], color: C.machineLight });
+for (const sx of [-1, 1])
+  add({ station: "grab", shape: "box", position: [CAB.x + (sx * CAB.w) / 2, RIM_Y, CAB.z], size: [0.5, 0.35, CAB.d + 0.5], color: C.machineLight });
+add({ station: "grab", shape: "box", position: [CAB.x, RIM_Y, CAB.z + CAB.d / 2 - 0.15], size: [CAB.w + 0.6, 1.8, 1.0], color: C.white });
+[C.red, C.accent, C.blue].forEach((col, i) =>
+  add({ station: "grab", shape: "box", position: [CAB.x - 3.6 + i * 0.65, RIM_Y + 0.3, CAB.z + CAB.d / 2 + 0.38], size: [0.3, 1.2, 0.08], rotation: [0, 0, -18], color: col, emissive: col }));
+add({ id: "cab-light", station: "grab", shape: "box", position: [CAB.x, RIM_Y - 0.4, CAB.z + CAB.d / 2 - 0.9], size: [CAB.w - 1, 0.16, 0.16], color: C.white, emissive: C.white }); // strip light inside
+// gantry rail behind the cabinet, spanning from the case to over the H hopper
+add({ station: "grab", shape: "box", position: [-30.5, CLAW.railY, CLAW.railZ], size: [15, 0.55, 0.55], color: C.machineLight });
+for (const x of [-38, -23])
+  add({ station: "grab", shape: "box", position: [x, 0, CLAW.railZ], size: [0.7, CLAW.railY, 0.7], color: C.roller });
 
 // H machine (ideas switch): body, hopper funnel on top, H plate, vents, exit mouth
 add({ station: "switch", shape: "box", position: [-24, 0, 0], size: [7, 6, 6], color: C.machine });
