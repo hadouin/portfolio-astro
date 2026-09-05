@@ -1,9 +1,6 @@
 ---
-import { Image, getImage } from "astro:assets";
 import Link from "@components/ui/link.astro";
 import { localizedPath, useTranslations, type Locale } from "@i18n/utils";
-import heroPortrait from "@assets/hadouin-hero.jpg";
-import heroEdges from "@assets/hadouin-hero-edges.webp";
 
 interface Props {
   locale: Locale;
@@ -12,60 +9,70 @@ interface Props {
 const { locale } = Astro.props;
 const t = useTranslations(locale);
 const displayName = "Hadouin";
-const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75, format: "webp" });
+const controlsCopy = locale === "fr"
+  ? {
+      status: "IDÉE PRÊTE",
+      grab: "Attraper une idée",
+      hint: "Glisser pour faire pivoter",
+      canvas: "Une machine à idées interactive en trois dimensions",
+      controls: "Commandes de la machine à idées",
+      directions: ["Reculer la pince", "Déplacer la pince à gauche", "Avancer la pince", "Déplacer la pince à droite"],
+    }
+  : {
+      status: "IDEA READY",
+      grab: "Grab an idea",
+      hint: "Drag to rotate",
+      canvas: "An interactive three-dimensional idea claw machine",
+      controls: "Idea machine controls",
+      directions: ["Move claw back", "Move claw left", "Move claw forward", "Move claw right"],
+    };
 ---
 
 <section
   class="hero-shell relative isolate z-30 -mt-[70px] min-h-[100svh] overflow-hidden"
   data-dark-hero
 >
-  <div
-    class="hero-portrait absolute inset-x-0 top-0 h-[56%] md:inset-y-0 md:left-0 md:right-auto md:h-auto md:w-[58%]"
-    data-chromatic-portrait
-    data-image-src={heroTexture.src}
-    data-edge-src={heroEdges.src}
-    data-image-width={heroPortrait.width}
-    data-image-height={heroPortrait.height}
-  >
-    <Image
-      src={heroPortrait}
-      alt={t("about.image.alt")}
-      widths={[720, 1080, 1440, 1600]}
-      sizes="(min-width: 768px) 58vw, 100vw"
-      quality={68}
-      loading="eager"
-      fetchpriority="high"
-      class="hero-portrait-image hero-portrait-base"
-    />
-    <canvas class="hero-chromatic-canvas" aria-hidden="true"></canvas>
-  </div>
+  <div class="hero-grid" aria-hidden="true"></div>
 
-  <div
-    class="hero-content relative z-10 mx-auto flex min-h-[100svh] w-full max-w-screen-2xl items-end px-4 pb-12 pt-[48vh] md:items-center md:justify-end md:px-6 md:pb-16 md:pt-[70px] lg:px-8"
-  >
-    <div class="w-full md:w-[56%] md:max-w-[50rem] lg:w-[54%]">
-      <p class="hero-kicker mb-3 text-sm font-semibold uppercase tracking-[0.24em] md:text-base">
-        {t("hero.greeting")}
-      </p>
-      <h1
-        class="text-5xl font-bold tracking-wide sm:text-6xl lg:text-7xl xl:text-8xl"
-        aria-label="Hadouin Leroy"
-      >
+  <div class="hero-layout">
+    <div class="machine-column">
+      <div class="machine-stage" data-idea-machine>
+        <canvas
+          class="machine-canvas"
+          data-machine-canvas
+          aria-label={controlsCopy.canvas}
+          role="img"
+        ></canvas>
+        <div class="machine-fallback">
+          <span>IDEA</span>
+          <small>3D MACHINE</small>
+        </div>
+        <div class="machine-reflection" aria-hidden="true"></div>
+      </div>
+
+      <div class="machine-console" role="group" aria-label={controlsCopy.controls}>
+        <div class="machine-dpad">
+          <button type="button" data-machine-move="0,-0.28" aria-label={controlsCopy.directions[0]}>▲</button>
+          <button type="button" data-machine-move="-0.3,0" aria-label={controlsCopy.directions[1]}>◀</button>
+          <button type="button" data-machine-move="0,0.28" aria-label={controlsCopy.directions[2]}>▼</button>
+          <button type="button" data-machine-move="0.3,0" aria-label={controlsCopy.directions[3]}>▶</button>
+        </div>
+        <div class="machine-readout">
+          <span class="machine-status" data-machine-status aria-live="polite">{controlsCopy.status}</span>
+          <span class="machine-hint">{controlsCopy.hint}</span>
+        </div>
+        <button class="machine-grab" type="button" data-machine-grab>{controlsCopy.grab}</button>
+      </div>
+    </div>
+
+    <div class="hero-content">
+      <p class="hero-kicker">{t("hero.greeting")}</p>
+      <h1 aria-label="Hadouin Leroy">
         <span class="sr-only">Hadouin Leroy</span>
-        <span
-          class="hacker-effect block h-[48px] whitespace-pre sm:h-[60px] lg:h-[72px] xl:h-[96px]"
-          data-value={displayName}
-          aria-hidden="true"
-        >
-          {displayName}
-        </span>
+        <span class="hacker-effect" data-value={displayName} aria-hidden="true">{displayName}</span>
       </h1>
-      <p class="hero-tagline mt-2 max-w-3xl text-3xl font-bold leading-[0.98] sm:text-4xl lg:text-5xl xl:text-6xl">
-        {t("hero.tagline")}
-      </p>
-      <p class="hero-intro my-6 max-w-2xl font-inter text-base leading-relaxed sm:text-lg">
-        {t("hero.intro")}
-      </p>
+      <p class="hero-tagline">{t("hero.tagline")}</p>
+      <p class="hero-intro">{t("hero.intro")}</p>
       <Link
         class="hire-me wiggle w-fit font-semibold"
         style="inverted"
@@ -76,111 +83,309 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     </div>
   </div>
 
-  <div class="hero-grain pointer-events-none absolute inset-0 z-20" aria-hidden="true"></div>
+  <div class="hero-grain" aria-hidden="true"></div>
 </section>
 
 <style>
   .hero-shell {
-    background: #1a1a19;
-    color: #f4f4f0;
+    --paper: #f2e8d7;
+    --ink: #191817;
+    --muted: #bdb8ad;
+    --red: #eb6657;
+    --yellow: #efbb40;
+    --blue: #718bda;
+    color: var(--paper);
+    background:
+      radial-gradient(circle at 26% 42%, rgb(235 102 87 / 0.13), transparent 24%),
+      radial-gradient(circle at 46% 30%, rgb(239 187 64 / 0.1), transparent 28%),
+      #1a1917;
   }
 
-  .hero-portrait {
-    isolation: isolate;
-    overflow: hidden;
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%);
-  }
-
-  .hero-portrait-image {
+  .hero-grid {
     position: absolute;
     inset: 0;
+    opacity: 0.12;
+    background-image:
+      linear-gradient(rgb(242 232 215 / 0.12) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(242 232 215 / 0.12) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(circle at 26% 45%, black, transparent 62%);
+  }
+
+  .hero-layout {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    min-height: 100svh;
+    max-width: 1536px;
+    margin: 0 auto;
+    padding: 86px 1rem 2rem;
+    grid-template-rows: minmax(24rem, 56svh) auto;
+    align-items: center;
+  }
+
+  .machine-column {
+    position: relative;
+    width: min(100%, 45rem);
+    height: 100%;
+    min-height: 24rem;
+    margin-inline: auto;
+  }
+
+  .machine-stage {
+    position: absolute;
+    inset: -2rem -1.5rem 1.75rem;
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+    transition: opacity 700ms ease, transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .machine-stage[data-ready="true"],
+  .machine-stage[data-webgl-failed="true"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .machine-stage::before {
+    position: absolute;
+    inset: 8% 9% 6%;
+    content: "";
+    border-radius: 50%;
+    background: rgb(236 171 96 / 0.19);
+    filter: blur(60px);
+  }
+
+  .machine-canvas {
+    position: relative;
+    z-index: 2;
+    display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    object-position: 50% 43%;
+    cursor: grab;
+    touch-action: pan-y;
   }
 
-  .hero-portrait-base {
-    z-index: 0;
+  .machine-canvas:active { cursor: grabbing; }
+
+  .machine-fallback {
+    position: absolute;
+    inset: 25% 18%;
+    display: none;
+    place-items: center;
+    border: 12px solid var(--paper);
+    color: var(--paper);
+    font-weight: 900;
+    font-size: clamp(4rem, 18vw, 8rem);
   }
 
-  .hero-chromatic-canvas {
+  .machine-fallback small {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.26em;
+  }
+
+  [data-webgl-failed="true"] .machine-canvas { display: none; }
+  [data-webgl-failed="true"] .machine-fallback { display: grid; }
+
+  .machine-reflection {
     position: absolute;
     z-index: 1;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    opacity: 0;
+    right: 17%;
+    bottom: 4%;
+    left: 14%;
+    height: 12%;
+    border-radius: 50%;
+    background: #090908;
+    filter: blur(26px);
+    opacity: 0.64;
+    transform: perspective(600px) rotateX(68deg);
   }
 
-  .hero-portrait[data-chromatic-ready="true"] .hero-chromatic-canvas {
-    opacity: 1;
-  }
-
-  .hero-portrait[data-chromatic-ready="true"] .hero-portrait-base {
-    visibility: hidden;
-  }
-
-  .hero-portrait::after {
+  .machine-console {
     position: absolute;
-    z-index: 2;
-    inset: 0;
-    content: "";
-    background:
-      linear-gradient(to bottom, transparent 48%, #1a1a19 100%),
-      linear-gradient(to right, transparent 62%, rgb(26 26 25 / 0.42) 100%);
-    pointer-events: none;
+    z-index: 4;
+    right: 0.5rem;
+    bottom: 1rem;
+    left: 0.5rem;
+    display: grid;
+    grid-template-columns: auto minmax(8rem, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 34rem;
+    margin-inline: auto;
+    padding: 0.55rem;
+    border: 1px solid rgb(242 232 215 / 0.23);
+    background: rgb(18 17 16 / 0.84);
+    box-shadow: 0 15px 40px rgb(0 0 0 / 0.25);
+    backdrop-filter: blur(12px);
+  }
+
+  .machine-dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1.6rem);
+    grid-template-rows: repeat(2, 1.5rem);
+  }
+
+  .machine-dpad button,
+  .machine-grab {
+    border: 0;
+    color: var(--paper);
+    background: #302e2b;
+    transition: transform 140ms ease, background 140ms ease;
+  }
+
+  .machine-dpad button:hover { background: #46423d; }
+  .machine-dpad button:active, .machine-grab:active { transform: translateY(2px); }
+  .machine-dpad button:focus-visible, .machine-grab:focus-visible {
+    outline: 2px solid var(--yellow);
+    outline-offset: 2px;
+  }
+
+  .machine-dpad button:nth-child(1) { grid-column: 2; }
+  .machine-dpad button:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .machine-dpad button:nth-child(3) { grid-column: 2; grid-row: 2; }
+  .machine-dpad button:nth-child(4) { grid-column: 3; grid-row: 2; }
+
+  .machine-readout {
+    min-width: 0;
+    padding-inline: 0.35rem;
+    line-height: 1;
+  }
+
+  .machine-status {
+    display: block;
+    overflow: hidden;
+    color: #d3e95b;
+    font-family: monospace;
+    font-size: 0.67rem;
+    letter-spacing: 0.08em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .machine-hint {
+    display: block;
+    margin-top: 0.35rem;
+    color: #8d8981;
+    font-size: 0.55rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .machine-grab {
+    min-height: 2.65rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 999px;
+    color: #fff6e7;
+    background: var(--red);
+    box-shadow: inset 0 -4px 0 rgb(89 21 15 / 0.35), 0 0 0 4px #292725;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 3;
+    padding: 1rem 0 2rem;
   }
 
   .hero-kicker {
-    color: #c7c7c0;
+    margin-bottom: 0.75rem;
+    color: #c7c1b6;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-size: clamp(3.25rem, 12vw, 7rem);
+    font-weight: 700;
+    line-height: 0.92;
+    letter-spacing: 0.02em;
+  }
+
+  .hacker-effect {
+    display: block;
+    min-height: 0.95em;
+    white-space: pre;
   }
 
   .hero-tagline {
-    color: #a8a8a2;
+    max-width: 42rem;
+    margin-top: 0.5rem;
+    color: #aaa69e;
+    font-size: clamp(2rem, 7vw, 4.4rem);
+    font-weight: 700;
+    line-height: 0.97;
     text-wrap: balance;
   }
 
   .hero-intro {
-    color: #deded8;
+    max-width: 38rem;
+    margin-block: 1.5rem;
+    color: #ddd7cb;
+    font-family: Inter, sans-serif;
+    font-size: clamp(1rem, 1.35vw, 1.15rem);
+    line-height: 1.68;
   }
 
   .hero-grain {
-    opacity: 0.04;
+    pointer-events: none;
+    position: absolute;
+    z-index: 5;
+    inset: 0;
+    opacity: 0.045;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
     mix-blend-mode: soft-light;
   }
 
   @media (min-width: 768px) {
-    .hero-portrait {
-      -webkit-mask-image: linear-gradient(to right, #000 0%, #000 58%, transparent 100%);
-      mask-image: linear-gradient(to right, #000 0%, #000 58%, transparent 100%);
+    .hero-layout {
+      grid-template-columns: minmax(0, 1.06fr) minmax(22rem, 0.94fr);
+      grid-template-rows: 1fr;
+      gap: clamp(0rem, 2vw, 2.5rem);
+      padding: 70px 1.5rem 0;
     }
 
-    .hero-portrait::after {
-      background:
-        linear-gradient(to right, transparent 54%, #1a1a19 100%),
-        linear-gradient(to top, rgb(26 26 25 / 0.18), transparent 38%);
+    .machine-column {
+      width: 100%;
+      min-height: min(47rem, calc(100svh - 70px));
     }
 
-    .hero-portrait-image {
-      object-position: 50% 48%;
-    }
+    .machine-stage { inset: -1rem -9% 1rem -12%; }
+    .machine-console { bottom: 2.25rem; }
+    .hero-content { padding: 0 clamp(0rem, 2vw, 2.25rem) 0 0; }
+    .hero-kicker { font-size: 0.88rem; }
   }
 
-  @media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
-    .hero-chromatic-canvas {
-      display: none;
-    }
+  @media (min-width: 1200px) {
+    .hero-layout { grid-template-columns: minmax(0, 1.12fr) minmax(29rem, 0.88fr); }
+    .machine-stage { inset: -3rem -5% -1rem -8%; }
+    .machine-console { bottom: 1.5rem; }
+  }
+
+  @media (max-width: 430px) {
+    .hero-layout { grid-template-rows: minmax(21rem, 52svh) auto; }
+    .machine-column { min-height: 21rem; }
+    .machine-stage { inset-inline: -2.75rem; }
+    .machine-console { gap: 0.45rem; }
+    .machine-hint { display: none; }
+    .machine-grab { max-width: 5.5rem; padding-inline: 0.55rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .machine-stage { transition: none; }
+    .machine-dpad button, .machine-grab { transition: none; }
   }
 </style>
 
 <script>
-  import { initHeroChromaticWebGL } from "../lib/hero-chromatic-webgl";
+  import { initIdeaMachine3D } from "../lib/idea-machine-3d";
 
-  const letters = "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&?@:/}{()*+-#$&";
+  const letters = "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&";
   const scrambleColors = ["#8BA6F3", "#F0C477", "#EE8D8D"];
   const randomScrambleColor = () =>
     scrambleColors[Math.floor(Math.random() * scrambleColors.length)];
@@ -202,10 +407,8 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
 
   function initHero() {
     const element = document.querySelector(".hacker-effect") as HTMLElement | null;
-    if (!element) return;
-    if ((element as any).__heroBound) return;
+    if (!element || (element as any).__heroBound) return;
     (element as any).__heroBound = true;
-
     const target = element.dataset.value ?? "Hadouin";
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let interval: ReturnType<typeof setInterval> | undefined;
@@ -215,12 +418,10 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
         element.textContent = target;
         return;
       }
-
       if (interval) clearInterval(interval);
       let iteration = 0;
       interval = setInterval(() => {
         setScrambledContent(element, target, iteration);
-
         if (iteration >= target.length) {
           if (interval) clearInterval(interval);
           element.textContent = target;
@@ -233,76 +434,39 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     scramble();
   }
 
-  function initChromaticPortrait() {
-    const previousCleanup = (window as any).__chromaticHeroCleanup as (() => void) | undefined;
+  function initMachine() {
+    const previousCleanup = (window as any).__ideaMachineCleanup as (() => void) | undefined;
     previousCleanup?.();
 
-    const hero = document.querySelector<HTMLElement>("[data-dark-hero]");
-    const portrait = document.querySelector<HTMLElement>("[data-chromatic-portrait]");
-    const canvas = portrait?.querySelector<HTMLCanvasElement>(".hero-chromatic-canvas");
-    const imageSrc = portrait?.dataset.imageSrc;
-    const edgeSrc = portrait?.dataset.edgeSrc;
-    const imageWidth = Number(portrait?.dataset.imageWidth);
-    const imageHeight = Number(portrait?.dataset.imageHeight);
-    const referenceImage = portrait?.querySelector<HTMLImageElement>("img");
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    const container = document.querySelector<HTMLElement>("[data-idea-machine]");
+    const canvas = container?.querySelector<HTMLCanvasElement>("[data-machine-canvas]");
+    const status = document.querySelector<HTMLElement>("[data-machine-status]");
+    if (!container || !canvas) return;
 
-    if (
-      !hero ||
-      !portrait ||
-      !canvas ||
-      !imageSrc ||
-      !edgeSrc ||
-      !referenceImage ||
-      !Number.isFinite(imageWidth) ||
-      !Number.isFinite(imageHeight) ||
-      imageWidth < 1 ||
-      imageHeight < 1 ||
-      reduceMotion ||
-      !finePointer
-    ) {
-      (window as any).__chromaticHeroCleanup = undefined;
-      return;
-    }
+    const controller = initIdeaMachine3D({ container, canvas, status });
+    if (!controller) return;
+    (window as any).__ideaMachineCleanup = controller.dispose;
+    (window as any).__ideaMachineController = controller;
 
-    // Hold the first-load preloader until the hero textures are in cache, so
-    // the reveal never lands on an un-rendered portrait. No-op after first load.
-    const loader = (window as any).hadouinLoader;
-    if (loader && "loading" in document.documentElement.dataset) {
-      loader.register(
-        Promise.all(
-          [imageSrc, edgeSrc].map(
-            (src) =>
-              new Promise<void>((resolve) => {
-                const preload = new window.Image();
-                preload.onload = () => resolve();
-                preload.onerror = () => resolve();
-                preload.src = src;
-              })
-          )
-        )
-      );
-    }
-
-    const cleanup = initHeroChromaticWebGL({
-      container: portrait,
-      canvas,
-      imageSrc,
-      edgeSrc,
-      hero,
-      imageSize: [imageWidth, imageHeight],
-      referenceImage,
+    document.querySelectorAll<HTMLButtonElement>("[data-machine-move]").forEach((button) => {
+      if ((button as any).__machineBound) return;
+      (button as any).__machineBound = true;
+      button.addEventListener("click", () => {
+        const [dx, dz] = (button.dataset.machineMove ?? "0,0").split(",").map(Number);
+        (window as any).__ideaMachineController?.move(dx, dz);
+      });
     });
-
-    (window as any).__chromaticHeroCleanup = cleanup ?? undefined;
+    const grabButton = document.querySelector<HTMLButtonElement>("[data-machine-grab]");
+    if (grabButton && !(grabButton as any).__machineBound) {
+      (grabButton as any).__machineBound = true;
+      grabButton.addEventListener("click", () => (window as any).__ideaMachineController?.grab());
+    }
   }
 
   function syncHeroTheme() {
     const hero = document.querySelector<HTMLElement>("[data-dark-hero]");
     const previous = (window as any).__heroThemeObserver as IntersectionObserver | undefined;
     previous?.disconnect();
-
     if (!hero) {
       document.body.classList.remove("hero-dark-active");
       return;
@@ -310,27 +474,20 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
 
     const updateTheme = () => {
       const rect = hero.getBoundingClientRect();
-      document.body.classList.toggle(
-        "hero-dark-active",
-        rect.bottom > 70 && rect.top < window.innerHeight
-      );
+      document.body.classList.toggle("hero-dark-active", rect.bottom > 70 && rect.top < window.innerHeight);
     };
-
-    const observer = new IntersectionObserver(updateTheme, {
-      rootMargin: "-70px 0px 0px",
-      threshold: 0,
-    });
+    const observer = new IntersectionObserver(updateTheme, { rootMargin: "-70px 0px 0px", threshold: 0 });
     observer.observe(hero);
     (window as any).__heroThemeObserver = observer;
     updateTheme();
   }
 
-  initHero();
-  initChromaticPortrait();
-  syncHeroTheme();
-  document.addEventListener("astro:page-load", () => {
+  function init() {
     initHero();
-    initChromaticPortrait();
+    initMachine();
     syncHeroTheme();
-  });
+  }
+
+  init();
+  document.addEventListener("astro:page-load", init);
 </script>
