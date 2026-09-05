@@ -148,15 +148,17 @@ const COMPOSITE_FRAGMENT_SHADER = `
     float split = uStrength * drive * (0.005 + edge * 0.02) * (0.35 + mouseMask * 0.65);
     float velBoost = length(uMouseVel) * uStrength * drive * 0.11;
 
-    // Tilt holds the channels apart across the whole portrait for as long as the
-    // phone is held over. Unlike the motion terms it never decays on its own: the
-    // separation is a function of the angle, so only levelling out closes it.
+    // Relative tilt is the driver on mobile, not the motion of getting there:
+    // these offsets are a pure function of the held angle. The picture shears
+    // toward the low side (edge-weighted so contours lead) with the channels
+    // split on top, and neither decays until the phone levels back out.
     float tiltMag = min(length(uTilt), 1.0);
-    vec2 tiltSplit = uTilt * uStrength * (0.004 + edge * 0.016) * coverScale;
+    vec2 tiltWarp = uTilt * uStrength * (0.006 + edge * 0.028) * coverScale;
+    vec2 tiltSplit = uTilt * uStrength * (0.006 + edge * 0.024) * coverScale;
 
-    vec2 offsetR = waveOffset + chromaDir * (split + velBoost) * coverScale + tiltSplit;
-    vec2 offsetG = waveOffset;
-    vec2 offsetB = waveOffset - chromaDir * (split + velBoost) * coverScale - tiltSplit;
+    vec2 offsetR = waveOffset + chromaDir * (split + velBoost) * coverScale + tiltWarp + tiltSplit;
+    vec2 offsetG = waveOffset + tiltWarp;
+    vec2 offsetB = waveOffset + tiltWarp - chromaDir * (split + velBoost) * coverScale - tiltSplit;
 
     float r = texture2D(uImage, uv + offsetR).r;
     float g = texture2D(uImage, uv + offsetG).g;
@@ -164,7 +166,7 @@ const COMPOSITE_FRAGMENT_SHADER = `
 
     vec3 base = texture2D(uImage, uv).rgb;
     float mixAmount = clamp(
-      mouseMask * 0.9 + abs(wave) * 14.0 + length(uMouseVel) * 30.0 + tiltMag * 0.9,
+      mouseMask * 0.9 + abs(wave) * 14.0 + length(uMouseVel) * 30.0 + tiltMag * 2.2,
       0.0,
       1.0
     );
@@ -630,8 +632,10 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     const tiltMag = Math.min(Math.hypot(smoothTilt[0], smoothTilt[1]), 1);
     let intensityTarget = 0;
     if (hasPointer) {
+      // The tilt term is generous so a held angle keeps the effect fully lit:
+      // drive gates the mix, and a decaying drive would re-hide a steady tilt.
       intensityTarget = clamp(
-        0.55 + Math.max(recentMove * 14, inputMag * 10, motionMag * 18, tiltMag * 0.45),
+        0.55 + Math.max(recentMove * 14, inputMag * 10, motionMag * 18, tiltMag * 0.9),
         0.55,
         1,
       );
