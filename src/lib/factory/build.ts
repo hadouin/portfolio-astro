@@ -162,12 +162,61 @@ export function makeFloors(gridTex: THREE.Texture): THREE.Object3D[] {
   return [ground, back, end];
 }
 
-// ─── big danger lever with a glass cover ────────────────────────────────────
+// ─── mega switch: wall-mounted knife switch under a glass guard ─────────────
 export interface LeverBuild { group: THREE.Group; handle: THREE.Group; hinge: THREE.Group; cover: THREE.Mesh; hit: THREE.Mesh }
-// Rest points up-right, throw pulls it down (90° clockwise from a side-to-side swing).
-export const LEVER_REST = 0.95 - Math.PI / 2;
-export const LEVER_ON = -0.95 - Math.PI / 2;
+// The yoke hinges at the bottom terminals: it rests tilted out of the wall, the throw
+// swings it flat so the blades seat in the top jaws.
+export const LEVER_REST = 0.85;
+export const LEVER_ON = 0.05;
 export const COVER_OPEN = -1.75;
+
+/** Yellow "high voltage" triangle sticker, transparent around the shape. */
+const makeHighVoltageTexture = () =>
+  canvasTexture(128, (ctx, s) => {
+    const tri = (inset: number) => {
+      ctx.beginPath();
+      ctx.moveTo(s / 2, inset);
+      ctx.lineTo(s - inset, s - inset);
+      ctx.lineTo(inset, s - inset);
+      ctx.closePath();
+    };
+    ctx.fillStyle = "#111";
+    tri(6);
+    ctx.fill();
+    ctx.fillStyle = C.hazardYellow;
+    tri(18);
+    ctx.fill();
+    ctx.fillStyle = "#111"; // lightning bolt
+    ctx.beginPath();
+    ctx.moveTo(s * 0.56, s * 0.38);
+    ctx.lineTo(s * 0.44, s * 0.62);
+    ctx.lineTo(s * 0.52, s * 0.62);
+    ctx.lineTo(s * 0.42, s * 0.84);
+    ctx.lineTo(s * 0.6, s * 0.56);
+    ctx.lineTo(s * 0.5, s * 0.56);
+    ctx.lineTo(s * 0.62, s * 0.38);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+/** The small "DANGER / HIGH VOLTAGE" plate riveted on the yoke. */
+const makeDangerTexture = () =>
+  canvasTexture(256, (ctx, s) => {
+    ctx.fillStyle = "#f2f2ee";
+    ctx.fillRect(0, s * 0.28, s, s * 0.44);
+    ctx.fillStyle = "#c62828";
+    ctx.beginPath();
+    ctx.ellipse(s / 2, s * 0.4, s * 0.3, s * 0.075, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#fff";
+    ctx.font = `bold ${Math.round(s * 0.1)}px sans-serif`;
+    ctx.fillText("DANGER", s / 2, s * 0.405);
+    ctx.fillStyle = "#111";
+    ctx.font = `bold ${Math.round(s * 0.1)}px sans-serif`;
+    ctx.fillText("HIGH VOLTAGE", s / 2, s * 0.61);
+  });
 
 export function makeLever(hazardTex: THREE.Texture): LeverBuild {
   const g = new THREE.Group();
@@ -175,45 +224,98 @@ export function makeLever(hazardTex: THREE.Texture): LeverBuild {
   const dark = new THREE.MeshStandardMaterial({ color: C.charcoal, roughness: 0.8 });
   const steel = new THREE.MeshStandardMaterial({ color: C.roller, metalness: 0.5, roughness: 0.4 });
   const hazard = new THREE.MeshStandardMaterial({ map: hazardTex, roughness: 0.6 });
+  const bakelite = new THREE.MeshStandardMaterial({ color: "#6b452c", roughness: 0.55, metalness: 0.1 });
+  const sticker = (map: THREE.Texture) =>
+    new THREE.MeshStandardMaterial({ map, transparent: true, roughness: 0.5, side: THREE.DoubleSide });
 
-  // back plate with a hazard-striped frame
-  const plate = new THREE.Mesh(new THREE.BoxGeometry(3.6, 3.6, 0.25), dark);
-  plate.position.z = -0.2;
+  // brown bakelite back panel, held by two hazard-striped mounting rails
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(3.8, 5.4, 0.3), bakelite);
+  plate.position.z = -0.15;
+  plate.castShadow = true;
   g.add(plate);
-  for (const [w, h, x, y] of [[4.0, 0.32, 0, 1.84], [4.0, 0.32, 0, -1.84], [0.32, 3.4, 1.84, 0], [0.32, 3.4, -1.84, 0]]) {
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.3), hazard);
-    bar.position.set(x, y, -0.15);
-    g.add(bar);
+  for (const y of [2.85, -2.85]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.28, 0.34), hazard);
+    rail.position.set(0, y, -0.13);
+    g.add(rail);
   }
-  const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.9, 16), steel);
-  axle.rotation.x = Math.PI / 2;
-  axle.position.z = 0.1;
-  g.add(axle);
 
-  // the lever itself: striped bar + red knob, swings sideways in the plane of the face
+  const BLADE_X = 1.2;
+  const HINGE_Y = -2.05; // yoke pivot, low on the panel
+
+  // terminals: hinge blocks at the bottom, jaw clips the blades snap into up top
+  for (const sx of [-1, 1]) {
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.4), dark);
+    base.position.set(sx * BLADE_X, HINGE_Y - 0.15, 0.2);
+    g.add(base);
+    const boss = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.34, 16), steel);
+    boss.rotation.x = Math.PI / 2;
+    boss.position.set(sx * BLADE_X, HINGE_Y, 0.45);
+    g.add(boss);
+    for (const z of [0.14, 0.5]) {
+      const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.75, 0.14), dark);
+      jaw.position.set(sx * BLADE_X, 1.55, z);
+      g.add(jaw);
+    }
+  }
+
+  // hazard stickers on the panel
+  const hvTex = makeHighVoltageTexture();
+  for (const [y, size] of [[0.35, 1.0], [-1.35, 0.9]] as const) {
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(size, size), sticker(hvTex));
+    s.position.set(0, y, 0.02);
+    g.add(s);
+  }
+
+  // the yoke: two blades bridged by a lower bar and a red-gripped top bar
   const handle = new THREE.Group();
-  const hz = hazardTex.clone();
-  hz.needsUpdate = true;
-  hz.repeat.set(1, 3);
-  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.7, 0.3), new THREE.MeshStandardMaterial({ map: hz, roughness: 0.6 }));
-  bar.position.y = 0.85;
-  bar.castShadow = true;
-  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.36, 16, 12), new THREE.MeshStandardMaterial({ color: C.red, roughness: 0.4 }));
-  knob.position.y = 1.75;
-  knob.castShadow = true;
-  handle.add(bar, knob);
-  handle.position.z = 0.35;
-  handle.rotation.z = LEVER_REST;
+  handle.position.set(0, HINGE_Y, 0.32);
+  const BLADE_LEN = 4.0;
+  for (const sx of [-1, 1]) {
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.36, BLADE_LEN, 0.18), dark);
+    blade.position.set(sx * BLADE_X, BLADE_LEN / 2, 0);
+    blade.castShadow = true;
+    handle.add(blade);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 10), dark);
+    cap.position.set(sx * BLADE_X, BLADE_LEN, 0);
+    handle.add(cap);
+  }
+  const crossbar = (y: number, d: number) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(2 * BLADE_X + 0.36, 0.36, d), dark);
+    m.position.set(0, y, 0);
+    m.castShadow = true;
+    handle.add(m);
+    return m;
+  };
+  crossbar(BLADE_LEN, 0.36);
+  crossbar(1.5, 0.3);
+  const grip = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.26, 0.26, 1.9, 16),
+    new THREE.MeshStandardMaterial({ color: "#d62b2b", roughness: 0.45 }),
+  );
+  grip.rotation.z = Math.PI / 2;
+  grip.position.set(0.25, BLADE_LEN, 0);
+  grip.castShadow = true;
+  handle.add(grip);
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), sticker(makeDangerTexture()));
+  label.position.set(0.55, 1.5, 0.17);
+  handle.add(label);
+  handle.rotation.x = LEVER_REST;
   g.add(handle);
 
-  // glass cover hinged at the top edge
+  // generous invisible hit target, riding the yoke so it stays under the grip
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
+  hit.position.set(0, BLADE_LEN - 0.4, 0.1);
+  handle.add(hit);
+
+  // glass guard hinged at the top edge, deep enough to clear the yoke at rest
   const hinge = new THREE.Group();
-  hinge.position.set(0, 1.85, 0.05);
+  hinge.position.set(0, 3.0, 0.05);
+  const [W, H, D] = [4.4, 6.0, 3.9];
   const cover = new THREE.Mesh(
-    new THREE.BoxGeometry(3.7, 3.7, 1.4),
+    new THREE.BoxGeometry(W, H, D),
     new THREE.MeshStandardMaterial({ color: "#9fc0e8", transparent: true, opacity: 0.22, roughness: 0.1, metalness: 0.1, depthWrite: false, side: THREE.DoubleSide }),
   );
-  cover.position.set(0, -1.85, 0.7);
+  cover.position.set(0, -H / 2, D / 2);
   cover.renderOrder = 10;
   hinge.add(cover);
   const edge = (w: number, h: number, d: number, x: number, y: number, z: number) => {
@@ -221,19 +323,15 @@ export function makeLever(hazardTex: THREE.Texture): LeverBuild {
     m.position.set(x, y, z);
     hinge.add(m);
   };
-  edge(3.8, 0.12, 0.12, 0, 0, 1.4);
-  edge(3.8, 0.12, 0.12, 0, -3.7, 1.4);
-  edge(0.12, 3.8, 0.12, 1.85, -1.85, 1.4);
-  edge(0.12, 3.8, 0.12, -1.85, -1.85, 1.4);
-  edge(0.12, 0.12, 1.4, 1.85, -3.7, 0.7);
-  edge(0.12, 0.12, 1.4, -1.85, -3.7, 0.7);
-  edge(3.9, 0.16, 0.16, 0, 0, 0); // hinge rod
+  edge(W + 0.1, 0.12, 0.12, 0, 0, D);
+  edge(W + 0.1, 0.12, 0.12, 0, -H, D);
+  edge(0.12, H + 0.1, 0.12, W / 2, -H / 2, D);
+  edge(0.12, H + 0.1, 0.12, -W / 2, -H / 2, D);
+  edge(0.12, 0.12, D, W / 2, -H, D / 2);
+  edge(0.12, 0.12, D, -W / 2, -H, D / 2);
+  edge(W + 0.2, 0.16, 0.16, 0, 0, 0); // hinge rod
   g.add(hinge);
 
-  // generous invisible hit target for the lever
-  const hit = new THREE.Mesh(new THREE.SphereGeometry(1.6, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
-  hit.position.set(0.7, 0, 0.4);
-  g.add(hit);
   return { group: g, handle, hinge, cover, hit };
 }
 

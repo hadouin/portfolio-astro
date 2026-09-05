@@ -40,7 +40,7 @@ const SCROLL_LENGTH = 9000;
 const ESCAPE_PX = 380;
 // Front-on shots, like the storyboard: camera looks along -z, the belt runs left → right.
 const GRAB_CAM = { cam: new THREE.Vector3(-30, 6.8, 20), look: new THREE.Vector3(-30, 4.6, 0) };
-const LEVER_CAM = { cam: new THREE.Vector3(-24, 4.6, 14.5), look: new THREE.Vector3(-24, 3.4, 0) };
+const LEVER_CAM = { cam: new THREE.Vector3(-21, 4.9, 14), look: new THREE.Vector3(-24, 3.3, 2.4) };
 const POP_CAM = { cam: new THREE.Vector3(-21, 4.6, 15), look: new THREE.Vector3(-21, 2.6, 0) };
 
 type Gesture = { deltaY: number; event: Event & { lenisStopPropagation?: boolean } };
@@ -700,7 +700,7 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
     if (leverT >= 0) {
       leverT += dt / 0.55;
       const k = Math.min(1, leverT);
-      lever.handle.rotation.z = THREE.MathUtils.lerp(LEVER_REST, LEVER_ON, 1 - Math.pow(1 - k, 3));
+      lever.handle.rotation.x = THREE.MathUtils.lerp(LEVER_REST, LEVER_ON, 1 - Math.pow(1 - k, 3));
       if (k >= 1 && phase === "lever") { setPhase("popping"); leverT = -1; }
     }
     if (phase === "popping") {
