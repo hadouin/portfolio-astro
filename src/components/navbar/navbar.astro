@@ -51,7 +51,7 @@ const switcherChildren = locales.map((loc) => ({
   <div class="relative flex h-[70px] w-full items-center justify-between px-5 lg:w-[96px]">
     <a
       href={localizedPath("/", locale)}
-      class="navbar-logo absolute bottom-0 left-8 inline-flex h-12 items-end leading-none"
+      class="navbar-logo absolute bottom-0 left-2 lg:left-8 inline-flex h-12 items-end leading-none"
       aria-label="Home"
     >
       <svg
@@ -269,6 +269,33 @@ const switcherChildren = locales.map((loc) => ({
     .navbar-logo:hover .navbar-logo-line-red {
       transition-delay: 100ms;
     }
+  }
+
+  /* Touch/keyboard equivalent of the hover reveal. */
+  .navbar-logo.is-pressed .navbar-logo-h,
+  .navbar-logo:focus-visible .navbar-logo-h {
+    transform: none;
+  }
+
+  .navbar-logo.is-pressed .navbar-logo-line,
+  .navbar-logo:focus-visible .navbar-logo-line {
+    opacity: 1;
+    transform: none;
+  }
+
+  .navbar-logo.is-pressed .navbar-logo-line-blue,
+  .navbar-logo:focus-visible .navbar-logo-line-blue {
+    transition-delay: 0ms;
+  }
+
+  .navbar-logo.is-pressed .navbar-logo-line-yellow,
+  .navbar-logo:focus-visible .navbar-logo-line-yellow {
+    transition-delay: 50ms;
+  }
+
+  .navbar-logo.is-pressed .navbar-logo-line-red,
+  .navbar-logo:focus-visible .navbar-logo-line-red {
+    transition-delay: 100ms;
   }
 
   @media (prefers-reduced-motion: reduce) {

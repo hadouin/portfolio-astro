@@ -113,6 +113,33 @@ const styles = {
     }
   }
 
+  /* Touch/keyboard equivalent of the hover reveal. */
+  .btn-accent.is-pressed,
+  .btn-accent:focus-visible {
+    transform: translateX(8px);
+  }
+
+  .btn-accent.is-pressed .btn-accent-line,
+  .btn-accent:focus-visible .btn-accent-line {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .btn-accent.is-pressed .btn-accent-line-blue,
+  .btn-accent:focus-visible .btn-accent-line-blue {
+    transition-delay: 0ms;
+  }
+
+  .btn-accent.is-pressed .btn-accent-line-yellow,
+  .btn-accent:focus-visible .btn-accent-line-yellow {
+    transition-delay: 50ms;
+  }
+
+  .btn-accent.is-pressed .btn-accent-line-red,
+  .btn-accent:focus-visible .btn-accent-line-red {
+    transition-delay: 100ms;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .btn-accent-line {
       transition: none;
