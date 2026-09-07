@@ -59,6 +59,12 @@ export function initHeroDoorGate(): (() => void) | undefined {
   /** The drag only ever reveals a peek — the shutter is heavy. */
   const PEEK = 26;
   const shakeScale = coarse ? 0.55 : 1;
+  /**
+   * A jet's reach is vx / LATERAL_DRAG, so at full strength it carries ~100-180px
+   * off the rail. That is a sliver of a desktop viewport but most of the way
+   * across a phone, where the two seams would all but meet in the middle.
+   */
+  const jetScale = coarse ? 0.5 : 1;
 
   let state: State = "closed";
   let gate = 0;
@@ -177,7 +183,7 @@ export function initHeroDoorGate(): (() => void) | undefined {
           spawn({
             x: x0 + dir * Math.random() * 18,
             y: y0 + (Math.random() - 0.5) * 24,
-            vx: dir * (480 + Math.random() * 420),
+            vx: dir * (480 + Math.random() * 420) * jetScale,
             vy: -(30 + Math.random() * 70),
             scale: 0.3 + Math.random() * 0.2,
             growth: 0.9 + Math.random() * 0.8,
