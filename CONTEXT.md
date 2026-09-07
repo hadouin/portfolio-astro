@@ -22,6 +22,10 @@ English. Served at the unprefixed root (`/`, `/projects/...`). All inbound links
 **Secondary Locale**:
 French. Served under `/fr/` prefix.
 
+**Dev Mode**:
+A `#dev` hash on any URL, which turns on in-page diagnostic overlays. Works against production builds, not just `astro dev`, so it can be used on a real phone; toggling the hash switches it live. Currently drives the hero tilt-sensor readout.
+_Avoid_: Debug flag, dev server.
+
 **Locale-Agnostic Term**:
 An identifier that stays in English across all locales because the FR-tech audience uses the EN form natively. Covers job titles ("Founding Engineer", "Creative Developer"), tech/framework names, and product/company names. Translators must leave these untouched even inside French prose.
 _Avoid_: Untranslatable, proper noun (too broad).
