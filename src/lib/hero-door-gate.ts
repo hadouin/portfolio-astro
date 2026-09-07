@@ -4,8 +4,9 @@
  * While the gate is closed the page cannot scroll: wheel/touch deltas feed a
  * drag accumulator instead. A partial drag lifts the hero just enough to peek
  * at the content underneath, and lets go back to closed if the user stops
- * short. Cross the threshold and the shutter dips, then rips upward on an
- * accelerating ease with hydraulic steam and a rumbling screen shake.
+ * short. Cross the threshold and the shutter settles back onto its sill, the
+ * hydraulics blow off, and after a beat it rips upward on an accelerating ease
+ * with a rumbling screen shake.
  *
  * Scrolling back up at the top of the page drops the shutter shut again.
  */
@@ -22,12 +23,13 @@ const easeInOutCubic = (t: number) =>
 const OPEN_Y = -104;
 
 /**
- * Latching is deliberate: the shutter first settles back down into its seated
- * position so the user can read that their push registered, holds while the
- * hydraulics blow off, and only then pulls up.
+ * Latching is deliberate, and it plays in three beats: the shutter first
+ * settles back down into its seated position so the user can read that their
+ * push registered, then the hydraulics blow off and the vapour is given time to
+ * hang, and only then does the motor rip the slab upward.
  */
 const VALIDATE_MS = 1000;
-const HOLD_MS = 420;
+const HOLD_MS = 1100;
 const LIFT_MS = 1500;
 const CLOSE_MS = 560;
 const SNAPBACK_MS = 420;
@@ -187,7 +189,9 @@ export function initHeroDoorGate(): (() => void) | undefined {
       }
     }
 
-    impulse = Math.max(impulse, 22);
+    // A short hiss kick, not a rumble: it decays well inside the hold so the
+    // wait before the lift reads as still.
+    impulse = Math.max(impulse, 10);
     if (!steamRaf) {
       steamLast = performance.now();
       steamRaf = requestAnimationFrame(stepSteam);
@@ -277,10 +281,11 @@ export function initHeroDoorGate(): (() => void) | undefined {
 
     if (state === "opening") {
       if (elapsed < VALIDATE_MS) {
-        // Validation: ease back down to seated so the commit is legible, and
-        // shrink a touch as the slab loads up.
+        // Validation: ease back down to seated so the commit is legible.
         doorY = seqFrom * (1 - easeInOutCubic(elapsed / VALIDATE_MS));
       } else if (elapsed < VALIDATE_MS + HOLD_MS) {
+        // Seated. Vent on the first frame of the hold, then sit still while the
+        // vapour hangs and the kick dies out.
         doorY = 0;
         if (!vented) {
           vented = true;
@@ -345,7 +350,12 @@ export function initHeroDoorGate(): (() => void) | undefined {
     state = "opening";
     seqFrom = doorY;
     gate = 1;
-    vented = false;
+    // Steam leads. startOpen is guarded above, so this fires once per open.
+    // The seam is anchored to the bottom edge of the slab, which is still held
+    // up at the peek height when the latch trips. The impulse this sets makes
+    // quake() fire on the same frame, which is what kicks off the scramble —
+    // steam and text together.
+    ventBurst(clamp(96 + doorY, 40, 96));
     startLoop();
   }
 
