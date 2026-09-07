@@ -304,6 +304,7 @@ export function initHeroDoorGate(): (() => void) | undefined {
       if (t >= 1) {
         doorY = 0;
         finishClose();
+        return;
       }
     } else if (state === "dragging") {
       // Snapback tween back to shut.
@@ -323,10 +324,10 @@ export function initHeroDoorGate(): (() => void) | undefined {
     const speed = Math.abs(doorY - lastDoorY);
     lastDoorY = doorY;
 
-    // The validation settle stays quiet — the rumble belongs to the lift.
+    // The validation settle and closing sequence stay quiet — the rumble
+    // belongs exclusively to the powered lift.
     const lifting =
-      state === "closing" ||
-      (state === "opening" && elapsed >= VALIDATE_MS + HOLD_MS);
+      state === "opening" && elapsed >= VALIDATE_MS + HOLD_MS;
     const rumble = lifting ? Math.max(clamp(speed * 2.4, 0, 18), 3) : 0;
     quake(Math.max(impulse, rumble) * shakeScale);
     impulse *= 0.86;
@@ -367,6 +368,8 @@ export function initHeroDoorGate(): (() => void) | undefined {
     if (state === "closing" || state === "closed") return;
     state = "closing";
     seqFrom = doorY;
+    // Do not carry the lift's final impact into a later closing sequence.
+    impulse = 0;
     hero!.classList.remove("is-open");
     lock();
     startLoop();
@@ -376,13 +379,10 @@ export function initHeroDoorGate(): (() => void) | undefined {
     state = "closed";
     gate = 0;
     closeAccum = 0;
-    ventBurst(96);
-    setTimeout(() => {
-      if (state === "closed") {
-        stopLoop();
-        paint();
-      }
-    }, 460);
+    // Pressure is released before lifting, never when the shutter closes.
+    stopLoop();
+    paint();
+    syncTheme();
   }
 
   function scheduleSnapback() {
