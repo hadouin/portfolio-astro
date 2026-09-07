@@ -40,10 +40,12 @@ export const ui = {
     "nav.cv.fr": "Français",
     "nav.hireMe": "Hire me!",
 
-    "hero.greeting": "Hi, my name is",
-    "hero.tagline": "I build things for the web",
+    "hero.greeting": "Independent creative developer · Paris",
+    "hero.tagline": "Code is my material. Detail is my signature.",
     "hero.intro":
-      "I'm a freelance creative dev turning raw ideas into polished products.",
+      "I shape expressive websites, interactive 3D, and games from first sketch to final detail.",
+    "hero.workCta": "See selected work",
+    "hero.contactCta": "Start a project",
 
     "about.title": "About me",
     "about.p1":
@@ -163,10 +165,12 @@ export const ui = {
     "nav.cv.fr": "Français",
     "nav.hireMe": "Recrutez-moi !",
 
-    "hero.greeting": "Salut, je m'appelle",
-    "hero.tagline": "Je construis des choses pour le web",
+    "hero.greeting": "Creative developer indépendant · Paris",
+    "hero.tagline": "Le code est ma matière. Le détail, ma signature.",
     "hero.intro":
-      "Je suis creative dev freelance et je transforme des idées brutes en produits aboutis.",
+      "Je conçois des sites expressifs, des expériences 3D et des jeux, du premier croquis au dernier détail.",
+    "hero.workCta": "Voir mes projets",
+    "hero.contactCta": "Parler d'un projet",
 
     "about.title": "À propos de moi",
     "about.p1":

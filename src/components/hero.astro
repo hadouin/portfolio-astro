@@ -63,16 +63,27 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
       <p class="hero-tagline mt-2 max-w-3xl text-3xl font-bold leading-[0.98] sm:text-4xl lg:text-5xl xl:text-6xl">
         {t("hero.tagline")}
       </p>
-      <p class="hero-intro my-6 max-w-2xl font-inter text-base leading-relaxed sm:text-lg">
+      <p class="hero-intro mt-6 max-w-2xl font-inter text-base leading-relaxed sm:text-lg">
         {t("hero.intro")}
       </p>
-      <Link
-        class="hire-me wiggle w-fit font-semibold"
-        style="inverted"
-        href={localizedPath("/contact", locale)}
-      >
-        {t("nav.hireMe")}
-      </Link>
+      <div class="mt-6 flex flex-wrap items-center gap-3">
+        <Link
+          class="hire-me wiggle w-fit font-semibold"
+          size="md"
+          style="inverted"
+          href="#projects"
+        >
+          {t("hero.workCta")}
+        </Link>
+        <Link
+          class="w-fit font-semibold"
+          size="md"
+          style="ghost"
+          href={localizedPath("/contact", locale)}
+        >
+          {t("hero.contactCta")}
+        </Link>
+      </div>
     </div>
   </div>
 
