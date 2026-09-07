@@ -350,12 +350,9 @@ export function initHeroDoorGate(): (() => void) | undefined {
     state = "opening";
     seqFrom = doorY;
     gate = 1;
-    // Steam leads. startOpen is guarded above, so this fires once per open.
-    // The seam is anchored to the bottom edge of the slab, which is still held
-    // up at the peek height when the latch trips. The impulse this sets makes
-    // quake() fire on the same frame, which is what kicks off the scramble —
-    // steam and text together.
-    ventBurst(clamp(96 + doorY, 40, 96));
+    // Nothing vents here: the slab is still held up at the peek height. The
+    // burst waits until it has settled back onto its sill.
+    vented = false;
     startLoop();
   }
 
