@@ -4,6 +4,9 @@ title: "Midgard"
 snippet: "Score-based competitive markets on Starknet. Factory Owners stake on game scores, Challengers pay to beat them, Vault Investors provide capital. Built by RuneLabs."
 image:
   { src: "midgard-app-banner.png", alt: "Midgard app banner" }
+images:
+  - { src: "midgard-iso.png", alt: "Midgard isometric factory view" }
+  - { src: "midgard-vision.png", alt: "Midgard vision artwork" }
 technos:
   [
     "SvelteKit",

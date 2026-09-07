@@ -35,6 +35,16 @@ const portfolioCollection = defineCollection({
       src: z.string(),
       alt: z.string(),
     }),
+    // Up to 2 secondary images floating behind the main one on the home page
+    images: z
+      .array(
+        z.object({
+          src: z.string(),
+          alt: z.string(),
+        }),
+      )
+      .max(2)
+      .default([]),
     ogImage: z.string().optional(),
     technos: z.array(z.string()),
     startDate: z.string().transform((str) => new Date(str)),
