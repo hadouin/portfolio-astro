@@ -1,4 +1,20 @@
+import { initDeviceTilt, type DeviceTiltHandle, type TiltDebug } from "./device-tilt";
+
 type Vec2 = [number, number];
+
+export type HeroChromaticDebug = {
+  /** Null until the tilt source reports; null forever on platforms without one. */
+  tilt: TiltDebug | null;
+  /** Whatever last moved the focus point. */
+  source: "idle" | "mouse" | "touch" | "tilt";
+  /** Focus point in container UV, origin bottom-left. */
+  focus: Vec2;
+  /** Rest position the bubble settles to when the device is held at its neutral attitude. */
+  anchor: Vec2;
+  velocity: Vec2;
+  /** 0 = portrait untouched, 1 = full chromatic split. */
+  intensity: number;
+};
 
 type HeroChromaticOptions = {
   container: HTMLElement;
@@ -8,6 +24,8 @@ type HeroChromaticOptions = {
   hero: HTMLElement;
   imageSize: Vec2;
   referenceImage?: HTMLImageElement | null;
+  /** Dev-only readout hook; leave unset in production so nothing is sampled. */
+  onDebug?: (debug: HeroChromaticDebug) => void;
 };
 
 const VERTEX_SHADER = `
@@ -62,6 +80,7 @@ const COMPOSITE_FRAGMENT_SHADER = `
   uniform vec2 uObjectPosition;
   uniform vec2 uMouse;
   uniform vec2 uMouseVel;
+  uniform vec2 uTilt;
   uniform float uTime;
   uniform float uStrength;
   uniform float uIntensity;
@@ -129,9 +148,16 @@ const COMPOSITE_FRAGMENT_SHADER = `
     float split = uStrength * drive * (0.005 + edge * 0.02) * (0.35 + mouseMask * 0.65);
     float velBoost = length(uMouseVel) * uStrength * drive * 0.11;
 
-    vec2 offsetR = waveOffset + chromaDir * (split + velBoost) * coverScale;
+    // Relative tilt is the driver on mobile, not the motion of getting there:
+    // the split is a pure function of the held angle and only closes when the
+    // phone levels back out. Like the hover effect, only the channels pull
+    // apart — the image itself stays anchored, so tilt reads as one clean cue.
+    float tiltMag = min(length(uTilt), 1.0);
+    vec2 tiltSplit = uTilt * uStrength * (0.005 + edge * 0.020) * coverScale;
+
+    vec2 offsetR = waveOffset + chromaDir * (split + velBoost) * coverScale + tiltSplit;
     vec2 offsetG = waveOffset;
-    vec2 offsetB = waveOffset - chromaDir * (split + velBoost) * coverScale;
+    vec2 offsetB = waveOffset - chromaDir * (split + velBoost) * coverScale - tiltSplit;
 
     float r = texture2D(uImage, uv + offsetR).r;
     float g = texture2D(uImage, uv + offsetG).g;
@@ -139,7 +165,7 @@ const COMPOSITE_FRAGMENT_SHADER = `
 
     vec3 base = texture2D(uImage, uv).rgb;
     float mixAmount = clamp(
-      mouseMask * 0.9 + abs(wave) * 14.0 + length(uMouseVel) * 30.0,
+      mouseMask * 0.9 + abs(wave) * 14.0 + length(uMouseVel) * 30.0 + tiltMag * 1.2,
       0.0,
       1.0
     );
@@ -148,6 +174,12 @@ const COMPOSITE_FRAGMENT_SHADER = `
     gl_FragColor = vec4(color, 1.0);
   }
 `;
+
+/** How far full-scale tilt carries the bubble from its anchor, in container UV. */
+const TILT_SPAN = 0.42;
+/** Spring pulling the bubble to the tilt target, and the viscous drag on it. */
+const BUBBLE_SPRING = 22;
+const BUBBLE_DAMPING = 6.5;
 
 function createShader(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type);
@@ -273,6 +305,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     hero,
     imageSize,
     referenceImage = null,
+    onDebug,
   } = options;
   const gl = canvas.getContext("webgl", {
     alpha: false,
@@ -321,6 +354,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     uObjectPosition: gl.getUniformLocation(compositeProgram, "uObjectPosition"),
     uMouse: gl.getUniformLocation(compositeProgram, "uMouse"),
     uMouseVel: gl.getUniformLocation(compositeProgram, "uMouseVel"),
+    uTilt: gl.getUniformLocation(compositeProgram, "uTilt"),
     uTime: gl.getUniformLocation(compositeProgram, "uTime"),
     uStrength: gl.getUniformLocation(compositeProgram, "uStrength"),
     uIntensity: gl.getUniformLocation(compositeProgram, "uIntensity"),
@@ -356,9 +390,23 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   let recentMove = 0;
   let splatStrength = 0;
   let hasPointer = false;
+  let pointerSeeded = false;
+  let tiltActive = false;
+  let onScreen = true;
   let lastPointerX = 0;
   let lastPointerY = 0;
   let objectPosition: Vec2 = readObjectPosition(referenceImage);
+  let tiltHandle: DeviceTiltHandle | null = null;
+  let tiltOffset: Vec2 = [0, 0];
+  let smoothTilt: Vec2 = [0, 0];
+  let anchor: Vec2 = [0.5, 0.5];
+  let bubblePos: Vec2 = [0.5, 0.5];
+  let bubbleVel: Vec2 = [0, 0];
+  let debugSource: HeroChromaticDebug["source"] = "idle";
+  let tiltDebug: TiltDebug | null = null;
+  let lastDebugTime = 0;
+
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
 
   const syncObjectPosition = () => {
     objectPosition = readObjectPosition(referenceImage);
@@ -414,7 +462,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
 
     syncObjectPosition();
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, coarsePointer ? 1.5 : 2);
     width = Math.max(1, Math.round(rect.width * dpr));
     height = Math.max(1, Math.round(rect.height * dpr));
 
@@ -499,6 +547,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     gl.uniform2f(compositeLocations.uObjectPosition, objectPosition[0], objectPosition[1]);
     gl.uniform2f(compositeLocations.uMouse, mouseUv[0], mouseUv[1]);
     gl.uniform2f(compositeLocations.uMouseVel, smoothVel[0], smoothVel[1]);
+    gl.uniform2f(compositeLocations.uTilt, smoothTilt[0], smoothTilt[1]);
     gl.uniform1f(compositeLocations.uTime, time);
     gl.uniform1f(compositeLocations.uStrength, 1);
     gl.uniform1f(compositeLocations.uIntensity, effectIntensity);
@@ -509,9 +558,50 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   const animate = (frameTime: number) => {
     if (disposed) return;
 
+    // Tilt keeps the effect permanently "hovered", so idleFrames never trips on
+    // mobile — park the loop whenever nobody can see it.
+    if (!onScreen || document.hidden) {
+      animationFrame = 0;
+      lastFrameTime = 0;
+      return;
+    }
+
     const delta = lastFrameTime ? Math.min((frameTime - lastFrameTime) / 1000, 0.034) : 1 / 60;
     lastFrameTime = frameTime;
     time += delta;
+
+    // A bubble level's bubble glides to the raised side and settles rather than
+    // tracking the sensor rigidly. A finger on the glass overrides it outright.
+    if (tiltActive && !pointerSeeded) {
+      const step = Math.min(delta, 1 / 45);
+      const target: Vec2 = [
+        clamp(anchor[0] + tiltOffset[0] * TILT_SPAN, 0, 1),
+        clamp(anchor[1] + tiltOffset[1] * TILT_SPAN, 0, 1),
+      ];
+
+      const moved: Vec2 = [0, 0];
+      for (let axis = 0; axis < 2; axis++) {
+        bubbleVel[axis] +=
+          (BUBBLE_SPRING * (target[axis] - bubblePos[axis]) - BUBBLE_DAMPING * bubbleVel[axis]) *
+          step;
+        const drifted = bubblePos[axis] + bubbleVel[axis] * step;
+        const next = clamp(drifted, 0, 1);
+        // Stop dead at the edge of the portrait instead of building up pressure.
+        if (next !== drifted) bubbleVel[axis] = 0;
+        moved[axis] = next - bubblePos[axis];
+        bubblePos[axis] = next;
+      }
+
+      mouseUv = [bubblePos[0], bubblePos[1]];
+      if (Math.abs(moved[0]) > 1e-5 || Math.abs(moved[1]) > 1e-5) {
+        energize(moved[0], moved[1], 1.6, 0);
+      }
+    }
+
+    // Follow the held angle rather than decaying toward zero like the motion terms.
+    const tiltEase = 1 - Math.exp(-6 * delta);
+    smoothTilt[0] += ((tiltActive ? tiltOffset[0] : 0) - smoothTilt[0]) * tiltEase;
+    smoothTilt[1] += ((tiltActive ? tiltOffset[1] : 0) - smoothTilt[1]) * tiltEase;
 
     const velDecay = Math.exp(-1.8 * delta);
     const inputMag = Math.hypot(pendingVel[0], pendingVel[1]);
@@ -538,10 +628,13 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     smoothVel[1] += (targetVel[1] - smoothVel[1]) * velEaseY;
 
     const motionMag = Math.hypot(smoothVel[0], smoothVel[1]);
+    const tiltMag = Math.min(Math.hypot(smoothTilt[0], smoothTilt[1]), 1);
     let intensityTarget = 0;
     if (hasPointer) {
+      // The tilt term is generous so a held angle keeps the effect fully lit:
+      // drive gates the mix, and a decaying drive would re-hide a steady tilt.
       intensityTarget = clamp(
-        0.55 + Math.max(recentMove * 14, inputMag * 10, motionMag * 18),
+        0.55 + Math.max(recentMove * 14, inputMag * 10, motionMag * 18, tiltMag * 0.9),
         0.55,
         1,
       );
@@ -554,6 +647,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
 
     stepWave();
     renderComposite();
+    emitDebug();
 
     if (!ready) {
       ready = true;
@@ -581,11 +675,35 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     }
   };
 
+  const emitDebug = (force = false) => {
+    if (!onDebug) return;
+    const now = performance.now();
+    if (!force && now - lastDebugTime < 60) return;
+    lastDebugTime = now;
+    onDebug({
+      tilt: tiltDebug,
+      source: debugSource,
+      focus: [mouseUv[0], mouseUv[1]],
+      anchor: [anchor[0], anchor[1]],
+      velocity: [smoothVel[0], smoothVel[1]],
+      intensity: effectIntensity,
+    });
+  };
+
   const startAnimation = () => {
-    if (!animationFrame) {
+    if (!animationFrame && onScreen && !document.hidden) {
       lastFrameTime = 0;
       animationFrame = requestAnimationFrame(animate);
     }
+  };
+
+  const energize = (deltaX: number, deltaY: number, gain: number, splatFloor: number) => {
+    pendingVel[0] = clamp(pendingVel[0] * 0.35 + deltaX * gain, -0.14, 0.14);
+    pendingVel[1] = clamp(pendingVel[1] * 0.35 + deltaY * gain, -0.14, 0.14);
+    const moveMag = Math.hypot(deltaX, deltaY);
+    recentMove = clamp(Math.max(recentMove, moveMag * 1.4), 0, 0.35);
+    splatStrength += clamp(moveMag * 52, splatFloor, 0.45);
+    startAnimation();
   };
 
   const updateMouseFromEvent = (event: PointerEvent) => {
@@ -595,10 +713,19 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     const x = clamp((event.clientX - rect.left) / rect.width, 0, 1);
     const y = clamp(1 - (event.clientY - rect.top) / rect.height, 0, 1);
     mouseUv = [x, y];
+    debugSource = event.pointerType === "touch" ? "touch" : "mouse";
 
-    if (!hasPointer) {
+    // Wherever the finger is becomes the bubble's new rest position, and the
+    // attitude the device is held at right now becomes level.
+    anchor = [x, y];
+    bubblePos = [x, y];
+    bubbleVel = [0, 0];
+    tiltHandle?.recenter();
+
+    if (!pointerSeeded) {
       lastPointerX = event.clientX;
       lastPointerY = event.clientY;
+      pointerSeeded = true;
       hasPointer = true;
       splatStrength += 0.22;
       recentMove = 0.08;
@@ -611,20 +738,45 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     lastPointerX = event.clientX;
     lastPointerY = event.clientY;
 
-    pendingVel[0] = clamp(pendingVel[0] * 0.35 + deltaX * 1.35, -0.14, 0.14);
-    pendingVel[1] = clamp(pendingVel[1] * 0.35 + deltaY * 1.35, -0.14, 0.14);
-    const moveMag = Math.hypot(deltaX, deltaY);
-    recentMove = clamp(Math.max(recentMove, moveMag * 1.4), 0, 0.35);
-    splatStrength += clamp(moveMag * 52, 0.04, 0.45);
-    startAnimation();
+    energize(deltaX, deltaY, 1.35, 0.04);
   };
 
   const handlePointerMove = (event: PointerEvent) => {
     updateMouseFromEvent(event);
   };
 
-  const handlePointerLeave = () => {
-    hasPointer = false;
+  // A finger that lands without dragging should still light up the portrait.
+  const handlePointerDown = (event: PointerEvent) => {
+    updateMouseFromEvent(event);
+  };
+
+  // Touch has no hover: lifting (or losing the pointer to a scroll) ends the
+  // contact, and the next one has to seed a fresh origin.
+  const handlePointerRelease = () => {
+    pointerSeeded = false;
+    // The bubble stays where it was let go and tilts on from there; it springs
+    // rather than snaps, so there is nothing to re-seed.
+    bubbleVel = [0, 0];
+    hasPointer = tiltActive;
+    tiltHandle?.recenter();
+    startAnimation();
+  };
+
+  // Phone tilt is the touch-device stand-in for the pointer. The sensor only sets
+  // where the bubble is heading; the render loop does the gliding.
+  const handleTilt = (sample: { x: number; y: number }) => {
+    // The bubble rides to the raised edge: tipping the right side down sends it
+    // left, and lifting the top pulls it up.
+    tiltOffset = [-sample.x, sample.y];
+    debugSource = "tilt";
+
+    if (!tiltActive) {
+      tiltActive = true;
+      hasPointer = true;
+      splatStrength += 0.22;
+      recentMove = 0.08;
+    }
+
     startAnimation();
   };
 
@@ -687,9 +839,38 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     startAnimation();
   };
 
+  const visibilityObserver = new IntersectionObserver(
+    (entries) => {
+      onScreen = entries.some((entry) => entry.isIntersecting);
+      if (onScreen) startAnimation();
+    },
+    { threshold: 0 },
+  );
+
+  const handleDocumentVisibility = () => {
+    if (!document.hidden) startAnimation();
+  };
+
   resizeObserver.observe(container);
+  visibilityObserver.observe(container);
+  document.addEventListener("visibilitychange", handleDocumentVisibility);
+  hero.addEventListener("pointerdown", handlePointerDown, { passive: true });
   hero.addEventListener("pointermove", handlePointerMove, { passive: true });
-  hero.addEventListener("pointerleave", handlePointerLeave, { passive: true });
+  hero.addEventListener("pointerup", handlePointerRelease, { passive: true });
+  hero.addEventListener("pointercancel", handlePointerRelease, { passive: true });
+  hero.addEventListener("pointerleave", handlePointerRelease, { passive: true });
+
+  tiltHandle = initDeviceTilt({
+    onTilt: handleTilt,
+    gestureTarget: hero,
+    onDebug: onDebug
+      ? (debug) => {
+          tiltDebug = debug;
+          // The render loop parks when idle, so status changes have to push.
+          emitDebug(debug.events === 0);
+        }
+      : undefined,
+  });
 
   void initTextures().catch((error) => {
     console.warn("[hero-chromatic] Init failed", error);
@@ -699,8 +880,14 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
   return () => {
     disposed = true;
     resizeObserver.disconnect();
+    visibilityObserver.disconnect();
+    tiltHandle?.dispose();
+    document.removeEventListener("visibilitychange", handleDocumentVisibility);
+    hero.removeEventListener("pointerdown", handlePointerDown);
     hero.removeEventListener("pointermove", handlePointerMove);
-    hero.removeEventListener("pointerleave", handlePointerLeave);
+    hero.removeEventListener("pointerup", handlePointerRelease);
+    hero.removeEventListener("pointercancel", handlePointerRelease);
+    hero.removeEventListener("pointerleave", handlePointerRelease);
     if (animationFrame) cancelAnimationFrame(animationFrame);
     delete container.dataset.chromaticReady;
 
