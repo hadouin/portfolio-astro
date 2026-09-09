@@ -39,7 +39,7 @@ const formatRating = (value: number) =>
     }
   </p>
 
-  <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  <ul class="grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
     {
       recommendations.map((rec) => (
         <li class="reco-card flex flex-col rounded-2xl border border-slate-200 bg-white p-6">
@@ -82,13 +82,15 @@ const formatRating = (value: number) =>
             </span>
           </div>
 
-          {rec.quote[locale] && (
-            <blockquote class="font-inter mt-4 leading-relaxed text-slate-700">
-              {rec.quote[locale]}
+          {rec.quote[locale].length > 0 && (
+            <blockquote class="font-inter mt-4 space-y-3 leading-relaxed text-slate-700">
+              {rec.quote[locale].map((paragraph) => (
+                <p>{paragraph}</p>
+              ))}
             </blockquote>
           )}
 
-          <p class="font-inter mt-auto pt-4 text-xs text-slate-400">
+          <p class="font-inter mt-4 text-xs text-slate-400">
             <time datetime={rec.date}>
               {formatDate(new Date(rec.date), locale, {
                 day: "numeric",

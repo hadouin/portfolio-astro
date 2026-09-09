@@ -176,10 +176,11 @@ export type Recommendation = {
   date: string;
   rating: number;
   /**
-   * Verbatim recommendation, per locale. Originals were written in French.
-   * Empty string hides the quote block and renders the person card alone.
+   * Verbatim recommendation, one entry per paragraph. Originals were written
+   * in French; `en` is a translation. An empty array hides the quote block and
+   * renders the person card alone.
    */
-  quote: Record<Locale, string>;
+  quote: Record<Locale, string[]>;
 };
 
 const recommendations: Recommendation[] = [
@@ -189,7 +190,14 @@ const recommendations: Recommendation[] = [
     company: "GreenLeaze",
     date: "2026-06-08",
     rating: 5,
-    quote: { en: "", fr: "" },
+    quote: {
+      en: [
+        "Hadouin showed real rigour across the whole engagement and handled a number of projects that are in production today, efficiently and professionally.",
+      ],
+      fr: [
+        "Hadouin a fait preuve de beaucoup de sérieux sur l'ensemble de sa mission et a su gérer de nombreux projets aujourd'hui en production de manière efficace et professionnelle.",
+      ],
+    },
   },
   {
     name: "Raphael Cournault",
@@ -197,7 +205,14 @@ const recommendations: Recommendation[] = [
     company: "Enoria",
     date: "2026-06-03",
     rating: 5,
-    quote: { en: "", fr: "" },
+    quote: {
+      en: [
+        "I had Hadouin work on frontend parts, VueJS and an application redesign. Hadouin is a pleasant freelancer, very strong on the frontend, with a genuine sense of user experience. He fitted in well within a team of 3 on the VueJS rebuild of a management form originally built in Bootstrap. Vue component creation, integration, testing.",
+      ],
+      fr: [
+        "J'ai fait travailler Hadouin sur des parties front, VueJS et redesign d'application. Hadouin est un freelance agréable, très compétent en front, qui a un vrai sens de l'expérience utilisateur. Il s'est bien intégré dans une équipe de 3 sur un projet de refonte en VueJS de formulaire de Gestion à l'origine en Bootstrap. Création de composant Vue, intégration, test.",
+      ],
+    },
   },
   {
     name: "Valentin Ricard",
@@ -205,7 +220,16 @@ const recommendations: Recommendation[] = [
     company: "Runelabs",
     date: "2026-06-03",
     rating: 5,
-    quote: { en: "", fr: "" },
+    quote: {
+      en: [
+        "I had the pleasure of working with Hadouin at RuneLabs, where he contributed to the frontend development of both our game products. Skilled in Three.js, Svelte and Blender, he can carry a project end to end with remarkable autonomy — from development to documentation, 2D/3D asset creation and application maintenance.",
+        "Beyond his technical skills, Hadouin stands out for his ability to ship polished user experiences and to level up the people around him on the technologies he works with.",
+      ],
+      fr: [
+        "J'ai eu le plaisir de collaborer avec Hadouin chez RuneLabs, où il a contribué au développement frontend de nos deux produits de jeu. Maîtrisant Three.js, Svelte et Blender, il est capable de porter un projet de bout en bout avec une autonomie remarquable, du développement à la documentation, la création d'assets 2D/3D et la maintenance applicative.",
+        "Au-delà de ses compétences techniques, Hadouin se distingue par sa capacité à livrer des expériences utilisateur soignées et à faire monter en compétences ses collaborateurs sur les technologies qu'il utilise.",
+      ],
+    },
   },
 ];
 
