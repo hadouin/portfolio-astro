@@ -181,6 +181,13 @@ export type Recommendation = {
    * renders the person card alone.
    */
   quote: Record<Locale, string[]>;
+  /**
+   * Portfolio slugs worked on together. Rendered as links; an empty array is
+   * fine when the work never became a portfolio entry.
+   */
+  projects: string[];
+  /** Rendered wide, as the lead card of the section. At most one. */
+  featured?: boolean;
 };
 
 const recommendations: Recommendation[] = [
@@ -198,6 +205,7 @@ const recommendations: Recommendation[] = [
         "Hadouin a fait preuve de beaucoup de sérieux sur l'ensemble de sa mission et a su gérer de nombreux projets aujourd'hui en production de manière efficace et professionnelle.",
       ],
     },
+    projects: [],
   },
   {
     name: "Raphael Cournault",
@@ -213,6 +221,7 @@ const recommendations: Recommendation[] = [
         "J'ai fait travailler Hadouin sur des parties front, VueJS et redesign d'application. Hadouin est un freelance agréable, très compétent en front, qui a un vrai sens de l'expérience utilisateur. Il s'est bien intégré dans une équipe de 3 sur un projet de refonte en VueJS de formulaire de Gestion à l'origine en Bootstrap. Création de composant Vue, intégration, test.",
       ],
     },
+    projects: ["enoria"],
   },
   {
     name: "Valentin Ricard",
@@ -230,6 +239,8 @@ const recommendations: Recommendation[] = [
         "Au-delà de ses compétences techniques, Hadouin se distingue par sa capacité à livrer des expériences utilisateur soignées et à faire monter en compétences ses collaborateurs sur les technologies qu'il utilise.",
       ],
     },
+    projects: ["midgard", "ponziland"],
+    featured: true,
   },
 ];
 

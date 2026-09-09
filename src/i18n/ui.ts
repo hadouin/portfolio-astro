@@ -137,6 +137,7 @@ export const ui = {
     "recommendations.subtitle": "people who worked with me",
     "recommendations.count": "{count} recommendations · {rating} average",
     "recommendations.ratingLabel": "Rated {rating} out of 5",
+    "recommendations.projects": "Worked together on",
 
     "footer.home": "Home",
     "footer.blog": "Blog",
@@ -266,6 +267,7 @@ export const ui = {
     "recommendations.subtitle": "les gens qui ont travaillé avec moi",
     "recommendations.count": "{count} recommandations · {rating} de moyenne",
     "recommendations.ratingLabel": "Noté {rating} sur 5",
+    "recommendations.projects": "Collaboration sur",
 
     "footer.home": "Accueil",
     "footer.blog": "Blog",

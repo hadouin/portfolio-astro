@@ -1,6 +1,7 @@
 ---
 import { getRecommendations } from "@i18n/data";
-import { formatDate, useTranslations, type Locale } from "@i18n/utils";
+import { formatDate, localizedPath, useTranslations, type Locale } from "@i18n/utils";
+import { getCollection } from "astro:content";
 
 interface Props {
   locale: Locale;
@@ -8,7 +9,34 @@ interface Props {
 
 const { locale } = Astro.props;
 const t = useTranslations(locale);
-const recommendations = getRecommendations(locale);
+
+// Featured first — it leads the section as a wide card.
+const recommendations = [...getRecommendations(locale)].sort(
+  (a, b) => Number(b.featured ?? false) - Number(a.featured ?? false),
+);
+
+const portfolio = await getCollection(
+  "portfolio",
+  ({ id }) => id.startsWith(`${locale}/`),
+);
+const projectsBySlug = new Map(
+  portfolio.map((entry) => [entry.id.slice(locale.length + 1), entry]),
+);
+
+// Fail the build on a stale slug rather than silently dropping the link.
+const linkedProjects = (slugs: string[]) =>
+  slugs.map((slug) => {
+    const entry = projectsBySlug.get(slug);
+    if (!entry) {
+      throw new Error(
+        `Recommendation links to unknown portfolio slug "${slug}" (${locale}).`,
+      );
+    }
+    return {
+      title: entry.data.title,
+      href: localizedPath(`/projects/${slug}`, locale),
+    };
+  });
 
 const initials = (name: string) =>
   name
@@ -39,68 +67,93 @@ const formatRating = (value: number) =>
     }
   </p>
 
-  <ul class="grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
+  <ul class="grid items-start gap-6 lg:grid-cols-2">
     {
-      recommendations.map((rec) => (
-        <li class="reco-card flex flex-col rounded-2xl border border-slate-200 bg-white p-6">
-          <div class="flex items-center gap-4">
-            <span
-              class="reco-avatar grid h-12 w-12 shrink-0 place-items-center rounded-full bg-slate-900 font-inter text-sm font-bold text-white"
-              aria-hidden="true"
-            >
-              {initials(rec.name)}
-            </span>
-            <div class="min-w-0">
-              <p class="font-bold leading-tight">{rec.name}</p>
-              <p class="font-inter text-sm leading-tight text-slate-500">
-                {rec.role} @ {rec.company}
-              </p>
-            </div>
-          </div>
-
-          <div class="mt-4 flex items-center gap-2">
-            <span
-              class="reco-stars flex gap-0.5"
-              role="img"
-              aria-label={t("recommendations.ratingLabel", {
-                rating: formatRating(rec.rating),
-              })}
-            >
-              {Array.from({ length: 5 }).map(() => (
-                <svg
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 28 27"
-                  class="h-3.5 w-3.5 fill-current"
+      recommendations.map((rec) => {
+        const projects = linkedProjects(rec.projects);
+        return (
+          <li
+            class:list={[
+              "reco-card flex flex-col rounded-2xl border border-slate-200 bg-white p-6 sm:p-8",
+              rec.featured && "reco-card--featured lg:col-span-2",
+            ]}
+          >
+            <div class="flex items-center gap-4">
+              <span
+                class="reco-avatar grid h-12 w-12 shrink-0 place-items-center rounded-full bg-slate-900 font-inter text-sm font-bold text-white"
+                aria-hidden="true"
+              >
+                {initials(rec.name)}
+              </span>
+              <div class="min-w-0">
+                <p class="font-bold leading-tight">{rec.name}</p>
+                <p class="font-inter text-sm leading-tight text-slate-500">
+                  {rec.role} @ {rec.company}
+                </p>
+              </div>
+              <span class="ml-auto flex shrink-0 items-center gap-2">
+                <span
+                  class="reco-stars flex gap-0.5"
+                  role="img"
+                  aria-label={t("recommendations.ratingLabel", {
+                    rating: formatRating(rec.rating),
+                  })}
                 >
-                  <path d="M13.3563 0.908491C13.5397 0.536868 14.0696 0.53687 14.2531 0.908493L18.0967 8.69665C18.1696 8.84422 18.3104 8.94651 18.4732 8.97017L27.068 10.2191C27.4781 10.2787 27.6418 10.7826 27.3451 11.0719L21.1258 17.1341C21.008 17.249 20.9542 17.4145 20.982 17.5767L22.4502 26.1367C22.5203 26.5452 22.0915 26.8567 21.7247 26.6638L14.0374 22.6223C13.8917 22.5457 13.7177 22.5457 13.572 22.6223L5.88465 26.6638C5.51783 26.8567 5.08911 26.5452 5.15917 26.1367L6.62733 17.5767C6.65515 17.4145 6.60137 17.249 6.48353 17.1341L0.264316 11.0719C-0.0324429 10.7826 0.131311 10.2787 0.541421 10.2191L9.13616 8.97017C9.29902 8.94651 9.4398 8.84422 9.51263 8.69665L13.3563 0.908491Z" />
-                </svg>
-              ))}
-            </span>
-            <span class="font-inter text-sm font-bold">
-              {formatRating(rec.rating)}
-            </span>
-          </div>
+                  {Array.from({ length: 5 }).map(() => (
+                    <svg
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 28 27"
+                      class="h-3.5 w-3.5 fill-current"
+                    >
+                      <path d="M13.3563 0.908491C13.5397 0.536868 14.0696 0.53687 14.2531 0.908493L18.0967 8.69665C18.1696 8.84422 18.3104 8.94651 18.4732 8.97017L27.068 10.2191C27.4781 10.2787 27.6418 10.7826 27.3451 11.0719L21.1258 17.1341C21.008 17.249 20.9542 17.4145 20.982 17.5767L22.4502 26.1367C22.5203 26.5452 22.0915 26.8567 21.7247 26.6638L14.0374 22.6223C13.8917 22.5457 13.7177 22.5457 13.572 22.6223L5.88465 26.6638C5.51783 26.8567 5.08911 26.5452 5.15917 26.1367L6.62733 17.5767C6.65515 17.4145 6.60137 17.249 6.48353 17.1341L0.264316 11.0719C-0.0324429 10.7826 0.131311 10.2787 0.541421 10.2191L9.13616 8.97017C9.29902 8.94651 9.4398 8.84422 9.51263 8.69665L13.3563 0.908491Z" />
+                    </svg>
+                  ))}
+                </span>
+                <span class="font-inter text-sm font-bold">
+                  {formatRating(rec.rating)}
+                </span>
+              </span>
+            </div>
 
-          {rec.quote[locale].length > 0 && (
-            <blockquote class="font-inter mt-4 space-y-3 leading-relaxed text-slate-700">
-              {rec.quote[locale].map((paragraph) => (
-                <p>{paragraph}</p>
-              ))}
-            </blockquote>
-          )}
+            {rec.quote[locale].length > 0 && (
+              <blockquote class="reco-quote font-inter mt-5 space-y-3 leading-relaxed text-slate-700">
+                {rec.quote[locale].map((paragraph) => (
+                  <p>{paragraph}</p>
+                ))}
+              </blockquote>
+            )}
 
-          <p class="font-inter mt-4 text-xs text-slate-400">
-            <time datetime={rec.date}>
-              {formatDate(new Date(rec.date), locale, {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </time>
-          </p>
-        </li>
-      ))
+            <div class="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-slate-100 pt-4">
+              {projects.length > 0 && (
+                <>
+                  <span class="font-inter text-xs uppercase tracking-wide text-slate-400">
+                    {t("recommendations.projects")}
+                  </span>
+                  {projects.map((project) => (
+                    <a
+                      href={project.href}
+                      class="reco-project font-inter rounded-full border border-slate-300 px-3 py-1 text-xs"
+                    >
+                      {project.title}
+                    </a>
+                  ))}
+                </>
+              )}
+              <time
+                datetime={rec.date}
+                class="font-inter ml-auto text-xs text-slate-400"
+              >
+                {formatDate(new Date(rec.date), locale, {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </time>
+            </div>
+          </li>
+        );
+      })
     }
   </ul>
 </section>
@@ -121,8 +174,36 @@ const formatRating = (value: number) =>
     color: #f0a500;
   }
 
+  .reco-project {
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease;
+  }
+
+  .reco-project:hover {
+    background-color: rgb(15 23 42);
+    border-color: rgb(15 23 42);
+    color: #ffffff;
+  }
+
+  /* The lead card gets the extra width, so give the quote extra presence too. */
+  @media (min-width: 1024px) {
+    .reco-card--featured .reco-quote {
+      column-count: 2;
+      column-gap: 2.5rem;
+      font-size: 1.0625rem;
+    }
+
+    .reco-card--featured .reco-quote > p {
+      break-inside: avoid;
+      margin-top: 0;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .reco-card {
+    .reco-card,
+    .reco-project {
       transition: none;
     }
     .reco-card:hover {
