@@ -205,7 +205,7 @@ const recommendations: Recommendation[] = [
         "Hadouin a fait preuve de beaucoup de sérieux sur l'ensemble de sa mission et a su gérer de nombreux projets aujourd'hui en production de manière efficace et professionnelle.",
       ],
     },
-    projects: [],
+    projects: ["je-intervenants"],
   },
   {
     name: "Raphael Cournault",
