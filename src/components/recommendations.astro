@@ -11,7 +11,7 @@ interface Props {
 const { locale } = Astro.props;
 const t = useTranslations(locale);
 
-// Featured first — it leads the section as a wide card.
+// Featured first: it leads the section as a wide card.
 const recommendations = [...getRecommendations(locale)].sort(
   (a, b) => Number(b.featured ?? false) - Number(a.featured ?? false),
 );
@@ -39,7 +39,7 @@ const linkedProjects = (slugs: string[]) =>
     };
   });
 
-// Optional — a missing file just falls back to the initials monogram.
+// Optional: a missing file just falls back to the initials monogram.
 const avatarFiles = import.meta.glob<{ default: ImageMetadata }>(
   "/src/assets/recommendations/*.{png,jpg,jpeg,webp,avif}",
   { eager: true },

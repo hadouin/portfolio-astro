@@ -169,7 +169,7 @@ export function getEducation(locale: Locale): Education[] {
 
 export type Recommendation = {
   name: string;
-  /** Job title — Locale-Agnostic Term, stays EN across locales. */
+  /** Job title: Locale-Agnostic Term, stays EN across locales. */
   role: string;
   company: string;
   /** ISO date the recommendation was received. */
@@ -239,7 +239,7 @@ const recommendations: Recommendation[] = [
     avatar: "valentin-ricard.jpg",
     quote: {
       en: [
-        "I had the pleasure of working with Hadouin at RuneLabs, where he contributed to the frontend development of both our game products. Skilled in Three.js, Svelte and Blender, he can carry a project end to end with remarkable autonomy — from development to documentation, 2D/3D asset creation and application maintenance.",
+        "I had the pleasure of working with Hadouin at RuneLabs, where he contributed to the frontend development of both our game products. Skilled in Three.js, Svelte and Blender, he can carry a project end to end with remarkable autonomy, from development to documentation, 2D/3D asset creation and application maintenance.",
         "Beyond his technical skills, Hadouin stands out for his ability to ship polished user experiences and to level up the people around him on the technologies he works with.",
       ],
       fr: [
