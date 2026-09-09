@@ -30,6 +30,10 @@ _Avoid_: Debug flag, dev server.
 An identifier that stays in English across all locales because the FR-tech audience uses the EN form natively. Covers job titles ("Founding Engineer", "Creative Developer"), tech/framework names, and product/company names. Translators must leave these untouched even inside French prose.
 _Avoid_: Untranslatable, proper noun (too broad).
 
+**No Em Dash**:
+A hard rule: the em dash (U+2014) never appears anywhere in this repo, in either locale. It covers portfolio content, i18n strings, page titles, RSS, `public/llms.txt`, and source comments. Write a colon, a comma, parentheses, or two sentences instead. Enforced by `pnpm check:emdash`, which runs as `prebuild`, so a stray em dash fails the build and the deploy.
+_Avoid_: Long dash, mdash.
+
 **Translation Pending**:
 A `/fr/...` page rendered with EN body content plus a visible badge, used as fallback when the FR markdown counterpart is missing. Decided over a hard build-block to keep authoring frictionless.
 _Avoid_: Missing translation, untranslated.

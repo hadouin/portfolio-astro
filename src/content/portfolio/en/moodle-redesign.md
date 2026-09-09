@@ -22,21 +22,21 @@ Moodle is the backbone of coursework for thousands of universities, but its mobi
 
 The redesign stayed grounded in real student workflows rather than chasing visual novelty:
 
-- **Audit** — mapped every core flow in the existing app and logged friction points
-- **Research** — informal interviews with classmates about how they actually use Moodle week to week
-- **Reframe** — treated the app as a student dashboard first, a course catalog second
-- **Design** — hi-fi mockups in Figma with a dark-first theme, bold typography, and color-coded course accents
+- **Audit**: mapped every core flow in the existing app and logged friction points
+- **Research**: informal interviews with classmates about how they actually use Moodle week to week
+- **Reframe**: treated the app as a student dashboard first, a course catalog second
+- **Design**: hi-fi mockups in Figma with a dark-first theme, bold typography, and color-coded course accents
 
 ## Key Screens
 
 ![Moodle redesign mockups](../../../assets/portfolio/moodle-redesign-banner.png)
 
-- **Home** — upcoming assignments, recent courses, and recently accessed files surfaced on a single scrollable view
-- **Course detail** — description, updates, assignments, and docs grouped under a clear hero
-- **Assignment view** — deadline, grade, description, and attached files on one screen, with a prominent countdown
-- **Announcements** — compose and publish flow simplified to a single form
-- **Calendar** — month grid with color-coded events and a scannable event list
-- **Chat** — lightweight direct messaging for course-level collaboration
+- **Home**: upcoming assignments, recent courses, and recently accessed files surfaced on a single scrollable view
+- **Course detail**: description, updates, assignments, and docs grouped under a clear hero
+- **Assignment view**: deadline, grade, description, and attached files on one screen, with a prominent countdown
+- **Announcements**: compose and publish flow simplified to a single form
+- **Calendar**: month grid with color-coded events and a scannable event list
+- **Chat**: lightweight direct messaging for course-level collaboration
 
 ## Design System
 

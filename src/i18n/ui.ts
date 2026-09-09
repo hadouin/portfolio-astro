@@ -24,11 +24,11 @@ export const dateLocaleTag: Record<Locale, string> = {
 
 export const ui = {
   en: {
-    "site.title.fallback": "Hadouin Leroy — Creative Developer",
+    "site.title.fallback": "Hadouin Leroy · Creative Developer",
     "site.description":
-      "Hi, I'm Hadouin — freelance creative dev in Paris. I build things for the web, turning raw ideas into polished products.",
+      "Hi, I'm Hadouin, freelance creative dev in Paris. I build things for the web, turning raw ideas into polished products.",
     "site.image.alt":
-      "Hadouin Leroy — creative developer building things for the web",
+      "Hadouin Leroy, creative developer building things for the web",
 
     "nav.about": "About",
     "nav.experience": "Experience",
@@ -76,8 +76,8 @@ export const ui = {
     "contact.page.body":
       "Have something you want to develop ? Fill up the form or send an email directly.",
     "contact.page.location": "Paris, France",
-    "contact.page.cv.en": "CV — English",
-    "contact.page.cv.fr": "CV — Français",
+    "contact.page.cv.en": "CV (English)",
+    "contact.page.cv.fr": "CV (Français)",
     "contact.form.name": "Full Name",
     "contact.form.email": "Email Address",
     "contact.form.email.label": "Email Address",
@@ -110,19 +110,19 @@ export const ui = {
     "project.demo": "Live Demo",
     "project.continue": "Continue reading",
     "project.translationPending":
-      "FR translation pending — showing the English version.",
+      "FR translation pending. Showing the English version.",
 
     "footer.copyright": "Copyright © {year} Hadouin. All rights reserved.",
 
     "contact.meta.description":
-      "Get in touch with Hadouin Leroy — creative developer based in Paris. Reach out for freelance work, collaborations or gaming and web projects.",
+      "Get in touch with Hadouin Leroy, creative developer based in Paris. Reach out for freelance work, collaborations or gaming and web projects.",
 
     "person.schemaDescription":
       "Freelance creative developer in Paris with a strong technical background. Founding Engineer at Runelabs. Builds web apps, 3D experiences (Blender, Three.js), and onchain games (Starknet, Dojo). UX designer and certified Scrum Master.",
 
     "glance.title": "At a glance",
     "glance.who.label": "Who",
-    "glance.who.value": "Hadouin Leroy — creative developer",
+    "glance.who.value": "Hadouin Leroy, creative developer",
     "glance.what.label": "What",
     "glance.what.value":
       "Web apps, 3D (Blender, Three.js), onchain games (Starknet, Dojo)",
@@ -147,11 +147,11 @@ export const ui = {
     "switcher.toEn": "View in English",
   },
   fr: {
-    "site.title.fallback": "Hadouin Leroy — Creative Developer",
+    "site.title.fallback": "Hadouin Leroy · Creative Developer",
     "site.description":
-      "Salut, moi c'est Hadouin — creative dev freelance à Paris. Je construis des choses pour le web et transforme des idées brutes en produits aboutis.",
+      "Salut, moi c'est Hadouin, creative dev freelance à Paris. Je construis des choses pour le web et transforme des idées brutes en produits aboutis.",
     "site.image.alt":
-      "Hadouin Leroy — creative developer qui construit des choses pour le web",
+      "Hadouin Leroy, creative developer qui construit des choses pour le web",
 
     "nav.about": "À propos",
     "nav.experience": "Expérience",
@@ -199,8 +199,8 @@ export const ui = {
     "contact.page.body":
       "Un projet à développer ? Remplissez le formulaire ou envoyez-moi un email directement.",
     "contact.page.location": "Paris, France",
-    "contact.page.cv.en": "CV — English",
-    "contact.page.cv.fr": "CV — Français",
+    "contact.page.cv.en": "CV (English)",
+    "contact.page.cv.fr": "CV (Français)",
     "contact.form.name": "Nom complet",
     "contact.form.email": "Adresse email",
     "contact.form.email.label": "Adresse email",
@@ -233,20 +233,20 @@ export const ui = {
     "project.demo": "Démo live",
     "project.continue": "Reprendre la lecture",
     "project.translationPending":
-      "Traduction FR en attente — version anglaise affichée.",
+      "Traduction FR en attente. Version anglaise affichée.",
 
     "footer.copyright":
       "Copyright © {year} Hadouin. Tous droits réservés.",
 
     "contact.meta.description":
-      "Contactez Hadouin Leroy — creative developer basé à Paris. Disponible pour des missions freelance, collaborations, projets gaming et web.",
+      "Contactez Hadouin Leroy, creative developer basé à Paris. Disponible pour des missions freelance, collaborations, projets gaming et web.",
 
     "person.schemaDescription":
       "Creative developer freelance à Paris avec une solide base technique. Founding Engineer chez Runelabs. Conçoit des apps web, des expériences 3D (Blender, Three.js) et des jeux onchain (Starknet, Dojo). UX designer et Scrum Master certifié.",
 
     "glance.title": "En bref",
     "glance.who.label": "Qui",
-    "glance.who.value": "Hadouin Leroy — creative developer",
+    "glance.who.value": "Hadouin Leroy, creative developer",
     "glance.what.label": "Quoi",
     "glance.what.value":
       "Apps web, 3D (Blender, Three.js), jeux onchain (Starknet, Dojo)",

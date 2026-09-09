@@ -3,7 +3,7 @@
  * First-paint preloader. Covers the page until its assets are actually ready,
  * so the hero never flickers in.
  *
- * The cover goes up before anything paints, on every full document load — a
+ * The cover goes up before anything paints, on every full document load, a
  * hard reload (cache cleared) must get it just as much as a first visit, so
  * there is deliberately no "once per session" flag.
  *
@@ -15,7 +15,7 @@
  *
  * Progress comes from real work: eager images (awaiting decode), webfonts,
  * `window.load`, and anything a component registers via
- * `window.hadouinLoader.register(promise)` — the hero WebGL textures today,
+ * `window.hadouinLoader.register(promise)`, the hero WebGL textures today,
  * 3D scenes later.
  */
 interface Props {
@@ -35,7 +35,7 @@ const LOGO_LINES = [
 const LOGO_H =
   "M157.243 0L135.253 104.379H102.212L108.687 73.0938H79.4834L72.9033 104.379H39.8672L61.8574 0H94.8623L85.3584 45.792H114.734L124.238 0H157.243Z";
 
-/** viewBox height of the logo, in user units — the mask travel distance. */
+/** viewBox height of the logo, in user units, the mask travel distance. */
 const LOGO_VB_H = 105;
 ---
 
@@ -79,7 +79,7 @@ const LOGO_VB_H = 105;
         LOGO_LINES.map((_, i) => (
           <clipPath id={`loader-line-clip-${i}`} clipPathUnits="userSpaceOnUse">
             {/* Full-height rect slid down out of the way, then raised as the
-                line fills — keeps the diagonal's geometry intact. */}
+                line fills, keeps the diagonal's geometry intact. */}
             <rect
               class="loader-line-mask"
               x="0"

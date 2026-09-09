@@ -29,7 +29,7 @@ priority: 2
 
 PonziLand is a multiplayer financial strategy game built on the Starknet blockchain. Players buy, sell, and exploit virtual land parcels whose economic rules are enforced by smart contracts.
 
-The challenge was making that complex infrastructure invisible to the player — an experience as smooth as a regular web app — while supporting a map of over 64,000 parcels and data updated in real time.
+The challenge was making that complex infrastructure invisible to the player, with an experience as smooth as a regular web app, while supporting a map of over 64,000 parcels and data updated in real time.
 
 Landing page: [ponzi.land](https://ponzi.land). Play the game: [play.ponzi.land](https://play.ponzi.land).
 
@@ -58,7 +58,7 @@ Interface work started in a Figma space shared with the team, where screens, the
 
 ![Collaborative Figma design space for the project](../../../assets/portfolio/ponziland-figma.png)
 
-Every token the game supports has its own building and upgrade tiers — dozens of sprites to integrate and render on the map.
+Every token the game supports has its own building and upgrade tiers, which means dozens of sprites to integrate and render on the map.
 
 ![Variety of PonziLand buildings across supported tokens](../../../assets/portfolio/ponziland-buildings.png)
 

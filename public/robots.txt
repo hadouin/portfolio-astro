@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 
-# AI crawlers welcome — portfolio content is public
+# AI crawlers welcome, portfolio content is public
 User-agent: GPTBot
 Allow: /
 
