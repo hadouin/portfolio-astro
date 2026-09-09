@@ -1,10 +1,22 @@
 ---
 draft: false
 title: "PonziLand"
-snippet: "Métagame DeFi 100% onchain et token-agnostic, construit sur Starknet. Projet multi-langage avec frontend SvelteKit, smart contracts Cairo via Dojo et services d'indexation en Rust."
+snippet: "Jeu de stratégie financière multijoueur sur Starknet. Carte de 64 000+ parcelles rendue en Three.js, données blockchain synchronisées en temps réel, frontend SvelteKit."
 image:
   { src: "ponziland-display-full.png", alt: "Aperçu PonziLand" }
-technos: ["Svelte", "TypeScript", "Cairo", "Dojo", "Rust", "Starknet", "PostgreSQL"]
+technos:
+  [
+    "SvelteKit",
+    "Svelte",
+    "TypeScript",
+    "Three.js",
+    "GLSL",
+    "Starknet",
+    "Cairo",
+    "Dojo",
+    "Rust",
+    "PostgreSQL",
+  ]
 startDate: "2024-06-01 08:00"
 endDate: "2099-02-01 00:00"
 github: "https://github.com/RuneLabsxyz/PonziLand"
@@ -13,41 +25,37 @@ show: true
 priority: 2
 ---
 
-## Vue d'ensemble
+## Contexte du projet
 
-PonziLand est un métagame DeFi 100 % onchain et token-agnostic sur Starknet. Les joueurs achètent, vendent et gèrent des parcelles virtuelles tout en s'affrontant sur des stratégies économiques. Toute la logique de jeu vit entièrement sur la blockchain via des smart contracts Cairo construits avec le framework Dojo.
+PonziLand est un jeu de stratégie financière multijoueur reposant sur la blockchain Starknet. Les joueurs achètent, vendent et exploitent des parcelles virtuelles dont les règles économiques sont exécutées via des smart contracts.
+
+L'enjeu était de rendre cette infrastructure complexe invisible pour l'utilisateur, avec une expérience aussi fluide qu'une application web classique, tout en supportant une carte de plus de 64 000 parcelles et des données mises à jour en temps réel.
 
 Landing page : [ponzi.land](https://ponzi.land). Jouer : [play.ponzi.land](https://play.ponzi.land).
 
-## Mon rôle
+## Déroulé de la mission
 
-Je travaille comme dev full-stack sur PonziLand, en contribuant sur l'ensemble du stack :
+J'ai participé au développement du produit de bout en bout, avec une forte responsabilité sur le frontend, l'expérience utilisateur et les performances.
 
-- **Développement frontend** : construction de la web app SvelteKit avec un système d'UI modulaire à base de widgets
-- **Développement de smart contracts** : écriture et maintenance de contrats Cairo pour les mécaniques de jeu (achat, claim, enchères, nuking)
-- **Services backend** : développement d'un indexer et d'un méta-indexer en Rust pour le traitement des données blockchain
+J'ai notamment travaillé sur :
 
-## Défis techniques
+- le développement du MVP en SvelteKit et TypeScript ;
+- la conception des principales interfaces et interactions du jeu ;
+- l'intégration des smart contracts pour les achats, ventes, enchères, taxes et transactions ;
+- la synchronisation en temps réel des données issues de la blockchain ;
+- la mise en place de services d'indexation et de traitement des données ;
+- la refonte et l'optimisation du rendu de la carte avec Three.js, InstancedMesh et GLSL ;
+- le développement de fonctionnalités compétitives et de tournois ;
+- l'optimisation de l'architecture frontend et des structures de données pour maintenir une expérience fluide à grande échelle.
 
-### Architecture multi-langage
+## Impact chiffré
 
-Coordonner trois langages (TypeScript, Cairo, Rust) demande un design d'API soigné et une synchronisation fine entre couches. Chaque composant a ses paradigmes et contraintes.
-
-### Logique de jeu onchain
-
-Toutes les mécaniques centrales sont 100 % onchain : chaque action de jeu est une transaction blockchain. Cela impose d'optimiser les coûts en gas tout en maintenant un état de jeu complexe.
-
-### Système de widgets
-
-Le frontend utilise une architecture de widgets modulaire pour l'extensibilité. Chaque widget est autonome avec sa propre gestion d'état via les Svelte 5 runes ($state, $derived, $effect).
-
-## Fonctionnalités clés
-
-- **Design token-agnostic** : prend en charge plusieurs tokens pour les transactions de parcelles
-- **Gestion des terres** : achat, vente, claim de taxes auprès des parcelles voisines
-- **Système d'enchères** : enchères automatisées sur les parcelles abandonnées ou nukées
-- **Méta-indexer** : enrichit les données blockchain pour des requêtes rapides avec cache PostgreSQL
-- **Mises à jour temps réel** : état de jeu live synchronisé depuis les événements blockchain
+- **64 000+ parcelles** gérées et affichées dans l'univers de jeu
+- Environ **100 000 $ de volume de transactions**
+- Optimisation de certaines recherches de données de **O(n) à O(1)**
+- Rendu de dizaines de milliers d'éléments interactifs grâce à l'utilisation d'InstancedMesh et de shaders
+- Architecture couvrant plusieurs briques techniques : frontend, smart contracts, indexation et base de données
+- Produit utilisé dans un environnement multijoueur avec synchronisation des données en temps réel
 
 ## Merch
 
@@ -55,11 +63,6 @@ J'ai aussi designé du merch pour le projet : hoodies et t-shirts avec des illus
 
 ![Lineup merch PonziLand que j'ai designé](../../../assets/portfolio/ponziland-merch.png)
 
-## Ce que j'en ai tiré
+## Technologies
 
-Travailler sur PonziLand a approfondi ma maîtrise de :
-
-- Construire des applications 100 % onchain avec un état complexe
-- Le framework Dojo et les patterns de smart contracts Cairo
-- La programmation async en Rust pour l'indexation blockchain
-- Concevoir des architectures frontend extensibles avec Svelte 5
+SvelteKit, Svelte 5, TypeScript, Three.js, GLSL, Starknet, Cairo, Dojo, Cartridge, Rust, PostgreSQL.
