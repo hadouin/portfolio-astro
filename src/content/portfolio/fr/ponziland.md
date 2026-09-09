@@ -33,6 +33,12 @@ L'enjeu était de rendre cette infrastructure complexe invisible pour l'utilisat
 
 Landing page : [ponzi.land](https://ponzi.land). Jouer : [play.ponzi.land](https://play.ponzi.land).
 
+![Bannière PonziLand](../../../assets/portfolio/ponziland-banner.png)
+
+La boucle de jeu tient en trois temps : acheter une parcelle en misant un token, encaisser les taxes des voisins, puis revendre ou conserver.
+
+![Boucle de gameplay PonziLand : acheter, encaisser, revendre ou conserver](../../../assets/portfolio/ponziland-gameplay-loop.png)
+
 ## Déroulé de la mission
 
 J'ai participé au développement du produit de bout en bout, avec une forte responsabilité sur le frontend, l'expérience utilisateur et les performances.
@@ -47,6 +53,18 @@ J'ai notamment travaillé sur :
 - la refonte et l'optimisation du rendu de la carte avec Three.js, InstancedMesh et GLSL ;
 - le développement de fonctionnalités compétitives et de tournois ;
 - l'optimisation de l'architecture frontend et des structures de données pour maintenir une expérience fluide à grande échelle.
+
+Le travail d'interface est parti d'un espace Figma partagé avec l'équipe, où les écrans, la FTUE et les composants ont été explorés avant d'être portés en code.
+
+![Espace de design collaboratif Figma du projet](../../../assets/portfolio/ponziland-figma.png)
+
+Chaque token supporté par le jeu possède son propre bâtiment et ses niveaux d'évolution, soit plusieurs dizaines de sprites à intégrer et à afficher sur la carte.
+
+![Diversité des bâtiments PonziLand selon les tokens](../../../assets/portfolio/ponziland-buildings.png)
+
+La refonte du rendu en Three.js a remplacé le DOM par des InstancedMesh et des shaders GLSL, avec un panneau de réglage des effets en temps réel pendant le développement.
+
+![Scène 3D PonziLand avec le panneau de réglage du shader d'outline](../../../assets/portfolio/ponziland-threejs-scene.png)
 
 ## Impact chiffré
 

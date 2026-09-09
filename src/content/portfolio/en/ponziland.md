@@ -33,6 +33,12 @@ The challenge was making that complex infrastructure invisible to the player —
 
 Landing page: [ponzi.land](https://ponzi.land). Play the game: [play.ponzi.land](https://play.ponzi.land).
 
+![PonziLand banner](../../../assets/portfolio/ponziland-banner.png)
+
+The game loop comes down to three beats: buy a parcel by staking a token, collect taxes from neighbours, then flip it or hold.
+
+![PonziLand game loop: buy, earn, flip or hold](../../../assets/portfolio/ponziland-gameplay-loop.png)
+
 ## How the work unfolded
 
 I took part in building the product end to end, with strong ownership of the frontend, the user experience, and performance.
@@ -47,6 +53,18 @@ Notably, I worked on:
 - rebuilding and optimizing map rendering with Three.js, InstancedMesh, and GLSL;
 - developing competitive and tournament features;
 - optimizing the frontend architecture and data structures to keep the experience smooth at scale.
+
+Interface work started in a Figma space shared with the team, where screens, the FTUE, and components were explored before being ported to code.
+
+![Collaborative Figma design space for the project](../../../assets/portfolio/ponziland-figma.png)
+
+Every token the game supports has its own building and upgrade tiers — dozens of sprites to integrate and render on the map.
+
+![Variety of PonziLand buildings across supported tokens](../../../assets/portfolio/ponziland-buildings.png)
+
+Rebuilding the renderer in Three.js replaced the DOM with InstancedMesh and GLSL shaders, with a live effect-tuning panel during development.
+
+![PonziLand 3D scene with the outline shader tuning panel](../../../assets/portfolio/ponziland-threejs-scene.png)
 
 ## Measurable impact
 
