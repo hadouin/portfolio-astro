@@ -186,6 +186,11 @@ export type Recommendation = {
    * fine when the work never became a portfolio entry.
    */
   projects: string[];
+  /**
+   * Filename inside `src/assets/recommendations/`. Falls back to an initials
+   * monogram when the file is absent.
+   */
+  avatar?: string;
   /** Rendered wide, as the lead card of the section. At most one. */
   featured?: boolean;
 };
@@ -197,6 +202,7 @@ const recommendations: Recommendation[] = [
     company: "GreenLeaze",
     date: "2026-06-08",
     rating: 5,
+    avatar: "hippolyte-bach.jpg",
     quote: {
       en: [
         "Hadouin showed real rigour across the whole engagement and handled a number of projects that are in production today, efficiently and professionally.",
@@ -213,6 +219,7 @@ const recommendations: Recommendation[] = [
     company: "Enoria",
     date: "2026-06-03",
     rating: 5,
+    avatar: "raphael-cournault.jpg",
     quote: {
       en: [
         "I had Hadouin work on frontend parts, VueJS and an application redesign. Hadouin is a pleasant freelancer, very strong on the frontend, with a genuine sense of user experience. He fitted in well within a team of 3 on the VueJS rebuild of a management form originally built in Bootstrap. Vue component creation, integration, testing.",
@@ -229,6 +236,7 @@ const recommendations: Recommendation[] = [
     company: "Runelabs",
     date: "2026-06-03",
     rating: 5,
+    avatar: "valentin-ricard.jpg",
     quote: {
       en: [
         "I had the pleasure of working with Hadouin at RuneLabs, where he contributed to the frontend development of both our game products. Skilled in Three.js, Svelte and Blender, he can carry a project end to end with remarkable autonomy — from development to documentation, 2D/3D asset creation and application maintenance.",

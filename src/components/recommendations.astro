@@ -2,6 +2,7 @@
 import { getRecommendations } from "@i18n/data";
 import { formatDate, localizedPath, useTranslations, type Locale } from "@i18n/utils";
 import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
 
 interface Props {
   locale: Locale;
@@ -38,6 +39,18 @@ const linkedProjects = (slugs: string[]) =>
     };
   });
 
+// Optional — a missing file just falls back to the initials monogram.
+const avatarFiles = import.meta.glob<{ default: ImageMetadata }>(
+  "/src/assets/recommendations/*.{png,jpg,jpeg,webp,avif}",
+  { eager: true },
+);
+const avatarsByName = Object.fromEntries(
+  Object.entries(avatarFiles).map(([path, mod]) => [
+    path.split("/").pop()!,
+    mod.default,
+  ]),
+);
+
 const initials = (name: string) =>
   name
     .split(/\s+/)
@@ -71,6 +84,7 @@ const formatRating = (value: number) =>
     {
       recommendations.map((rec) => {
         const projects = linkedProjects(rec.projects);
+        const avatar = rec.avatar ? avatarsByName[rec.avatar] : undefined;
         return (
           <li
             class:list={[
@@ -79,12 +93,23 @@ const formatRating = (value: number) =>
             ]}
           >
             <div class="flex items-center gap-4">
-              <span
-                class="reco-avatar grid h-12 w-12 shrink-0 place-items-center rounded-full bg-slate-900 font-inter text-sm font-bold text-white"
-                aria-hidden="true"
-              >
-                {initials(rec.name)}
-              </span>
+              {avatar ? (
+                <Image
+                  class="reco-avatar h-12 w-12 shrink-0 rounded-full object-cover"
+                  src={avatar}
+                  alt=""
+                  widths={[48, 96, 144]}
+                  sizes="48px"
+                  loading="lazy"
+                />
+              ) : (
+                <span
+                  class="reco-avatar grid h-12 w-12 shrink-0 place-items-center rounded-full bg-slate-900 font-inter text-sm font-bold text-white"
+                  aria-hidden="true"
+                >
+                  {initials(rec.name)}
+                </span>
+              )}
               <div class="min-w-0">
                 <p class="font-bold leading-tight">{rec.name}</p>
                 <p class="font-inter text-sm leading-tight text-slate-500">
