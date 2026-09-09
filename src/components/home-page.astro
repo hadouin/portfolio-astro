@@ -7,6 +7,7 @@ import Education from "@components/education.astro";
 import Experience from "@components/experience.astro";
 import Hero from "@components/hero.astro";
 import Projects from "@components/projects.astro";
+import Recommendations from "@components/recommendations.astro";
 import Layout from "@layouts/Layout.astro";
 import { getExperiences } from "@i18n/data";
 import { localizedPath, useTranslations, type Locale } from "@i18n/utils";
@@ -181,6 +182,7 @@ const keywords =
       <Experience locale={locale} />
       <Education locale={locale} />
       <Projects locale={locale} />
+      <Recommendations locale={locale} />
       <Cta locale={locale} />
     </Container>
   </div>

@@ -133,6 +133,11 @@ export const ui = {
     "glance.contact.label": "Contact",
     "glance.contact.value": "contact@hadouin.com",
 
+    "recommendations.title": "Recommendations",
+    "recommendations.subtitle": "people who worked with me",
+    "recommendations.count": "{count} recommendations · {rating} average",
+    "recommendations.ratingLabel": "Rated {rating} out of 5",
+
     "footer.home": "Home",
     "footer.blog": "Blog",
     "footer.contact": "Contact",
@@ -256,6 +261,11 @@ export const ui = {
     "glance.where.value": "Paris, France",
     "glance.contact.label": "Contact",
     "glance.contact.value": "contact@hadouin.com",
+
+    "recommendations.title": "Recommandations",
+    "recommendations.subtitle": "les gens qui ont travaillé avec moi",
+    "recommendations.count": "{count} recommandations · {rating} de moyenne",
+    "recommendations.ratingLabel": "Noté {rating} sur 5",
 
     "footer.home": "Accueil",
     "footer.blog": "Blog",

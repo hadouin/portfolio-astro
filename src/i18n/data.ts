@@ -166,3 +166,49 @@ export function getExperiences(locale: Locale): Experience[] {
 export function getEducation(locale: Locale): Education[] {
   return locale === "fr" ? educationFr : educationEn;
 }
+
+export type Recommendation = {
+  name: string;
+  /** Job title — Locale-Agnostic Term, stays EN across locales. */
+  role: string;
+  company: string;
+  /** ISO date the recommendation was received. */
+  date: string;
+  rating: number;
+  /**
+   * Verbatim recommendation, per locale. Originals were written in French.
+   * Empty string hides the quote block and renders the person card alone.
+   */
+  quote: Record<Locale, string>;
+};
+
+const recommendations: Recommendation[] = [
+  {
+    name: "Hippolyte Bach",
+    role: "CTO",
+    company: "GreenLeaze",
+    date: "2026-06-08",
+    rating: 5,
+    quote: { en: "", fr: "" },
+  },
+  {
+    name: "Raphael Cournault",
+    role: "President",
+    company: "Enoria",
+    date: "2026-06-03",
+    rating: 5,
+    quote: { en: "", fr: "" },
+  },
+  {
+    name: "Valentin Ricard",
+    role: "CTO",
+    company: "Runelabs",
+    date: "2026-06-03",
+    rating: 5,
+    quote: { en: "", fr: "" },
+  },
+];
+
+export function getRecommendations(_locale: Locale): Recommendation[] {
+  return recommendations;
+}
