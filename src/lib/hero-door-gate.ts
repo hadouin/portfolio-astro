@@ -56,7 +56,7 @@ export function initHeroDoorGate(): (() => void) | undefined {
   /** Wheel/touch pixels needed to drive the drag from shut to fully armed. */
   const DRAG = coarse ? 620 : 900;
   const THRESHOLD = 0.38;
-  /** The drag only ever reveals a peek — the shutter is heavy. */
+  /** The drag only ever reveals a peek: the shutter is heavy. */
   const PEEK = 26;
   const shakeScale = coarse ? 0.55 : 1;
   /**
@@ -166,7 +166,7 @@ export function initHeroDoorGate(): (() => void) | undefined {
   /**
    * The pressure release: one burst of steam punched horizontally out of the
    * rails on both sides of the screen. Fires once, between the shutter seating
-   * itself and the lift — nothing vents from the bottom.
+   * itself and the lift, nothing vents from the bottom.
    */
   function ventBurst(atPct: number) {
     const nozzles = coarse ? 4 : 6;
@@ -297,7 +297,7 @@ export function initHeroDoorGate(): (() => void) | undefined {
           vented = true;
           // Anchor the bottom of the rail seam just inside the viewport.
           // The impulse this sets makes quake() fire on the same frame, which
-          // is what kicks off the scramble — steam, shake and text together.
+          // is what kicks off the scramble: steam, shake and text together.
           ventBurst(96);
         }
       } else {
@@ -335,7 +335,7 @@ export function initHeroDoorGate(): (() => void) | undefined {
     const speed = Math.abs(doorY - lastDoorY);
     lastDoorY = doorY;
 
-    // The validation settle and closing sequence stay quiet — the rumble
+    // The validation settle and closing sequence stay quiet: the rumble
     // belongs exclusively to the powered lift.
     const lifting =
       state === "opening" && elapsed >= VALIDATE_MS + HOLD_MS;
@@ -538,7 +538,7 @@ export function initHeroDoorGate(): (() => void) | undefined {
 
   // The first-load preloader owns the scroll while it is up and hands it back
   // with lenis.start() on exit. If the shutter is still shut, take it straight
-  // back — otherwise the page would scroll freely behind a closed door.
+  // back, otherwise the page would scroll freely behind a closed door.
   const onLoaderDone = () => {
     if (state !== "open") lock();
   };

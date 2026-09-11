@@ -1,8 +1,8 @@
 /**
- * Factory world data — from the storyboard (boards 1 → 18).
+ * Factory world data, from the storyboard (boards 1 → 18).
  *
- * Flow (left → right, +x, one ground level — the boards never leave the hall):
- *   1  "IDEA" claw machine — drive the claw with buttons, grab an idea, it drops in the hopper
+ * Flow (left → right, +x, one ground level, since the boards never leave the hall):
+ *   1  "IDEA" claw machine: drive the claw with buttons, grab an idea, it drops in the hopper
  *   2  H machine, hopper + safety lever, the idea pops back out
  *   3  belt, charcoal raw idea
  *   4  "your idea is already gold" (scratch the charcoal)
@@ -130,7 +130,7 @@ export const CONVEYORS: Conveyor[] = [
 const parts: Part[] = [];
 const add = (p: Part) => parts.push(p);
 
-// Claw-machine cabinet (board 1): base, glass case, marquee, control panel — the claw rig
+// Claw-machine cabinet (board 1): base, glass case, marquee, control panel, the claw rig
 // itself (bridge / trolley / cable / jaws) is dynamic, see makeClawRig in build.ts.
 add({ station: "grab", shape: "box", position: [CAB.x, 0, CAB.z], size: [CAB.w, CAB.baseH, CAB.d], color: C.machine });
 add({ station: "grab", shape: "box", position: [CAB.x, 0.55, CAB.z + CAB.d / 2 + 0.8], size: [6.6, 0.9, 1.7], rotation: [-14, 0, 0], color: C.charcoal }); // control panel
@@ -280,7 +280,7 @@ add({ station: "ship", shape: "box", position: [TRUCK.x + TRUCK.length / 2 + 3.8
 for (const x of [TRUCK.x - 4, TRUCK.x + 2, TRUCK.x + 7])
   for (const sz of [-1, 1])
     add({ station: "ship", shape: "cylinder", position: [x, 0.9, (sz * (TRUCK.width - 0.6)) / 2], size: [1.8, 0.6, 1.8], rotation: [90, 0, 0], color: C.charcoal });
-// pallet on the bed — where the crate goes
+// pallet on the bed, where the crate goes
 add({ id: "pallet", station: "ship", shape: "box", position: [TRUCK.x - 2.5, TRUCK.bedY, 0], size: [3, 0.25, 3], color: "#5a4632" });
 for (const dz of [-1, 0, 1])
   add({ station: "ship", shape: "box", position: [TRUCK.x - 2.5, TRUCK.bedY + 0.25, dz * 1.1], size: [3, 0.12, 0.5], color: "#6b543c" });
@@ -352,7 +352,7 @@ export const FACTORY_PLAN: FactoryPlan = {
   ],
   spots: [
     { position: [-17, 4.5, 9], target: [-19, 1.9, 0], title: "Ideas Switch", note: "Raw ideas enter the hopper." },
-    { position: [-9.5, 12, 3.5], target: [-8, 2, 0], title: "Refine", note: "Open-top machine — look inside." },
+    { position: [-9.5, 12, 3.5], target: [-8, 2, 0], title: "Refine", note: "Open-top machine. Look inside." },
     { position: [2, 4, 8], target: [4, 1.9, 0], title: "Splitter", note: "One stream becomes three lanes." },
     { position: [16, 9, 22], target: [20, 1.5, 0], title: "Machining", note: "Press, drill, shaper, stamp." },
     { position: [40, 7, 17], target: [ASM.x, 3, 0], title: "Assembly", note: "The three lanes come back together." },

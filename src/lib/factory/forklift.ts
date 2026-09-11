@@ -134,7 +134,7 @@ export class Forklift {
 
   /**
    * Tokens for a key event. `code` is a physical position, so on AZERTY the key printed W is
-   * `KeyZ` and `KeyQ` is the key printed A — matching the printed letter too keeps W / S working
+   * `KeyZ` and `KeyQ` is the key printed A, and matching the printed letter too keeps W / S working
    * on any layout, and stops unrelated keys from moving the forks.
    */
   static tokens(e: KeyboardEvent): string[] {

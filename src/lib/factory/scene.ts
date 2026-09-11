@@ -350,7 +350,7 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
       case "grab":
         title = "Claw machine";
         hint = clawStep === "carry" || clawStep === "release" || clawStep === "home"
-          ? "Nice catch — into the hopper it goes"
+          ? "Nice catch. Into the hopper it goes"
           : clawStep === "play"
             ? (misses ? "Missed! Line up the claw and hit GRAB again" : "Arrows move the claw · GRAB to catch an idea")
             : "Grabbing…";
