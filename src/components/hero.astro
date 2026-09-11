@@ -1,9 +1,9 @@
 ---
 import { Image, getImage } from "astro:assets";
-import Link from "@components/ui/link.astro";
-import { localizedPath, useTranslations, type Locale } from "@i18n/utils";
+import { useTranslations, type Locale } from "@i18n/utils";
 import heroPortrait from "@assets/hadouin-hero.jpg";
 import heroEdges from "@assets/hadouin-hero-edges.webp";
+import heroEdgesCompact from "@assets/hadouin-hero-edges-compact.webp";
 
 interface Props {
   locale: Locale;
@@ -13,6 +13,14 @@ const { locale } = Astro.props;
 const t = useTranslations(locale);
 const displayName = "Hadouin";
 const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75, format: "webp" });
+// Phones drive the same effect from the tilt sensor at a lower canvas DPR, so they
+// get lighter textures instead of the multi-megabyte desktop pair.
+const heroTextureCompact = await getImage({
+  src: heroPortrait,
+  width: 900,
+  quality: 68,
+  format: "webp",
+});
 ---
 
 <section
@@ -24,6 +32,8 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     data-chromatic-portrait
     data-image-src={heroTexture.src}
     data-edge-src={heroEdges.src}
+    data-image-src-compact={heroTextureCompact.src}
+    data-edge-src-compact={heroEdgesCompact.src}
     data-image-width={heroPortrait.width}
     data-image-height={heroPortrait.height}
   >
@@ -66,23 +76,216 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
       <p class="hero-intro my-6 max-w-2xl font-inter text-base leading-relaxed sm:text-lg">
         {t("hero.intro")}
       </p>
-      <Link
-        class="hire-me wiggle w-fit font-semibold"
-        style="inverted"
-        href={localizedPath("/contact", locale)}
-      >
-        {t("nav.hireMe")}
-      </Link>
     </div>
   </div>
 
   <div class="hero-grain pointer-events-none absolute inset-0 z-20" aria-hidden="true"></div>
+
+  <div class="hero-door-hint" data-door-hint aria-hidden="true">
+    <span class="hero-door-chevrons"><i></i><i></i></span>
+    <span class="hero-door-label">{t("door.hint")}</span>
+    <span class="hero-door-meter"><span class="hero-door-meter-fill"></span></span>
+  </div>
+
+  <div class="hero-door-lip" aria-hidden="true"></div>
 </section>
+
+<div class="hero-door-fx" data-door-fx aria-hidden="true">
+  <div class="hero-door-steam" data-door-steam></div>
+</div>
 
 <style>
   .hero-shell {
     background: #1a1a19;
     color: #f4f4f0;
+    --door-y: 0;
+    --gate: 0;
+    --arm: 0;
+  }
+
+  /* ---------------- shutter gate ---------------- */
+
+  /* Lifted out of flow so the content below sits underneath it, ready to be
+     revealed. Only ever applied by the gate script. */
+  .hero-shell.is-gated {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 40;
+    margin-top: 0;
+    height: 100svh;
+    min-height: 0;
+    transform: translate3d(
+      var(--shake-x, 0px),
+      calc(var(--door-y) * 1% + var(--shake-yd, 0px)),
+      0
+    );
+    will-change: transform;
+  }
+
+  .hero-shell.is-open {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* Fade the copy out once the shutter is clearly on its way up, so it never
+     collides with the navbar on the way past. Peeking keeps it fully legible. */
+  .hero-shell.is-gated .hero-content,
+  .hero-shell.is-gated .hero-door-hint {
+    opacity: clamp(0, calc((var(--door-y) + 52) / 28), 1);
+  }
+
+  /* The bottom edge of the shutter: a lip that only shows itself once the
+     door starts to move. */
+  .hero-door-lip {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 25;
+    height: 8px;
+    opacity: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      #f0c477 0 14px,
+      #17171a 14px 28px
+    );
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.75);
+    pointer-events: none;
+  }
+
+  .hero-shell.is-gated .hero-door-lip {
+    opacity: clamp(0, calc(var(--arm) * 1.6), 1);
+  }
+
+  /* ---------------- scroll-to-open indicator ---------------- */
+
+  .hero-door-hint {
+    position: absolute;
+    inset: auto 0 clamp(1.25rem, 3.5vh, 2.5rem) 0;
+    z-index: 25;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+    pointer-events: none;
+  }
+
+  .hero-shell.is-gated .hero-door-hint {
+    display: flex;
+  }
+
+  .hero-shell.is-open .hero-door-hint {
+    opacity: 0;
+  }
+
+  /* Mobile stacks the copy against the bottom edge, so make room for the
+     indicator sitting below it. */
+  @media (max-width: 767px) {
+    .hero-shell.is-gated .hero-content {
+      padding-bottom: 7.5rem;
+    }
+  }
+
+  .hero-door-chevrons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .hero-door-chevrons i {
+    width: 14px;
+    height: 14px;
+    border-right: 1.5px solid rgb(244 244 240 / 0.75);
+    border-bottom: 1.5px solid rgb(244 244 240 / 0.75);
+    transform: rotate(45deg);
+    animation: heroDoorChevron 1.7s ease-in-out infinite;
+  }
+
+  .hero-door-chevrons i:last-child {
+    animation-delay: 0.18s;
+    opacity: 0.55;
+  }
+
+  @keyframes heroDoorChevron {
+    0%,
+    100% {
+      transform: translateY(-3px) rotate(45deg);
+      opacity: 0.35;
+    }
+    50% {
+      transform: translateY(3px) rotate(45deg);
+      opacity: 1;
+    }
+  }
+
+  .hero-door-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+    text-transform: uppercase;
+    color: rgb(244 244 240 / 0.72);
+  }
+
+  /* Fills as the shutter is pushed; goes gold once it will latch open. */
+  .hero-door-meter {
+    position: relative;
+    width: clamp(90px, 16vw, 150px);
+    height: 2px;
+    overflow: hidden;
+    background: rgb(244 244 240 / 0.16);
+  }
+
+  .hero-door-meter-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc(var(--arm) * 100%);
+    background: rgb(244 244 240 / 0.65);
+  }
+
+  .hero-shell.is-armed .hero-door-meter-fill {
+    background: #f0c477;
+    box-shadow: 0 0 10px rgb(240 196 119 / 0.85);
+  }
+
+  .hero-shell.is-armed .hero-door-label {
+    color: #f0c477;
+  }
+
+  /* ---------------- hydraulic steam ---------------- */
+
+  .hero-door-fx {
+    position: fixed;
+    inset: 0;
+    /* Above the shutter (40) but under the navbar (50): the vent fires while
+       the door still covers the viewport, so it has to read in front of it. */
+    z-index: 41;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .hero-door-steam {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Vapour, not smoke. Position, scale and opacity are driven per frame by the
+     particle simulation in hero-door-gate.ts — no keyframes here. */
+  .hero-door-steam :global(.hero-steam) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 76px;
+    height: 52px;
+    margin: -26px 0 0 -38px;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse at 50% 50%,
+      rgb(255 255 255 / 0.92) 0%,
+      rgb(244 248 252 / 0.45) 38%,
+      rgb(226 236 246 / 0) 72%
+    );
+    filter: blur(9px);
+    opacity: 0;
+    will-change: transform, opacity;
   }
 
   .hero-portrait {
@@ -170,7 +373,7 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     }
   }
 
-  @media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
+  @media (prefers-reduced-motion: reduce) {
     .hero-chromatic-canvas {
       display: none;
     }
@@ -178,7 +381,11 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
 </style>
 
 <script>
-  import { initHeroChromaticWebGL } from "../lib/hero-chromatic-webgl";
+  import {
+    initHeroChromaticWebGL,
+    type HeroChromaticDebug,
+  } from "../lib/hero-chromatic-webgl";
+  import { initHeroDoorGate } from "../lib/hero-door-gate";
 
   const letters = "abcdefgHijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?@:/}{()*+-#$&?@:/}{()*+-#$&";
   const scrambleColors = ["#8BA6F3", "#F0C477", "#EE8D8D"];
@@ -230,26 +437,96 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     };
 
     element.addEventListener("mouseenter", scramble);
+    // Fired by the door gate for as long as the screen is shaking. Listening on
+    // the element itself means the handler dies with it on a page swap.
+    element.addEventListener("hero:shake", scramble);
     scramble();
+  }
+
+  // The tilt readout has to be usable on a real phone against a real build, so it
+  // is gated on a #dev hash rather than on the dev server.
+  const debugRequested = () => window.location.hash.toLowerCase().startsWith("#dev");
+  let debugPanelActive = false;
+
+  function initTiltDebugPanel(hero: HTMLElement) {
+    hero.querySelector(".hero-tilt-debug")?.remove();
+
+    const panel = document.createElement("pre");
+    panel.className = "hero-tilt-debug";
+    panel.setAttribute("aria-hidden", "true");
+    panel.style.cssText = [
+      "position:absolute",
+      "left:12px",
+      "bottom:12px",
+      "z-index:40",
+      "margin:0",
+      "padding:8px 10px",
+      "border-radius:6px",
+      "background:rgb(12 12 11 / 0.72)",
+      "color:#deded8",
+      "font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace",
+      "white-space:pre",
+      "pointer-events:none",
+      "backdrop-filter:blur(4px)",
+    ].join(";");
+    hero.appendChild(panel);
+
+    const num = (value: number | null | undefined, digits = 2) =>
+      value === null || value === undefined || Number.isNaN(value)
+        ? "  —".padStart(digits + 4)
+        : value.toFixed(digits).padStart(digits + 4);
+
+    return (debug: HeroChromaticDebug | string) => {
+      if (typeof debug === "string") {
+        panel.textContent = `tilt   effect off · ${debug}`;
+        return;
+      }
+
+      const { tilt } = debug;
+      const sensor = tilt
+        ? `${tilt.status} · ${tilt.events} evt${
+            tilt.status === "awaiting-gesture" ? " · tap hero to allow" : ""
+          }${tilt.status === "listening" && tilt.events === 0 ? " · no sensor data" : ""}`
+        : "no sensor";
+
+      panel.textContent = [
+        `tilt   ${sensor}`,
+        tilt
+          ? `raw    b${num(tilt.raw.beta, 1)}  g${num(tilt.raw.gamma, 1)}  a${num(tilt.raw.alpha, 1)}`
+          : "raw    —",
+        tilt
+          ? `screen ${tilt.screenAngle}deg  neutral${num(tilt.neutral?.x, 1)} /${num(tilt.neutral?.y, 1)}`
+          : "screen —",
+        tilt ? `sample x${num(tilt.sample.x)}  y${num(tilt.sample.y)}` : "sample —",
+        `bubble x${num(debug.focus[0])}  y${num(debug.focus[1])}`,
+        `anchor x${num(debug.anchor[0])}  y${num(debug.anchor[1])}`,
+        `drive  vel${num(debug.velocity[0], 3)} /${num(debug.velocity[1], 3)}  int${num(debug.intensity)}`,
+        `source ${debug.source}`,
+      ].join("\n");
+    };
   }
 
   function initChromaticPortrait() {
     const previousCleanup = (window as any).__chromaticHeroCleanup as (() => void) | undefined;
     previousCleanup?.();
+    document.querySelector(".hero-tilt-debug")?.remove();
+    debugPanelActive = debugRequested();
 
     const hero = document.querySelector<HTMLElement>("[data-dark-hero]");
     const portrait = document.querySelector<HTMLElement>("[data-chromatic-portrait]");
     const canvas = portrait?.querySelector<HTMLCanvasElement>(".hero-chromatic-canvas");
-    const imageSrc = portrait?.dataset.imageSrc;
-    const edgeSrc = portrait?.dataset.edgeSrc;
+    const compact = window.matchMedia("(max-width: 767px)").matches;
+    const imageSrc = (compact && portrait?.dataset.imageSrcCompact) || portrait?.dataset.imageSrc;
+    const edgeSrc = (compact && portrait?.dataset.edgeSrcCompact) || portrait?.dataset.edgeSrc;
     const imageWidth = Number(portrait?.dataset.imageWidth);
     const imageHeight = Number(portrait?.dataset.imageHeight);
     const referenceImage = portrait?.querySelector<HTMLImageElement>("img");
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    // Touch devices get the same effect, driven by the orientation sensor instead.
+    const hasTiltSensor = typeof (window as any).DeviceOrientationEvent !== "undefined";
 
-    if (
-      !hero ||
+    const missingAssets =
       !portrait ||
       !canvas ||
       !imageSrc ||
@@ -258,13 +535,19 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
       !Number.isFinite(imageWidth) ||
       !Number.isFinite(imageHeight) ||
       imageWidth < 1 ||
-      imageHeight < 1 ||
-      reduceMotion ||
-      !finePointer
-    ) {
+      imageHeight < 1;
+
+    if (!hero || missingAssets || reduceMotion || (!finePointer && !hasTiltSensor)) {
       (window as any).__chromaticHeroCleanup = undefined;
+      if (debugPanelActive && hero) {
+        initTiltDebugPanel(hero)(
+          missingAssets ? "missing assets" : reduceMotion ? "reduce-motion" : "no input source"
+        );
+      }
       return;
     }
+
+    const renderDebug = debugPanelActive ? initTiltDebugPanel(hero) : undefined;
 
     // Hold the first-load preloader until the hero textures are in cache, so
     // the reveal never lands on an un-rendered portrait. No-op after first load.
@@ -293,6 +576,7 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
       hero,
       imageSize: [imageWidth, imageHeight],
       referenceImage,
+      onDebug: renderDebug,
     });
 
     (window as any).__chromaticHeroCleanup = cleanup ?? undefined;
@@ -325,12 +609,30 @@ const heroTexture = await getImage({ src: heroPortrait, width: 1600, quality: 75
     updateTheme();
   }
 
+  // Toggling #dev on or off rebuilds the effect so the readout can attach or detach.
+  window.addEventListener("hashchange", () => {
+    if (debugRequested() !== debugPanelActive) initChromaticPortrait();
+  });
+
+  function setupDoorGate() {
+    const previous = (window as any).__heroDoorGateCleanup as (() => void) | undefined;
+    previous?.();
+    (window as any).__heroDoorGateCleanup = initHeroDoorGate() ?? undefined;
+  }
+
   initHero();
   initChromaticPortrait();
   syncHeroTheme();
+  setupDoorGate();
   document.addEventListener("astro:page-load", () => {
     initHero();
     initChromaticPortrait();
     syncHeroTheme();
+    setupDoorGate();
+  });
+  document.addEventListener("astro:before-swap", () => {
+    const cleanup = (window as any).__heroDoorGateCleanup as (() => void) | undefined;
+    cleanup?.();
+    (window as any).__heroDoorGateCleanup = undefined;
   });
 </script>

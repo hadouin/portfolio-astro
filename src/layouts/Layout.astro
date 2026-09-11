@@ -275,18 +275,61 @@ const openGraph = article
         }
       }
 
+      // Touch devices never fire :hover, so every hover reveal also has to run
+      // on press. Mouse pointers are skipped: :hover already covers them.
+      const isTouchPress = (event: PointerEvent) => event.pointerType !== "mouse";
+
+      // Tapping a link navigates immediately, so the released state is held
+      // briefly to let the reveal play out instead of flashing.
+      function bindPress(
+        el: HTMLElement,
+        press: () => void,
+        unpress: () => void,
+        holdMs = 350
+      ) {
+        let release: ReturnType<typeof setTimeout> | undefined;
+        el.addEventListener("pointerdown", (event) => {
+          if (!isTouchPress(event)) return;
+          clearTimeout(release);
+          press();
+        });
+        const scheduleUnpress = (event: PointerEvent) => {
+          if (!isTouchPress(event)) return;
+          clearTimeout(release);
+          release = setTimeout(unpress, holdMs);
+        };
+        el.addEventListener("pointerup", scheduleUnpress);
+        el.addEventListener("pointercancel", scheduleUnpress);
+        el.addEventListener("pointerleave", scheduleUnpress);
+      }
+
       function bindPage() {
+        document
+          .querySelectorAll<HTMLElement>(".navbar-logo, .btn-accent")
+          .forEach((el) => {
+            if ((el as any).__pressBound) return;
+            (el as any).__pressBound = true;
+            bindPress(
+              el,
+              () => el.classList.add("is-pressed"),
+              () => el.classList.remove("is-pressed")
+            );
+          });
+
         document.querySelectorAll<HTMLElement>(".watermark-hover").forEach((el) => {
           if ((el as any).__watermarkBound) return;
           (el as any).__watermarkBound = true;
-          el.addEventListener("mouseenter", () => {
+          const scanIn = () => {
             el.classList.remove("is-scan-out");
             el.classList.add("is-scan-in");
-          });
-          el.addEventListener("mouseleave", () => {
+          };
+          const scanOut = () => {
             el.classList.remove("is-scan-in");
             el.classList.add("is-scan-out");
-          });
+          };
+          el.addEventListener("mouseenter", scanIn);
+          el.addEventListener("mouseleave", scanOut);
+          bindPress(el, scanIn, scanOut);
         });
 
         document
@@ -321,7 +364,7 @@ const openGraph = article
               lockWidth();
             }
 
-            el.addEventListener("mouseenter", () => {
+            const scramble = () => {
               if (interval) clearInterval(interval);
               let iteration = 0;
               const tickMs = 30;
@@ -337,6 +380,11 @@ const openGraph = article
                 }
                 iteration += step;
               }, tickMs);
+            };
+
+            el.addEventListener("mouseenter", scramble);
+            el.addEventListener("pointerdown", (event) => {
+              if (isTouchPress(event)) scramble();
             });
           });
 
