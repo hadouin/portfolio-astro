@@ -132,7 +132,7 @@ const openGraph = article
     <link
       rel="alternate"
       type="application/rss+xml"
-      title={`${SITE_NAME} — Blog`}
+      title={`${SITE_NAME} · Blog`}
       href="/rss.xml"
     />
     {alternates.map((alt) => (
@@ -497,7 +497,7 @@ const openGraph = article
                 y = Math.max(0, Math.round(window.scrollY + rect.top - navOffset));
               }
             } catch {
-              /* malformed hash — ignore */
+              /* malformed hash, ignore */
             }
           }
           if (!y) {

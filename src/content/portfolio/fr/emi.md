@@ -1,7 +1,7 @@
 ---
 draft: false
 title: "Emi"
-snippet: "Environmental Measures for Industries — un gilet connecté qui suit la santé et l'environnement des ouvriers en centrale à charbon, plus une plateforme web PHP OOP pour lire les données live, gérer les ouvriers et animer le forum communautaire."
+snippet: "Environmental Measures for Industries : un gilet connecté qui suit la santé et l'environnement des ouvriers en centrale à charbon, plus une plateforme web PHP OOP pour lire les données live, gérer les ouvriers et animer le forum communautaire."
 image:
   { src: "emi-banner.png", alt: "Étude de cas Emi : monitoring santé des ouvriers" }
 technos:
@@ -28,7 +28,7 @@ priority: 6
 
 ## Vue d'ensemble
 
-**Emi — Environmental Measures for Industries.** Prototype de gilet multifonction conçu pour les ouvriers des centrales à charbon françaises rouvertes pendant la crise énergétique européenne de 2022. Le gilet mesure la qualité de l'air, le bruit ambiant, la température corporelle et le rythme cardiaque, tout en restant basse consommation et discret. Les données circulent en Bluetooth vers une passerelle, puis vers une plateforme web où les managers supervisent les ouvriers et où un forum fait remonter les alertes santé.
+**Emi : Environmental Measures for Industries.** Prototype de gilet multifonction conçu pour les ouvriers des centrales à charbon françaises rouvertes pendant la crise énergétique européenne de 2022. Le gilet mesure la qualité de l'air, le bruit ambiant, la température corporelle et le rythme cardiaque, tout en restant basse consommation et discret. Les données circulent en Bluetooth vers une passerelle, puis vers une plateforme web où les managers supervisent les ouvriers et où un forum fait remonter les alertes santé.
 
 Conçu de bout en bout pendant mon projet APP électronique + logiciel à l'ISEP, avec l'équipe G10D (Hadouin LEROY, Romeo CORREC, Djamil ILA ADO, Gervais NGUEMA, Régis NGAN).
 
@@ -38,7 +38,7 @@ Conçu de bout en bout pendant mon projet APP électronique + logiciel à l'ISEP
 Centrale d'acquisition (gilet)  ── Bluetooth ──▶  Passerelle + serveur  ── HTTP ──▶  Plateforme web
 ```
 
-- **CeMeQe** — Centrale de Mesure de Qualité Environnementale, construite autour du **TI TIVA TM4C123GH6PM** (256 KB flash, 80 MHz, ADC 12 bits, UART/I2C/SPI/PWM)
+- **CeMeQe** : Centrale de Mesure de Qualité Environnementale, construite autour du **TI TIVA TM4C123GH6PM** (256 KB flash, 80 MHz, ADC 12 bits, UART/I2C/SPI/PWM)
 - **Capteurs** : MiCS-VZ-89TE (CO₂ + tVOC), front-end micro (micro + filtre passe-bas/passe-haut + amp), DHT11 (température + humidité), LED IR C503D-WAN + phototransistor (rythme cardiaque)
 - **Affichage** : OLED SSD1306 128×32 en I2C
 - **Comms** : module Bluetooth HC-06 sur Serial1, trames ASCII vers la passerelle
@@ -70,16 +70,16 @@ Le SSD1306 affiche le logo Emi et les messages d'état (transmission, mesure, er
 
 Les trames ASCII transportent l'ID groupe, le type de capteur, l'index capteur et la valeur. Exemple pour 25,8 °C : `1G10D13010258FFFFXX`. Types de trames : *Courante* (données capteur), *Synchronisation*, *Rapide*.
 
-## Plateforme web — PHP OOP
+## Plateforme web en PHP OOP
 
-[`hadouin/emi-website-oop`](https://github.com/hadouin/emi-website-oop) — MVC strict en PHP vanilla, sans framework, pour internaliser les patterns OOP de bout en bout.
+[`hadouin/emi-website-oop`](https://github.com/hadouin/emi-website-oop) : MVC strict en PHP vanilla, sans framework, pour internaliser les patterns OOP de bout en bout.
 
-- **Controllers** — routage GET/POST par feature
+- **Controllers** : routage GET/POST par feature
 - **Model**
-  - `entities/` — classes domaine (User, Device, Reading…)
+  - `entities/` : classes domaine (User, Device, Reading…)
   - Classes Repository pour l'accès SQL
-- **Templates** — vues regroupées par module fonctionnel
-- **Stack** — PHP-Apache (port 80), MariaDB (3306), phpMyAdmin (8080), Docker Compose, `.env` pour les credentials
+- **Templates** : vues regroupées par module fonctionnel
+- **Stack** : PHP-Apache (port 80), MariaDB (3306), phpMyAdmin (8080), Docker Compose, `.env` pour les credentials
 
 Fonctionnalités : landing, login, signup, dashboard live device, liste des appareils, liste des ouvriers, forum communautaire.
 
