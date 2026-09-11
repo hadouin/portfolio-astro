@@ -222,11 +222,24 @@ export function initHeroDoorGate(): (() => void) | undefined {
     );
   }
 
-  /** The navbar runs light-on-dark for as long as the shutter covers it. */
+  /**
+   * The navbar runs light-on-dark for as long as the shutter covers it.
+   *
+   * The shutter also hides everything behind it, and a gated hero is out of
+   * flow, so the section underneath sits at the top of the document from the
+   * first frame and would dress the header while still out of sight. Publish
+   * the shutter state so it can stand down. Nothing actually scrolls while the
+   * gate is driving, so a scroll listener would never hear about the change.
+   */
   function syncTheme() {
-    const dark = doorY > -85;
-    if (document.body.classList.contains("hero-dark-active") !== dark) {
-      document.body.classList.toggle("hero-dark-active", dark);
+    const shut = doorY > -85;
+    if (document.body.classList.contains("hero-dark-active") !== shut) {
+      document.body.classList.toggle("hero-dark-active", shut);
+    }
+    const next = shut ? "shut" : "open";
+    if (root.dataset.heroGate !== next) {
+      root.dataset.heroGate = next;
+      document.dispatchEvent(new Event("hadouin:hero-gate"));
     }
   }
 
@@ -580,6 +593,8 @@ export function initHeroDoorGate(): (() => void) | undefined {
     stopLoop();
     hero.classList.remove("is-gated", "is-open", "is-armed");
     root.style.removeProperty("--reveal");
+    delete root.dataset.heroGate;
+    document.dispatchEvent(new Event("hadouin:hero-gate"));
     unlock();
   };
 }

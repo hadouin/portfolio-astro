@@ -410,10 +410,25 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
   // a key held while the tab loses focus never fires keyup: the claw or forks would stay stuck moving
   const onBlur = () => { forklift.keys.clear(); clawKeys.clear(); };
   const onLoaderDone = () => scroller.enforce();
+  /**
+   * The header only goes black once this section is what the viewport is really
+   * looking at. The hero shutter covers the screen while it is down and takes
+   * the hero out of flow on the way, which parks this section at the top of the
+   * document long before any of it is visible.
+   */
+  const syncHeader = (rect: DOMRect, vh: number) => {
+    document.body.classList.toggle(
+      "factory-active",
+      document.documentElement.dataset.heroGate !== "shut" &&
+        rect.top < vh * 0.5 &&
+        rect.bottom > vh * 0.5,
+    );
+  };
+  const onHeroGate = () => syncHeader(section.getBoundingClientRect(), window.innerHeight);
   const onScroll = () => {
     const rect = section.getBoundingClientRect();
     const vh = window.innerHeight;
-    document.body.classList.toggle("factory-active", rect.top < vh * 0.5 && rect.bottom > vh * 0.5);
+    syncHeader(rect, vh);
     if (scroller.held) { scroller.enforce(); return; }
     // entering from above while the machine still needs an idea: hold at the top of the section
     if (phase === "grab" && !finished) {
@@ -425,6 +440,7 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
   window.addEventListener("keyup", onKeyUp);
   window.addEventListener("blur", onBlur);
   window.addEventListener("scroll", onScroll, { passive: true });
+  document.addEventListener("hadouin:hero-gate", onHeroGate);
   document.addEventListener("hadouin:loader-done", onLoaderDone);
 
   // ── pointer interactions ──
@@ -836,6 +852,7 @@ export function createFactoryScene({ canvas, section, onState }: FactorySceneOpt
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
       window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("hadouin:hero-gate", onHeroGate);
       document.removeEventListener("hadouin:loader-done", onLoaderDone);
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);

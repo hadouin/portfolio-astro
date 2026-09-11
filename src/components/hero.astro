@@ -593,6 +593,9 @@ const heroTextureCompact = await getImage({
     }
 
     const updateTheme = () => {
+      // The door gate owns the theme while it is driving. A gated hero is fixed
+      // to the viewport, so its rect says nothing about what the header sits on.
+      if (document.documentElement.dataset.heroGate) return;
       const rect = hero.getBoundingClientRect();
       document.body.classList.toggle(
         "hero-dark-active",
