@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
+    "check:emdash": "node scripts/check-no-emdash.mjs",
+    "prebuild": "pnpm check:emdash",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",

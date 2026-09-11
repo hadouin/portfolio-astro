@@ -151,7 +151,7 @@ const COMPOSITE_FRAGMENT_SHADER = `
     // Relative tilt is the driver on mobile, not the motion of getting there:
     // the split is a pure function of the held angle and only closes when the
     // phone levels back out. Like the hover effect, only the channels pull
-    // apart — the image itself stays anchored, so tilt reads as one clean cue.
+    // apart. The image itself stays anchored, so tilt reads as one clean cue.
     float tiltMag = min(length(uTilt), 1.0);
     vec2 tiltSplit = uTilt * uStrength * (0.005 + edge * 0.020) * coverScale;
 
@@ -561,7 +561,7 @@ export function initHeroChromaticWebGL(options: HeroChromaticOptions): (() => vo
     if (disposed) return;
 
     // Tilt keeps the effect permanently "hovered", so idleFrames never trips on
-    // mobile — park the loop whenever nobody can see it.
+    // mobile: park the loop whenever nobody can see it.
     if (!onScreen || document.hidden) {
       animationFrame = 0;
       lastFrameTime = 0;

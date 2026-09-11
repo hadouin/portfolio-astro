@@ -1,7 +1,7 @@
 ---
 draft: false
 title: "Emi"
-snippet: "Environmental Measures for Industries — a connected vest that tracks workers' health and environment in coal plants, plus a PHP OOP web platform to read live device data, manage workers, and run the community forum."
+snippet: "Environmental Measures for Industries: a connected vest that tracks workers' health and environment in coal plants, plus a PHP OOP web platform to read live device data, manage workers, and run the community forum."
 image:
   { src: "emi-banner.png", alt: "Emi workforce health monitoring case study" }
 technos:
@@ -28,7 +28,7 @@ priority: 6
 
 ## Overview
 
-**Emi — Environmental Measures for Industries.** A multifunction vest prototype designed for workers in French coal plants reopened during the 2022 European energy crisis. The vest measures air quality, ambient noise, body temperature, and heart rate while staying low-power and low-impact. Data flows over Bluetooth to a gateway, then to a web platform where managers monitor workers and a forum surfaces health alerts.
+**Emi: Environmental Measures for Industries.** A multifunction vest prototype designed for workers in French coal plants reopened during the 2022 European energy crisis. The vest measures air quality, ambient noise, body temperature, and heart rate while staying low-power and low-impact. Data flows over Bluetooth to a gateway, then to a web platform where managers monitor workers and a forum surfaces health alerts.
 
 Built end-to-end during my APP electronics + software project at ISEP with team G10D (Hadouin LEROY, Romeo CORREC, Djamil ILA ADO, Gervais NGUEMA, Régis NGAN).
 
@@ -38,7 +38,7 @@ Built end-to-end during my APP electronics + software project at ISEP with team 
 Acquisition unit (vest)  ── Bluetooth ──▶  Gateway + server  ── HTTP ──▶  Web platform
 ```
 
-- **CeMeQe** — Centrale de Mesure de Qualité Environnementale, built around the **TI TIVA TM4C123GH6PM** (256 KB flash, 80 MHz, 12-bit ADC, UART/I2C/SPI/PWM)
+- **CeMeQe**: Centrale de Mesure de Qualité Environnementale, built around the **TI TIVA TM4C123GH6PM** (256 KB flash, 80 MHz, 12-bit ADC, UART/I2C/SPI/PWM)
 - **Sensors**: MiCS-VZ-89TE (CO₂ + tVOC), microphone front-end (mic + low/high-pass filter + amp), DHT11 (temperature + humidity), C503D-WAN IR LED + phototransistor (heart rate)
 - **Display**: SSD1306 128×32 OLED over I2C
 - **Comms**: HC-06 Bluetooth module on Serial1, ASCII frames to the gateway
@@ -70,16 +70,16 @@ The SSD1306 displays the Emi logo and live state messages (transmitting, sensing
 
 ASCII frames carry group ID, sensor type, sensor index, value. Example for 25.8 °C: `1G10D13010258FFFFXX`. Frame types: *Courante* (sensor data), *Synchronisation*, *Rapide*.
 
-## Web Platform — PHP OOP
+## Web Platform in PHP OOP
 
-[`hadouin/emi-website-oop`](https://github.com/hadouin/emi-website-oop) — strict MVC in vanilla PHP, no framework, to internalise OOP patterns end-to-end.
+[`hadouin/emi-website-oop`](https://github.com/hadouin/emi-website-oop): strict MVC in vanilla PHP, no framework, to internalise OOP patterns end-to-end.
 
-- **Controllers** — GET/POST routing per feature
+- **Controllers**: GET/POST routing per feature
 - **Model**
-  - `entities/` — domain classes (User, Device, Reading…)
+  - `entities/`: domain classes (User, Device, Reading…)
   - Repository classes for SQL access
-- **Templates** — views grouped by feature module
-- **Stack** — PHP-Apache (port 80), MariaDB (3306), phpMyAdmin (8080), Docker Compose, `.env` for credentials
+- **Templates**: views grouped by feature module
+- **Stack**: PHP-Apache (port 80), MariaDB (3306), phpMyAdmin (8080), Docker Compose, `.env` for credentials
 
 Features: landing, login, signup, live device dashboard, devices list, workers list, community forum.
 

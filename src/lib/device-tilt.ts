@@ -17,7 +17,7 @@ export type TiltStatus =
 
 export type TiltDebug = {
   status: TiltStatus;
-  /** Readings received so far — stuck at 0 means subscribed but silent. */
+  /** Readings received so far. Stuck at 0 means subscribed but silent. */
   events: number;
   /** Raw sensor angles in degrees, before screen rotation and recentring. */
   raw: { alpha: number | null; beta: number | null; gamma: number | null };

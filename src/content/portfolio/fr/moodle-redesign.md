@@ -22,21 +22,21 @@ Moodle est la colonne vertébrale du travail scolaire dans des milliers d'univer
 
 La refonte est restée ancrée dans les vrais workflows étudiants plutôt que de courir après la nouveauté visuelle :
 
-- **Audit** — cartographie de chaque flux clé de l'app existante et logging des frictions
-- **Recherche** — entretiens informels avec des camarades sur leur utilisation hebdomadaire de Moodle
-- **Reframe** — l'app a été traitée comme un dashboard étudiant d'abord, un catalogue de cours ensuite
-- **Design** — mockups haute fidélité dans Figma avec un thème dark-first, une typo affirmée et des accents par cours codés en couleur
+- **Audit** : cartographie de chaque flux clé de l'app existante et logging des frictions
+- **Recherche** : entretiens informels avec des camarades sur leur utilisation hebdomadaire de Moodle
+- **Reframe** : l'app a été traitée comme un dashboard étudiant d'abord, un catalogue de cours ensuite
+- **Design** : mockups haute fidélité dans Figma avec un thème dark-first, une typo affirmée et des accents par cours codés en couleur
 
 ## Écrans clés
 
 ![Mockups de la refonte Moodle](../../../assets/portfolio/moodle-redesign-banner.png)
 
-- **Home** — devoirs à venir, cours récents et fichiers récemment consultés sur une seule vue scrollable
-- **Détail de cours** — description, mises à jour, devoirs et docs regroupés sous un hero clair
-- **Vue devoir** — date limite, note, description et fichiers attachés sur un seul écran, avec un compte à rebours visible
-- **Annonces** — flux de rédaction et publication simplifié à un seul formulaire
-- **Calendrier** — grille mensuelle avec événements codés en couleur et liste d'événements scannable
-- **Chat** — messagerie directe légère pour la collaboration au niveau du cours
+- **Home** : devoirs à venir, cours récents et fichiers récemment consultés sur une seule vue scrollable
+- **Détail de cours** : description, mises à jour, devoirs et docs regroupés sous un hero clair
+- **Vue devoir** : date limite, note, description et fichiers attachés sur un seul écran, avec un compte à rebours visible
+- **Annonces** : flux de rédaction et publication simplifié à un seul formulaire
+- **Calendrier** : grille mensuelle avec événements codés en couleur et liste d'événements scannable
+- **Chat** : messagerie directe légère pour la collaboration au niveau du cours
 
 ## Design system
 

@@ -1,7 +1,7 @@
 import type { APIContext } from "astro";
 import { getCollection } from "astro:content";
 
-const SITE_TITLE = "Hadouin Leroy — Blog";
+const SITE_TITLE = "Hadouin Leroy · Blog";
 const SITE_DESCRIPTION =
   "Articles, tutorials and notes by Hadouin Leroy on creative development, 3D, Blender, web engineering and onchain gaming.";
 
