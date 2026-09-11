@@ -1,0 +1,191 @@
+---
+/**
+ * Scroll-locked, full-screen 3D factory (Three.js, basic shapes). Sits right after the hero.
+ * Interactions: play the claw machine (arrows + GRAB) to drop an idea in the hopper, pull the
+ * lever, scroll the timeline, scratch the charcoal, then drive the forklift with the keyboard.
+ */
+---
+
+<section class="factory-scene relative z-10 text-white" data-factory-scene aria-label="Factory 3D scene">
+  <div class="sticky top-0 h-[100svh] w-full overflow-hidden">
+    <canvas class="block h-full w-full touch-none" data-factory-canvas></canvas>
+
+    <div class="pointer-events-none absolute inset-x-0 top-0 z-10 h-[3px] bg-white/10">
+      <div class="h-full w-0 bg-[#F0C477] transition-[width] duration-150" data-factory-progress></div>
+    </div>
+
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 px-5 py-6 md:py-10 md:pl-24 md:pr-24">
+      <div class="min-w-0 max-w-md">
+        <p class="mb-1 text-xs font-semibold uppercase tracking-[0.24em] text-[#c7c7c0]" data-factory-phase>Factory</p>
+        <h2 class="text-2xl font-bold sm:text-3xl" data-factory-title>Grab an idea</h2>
+        <p class="mt-1 font-inter text-sm text-[#a8a8a2]" data-factory-hint></p>
+      </div>
+      <div class="pointer-events-auto flex shrink-0 flex-col items-end gap-3">
+        <div class="factory-pad hidden grid-cols-3 gap-1 text-lg" data-factory-pad data-mode="claw">
+          <button type="button" class="factory-key" data-key="KeyW" data-drive-only aria-label="Raise forks">⤒</button>
+          <button type="button" class="factory-key" data-key="ArrowUp" aria-label="Up">↑</button>
+          <button type="button" class="factory-key" data-key="KeyS" data-drive-only aria-label="Lower forks">⤓</button>
+          <button type="button" class="factory-key" data-key="ArrowLeft" aria-label="Left">←</button>
+          <button type="button" class="factory-key" data-key="ArrowDown" aria-label="Down">↓</button>
+          <button type="button" class="factory-key" data-key="ArrowRight" aria-label="Right">→</button>
+          <button type="button" class="factory-key factory-grab col-span-3" data-key="Space" data-claw-only aria-label="Grab an idea">GRAB</button>
+        </div>
+        <button
+          type="button"
+          class="rounded-full border border-white/25 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition hover:bg-white hover:text-black"
+          data-factory-skip
+        >Skip the factory</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style is:global>
+  :root {
+    /* one colour for the scene, the section, the page and the header while the factory is on screen */
+    --factory-bg: #000000;
+  }
+  .factory-scene {
+    background: var(--factory-bg);
+  }
+  html:has(body.factory-active) {
+    background-color: var(--factory-bg) !important;
+  }
+  body.factory-active .navbar-root,
+  body.factory-active .navbar-root[data-home="true"] {
+    background: var(--factory-bg) !important;
+    color: #fff;
+  }
+  body.factory-active .navbar-root .navbar-menu,
+  body.factory-active .navbar-root[data-home="true"] .navbar-menu {
+    background: var(--factory-bg) !important;
+  }
+  body.factory-active .navbar-root a,
+  body.factory-active .navbar-root button,
+  body.factory-active .navbar-root .navbar-menu-toggle svg,
+  body.factory-active .navbar-root .navbar-dropdown-toggle svg,
+  body.factory-active .navbar-root .navbar-logo-svg {
+    color: #fff !important;
+  }
+  body.factory-active .side-rail,
+  body.factory-active .socials-side {
+    color: #9a9a94;
+  }
+  html.factory-locked {
+    overflow: hidden;
+  }
+  .factory-key {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(255 255 255 / 0.25);
+    background: rgb(0 0 0 / 0.5);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+  .factory-key:active {
+    background: #fff;
+    color: #000;
+  }
+  .factory-pad.is-visible {
+    display: grid;
+  }
+  .factory-pad[data-mode="claw"] [data-drive-only] {
+    visibility: hidden;
+  }
+  .factory-pad[data-mode="drive"] [data-claw-only] {
+    display: none;
+  }
+  .factory-grab {
+    width: auto;
+    height: 2.9rem;
+    border-radius: 999px;
+    border-color: rgb(255 138 138 / 0.7);
+    background: #c73838;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+  }
+  .factory-grab:active {
+    background: #ff5a5a;
+    color: #fff;
+  }
+</style>
+
+<script>
+  import { createFactoryScene, type FactoryState } from "@lib/factory/scene";
+
+  function initFactoryScene() {
+    const previousCleanup = (window as any).__factorySceneCleanup as (() => void) | undefined;
+    previousCleanup?.();
+
+    const root = document.querySelector<HTMLElement>("[data-factory-scene]");
+    const canvas = root?.querySelector<HTMLCanvasElement>("[data-factory-canvas]");
+    if (!root || !canvas) return;
+
+    const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+    const title = q("[data-factory-title]");
+    const hint = q("[data-factory-hint]");
+    const phaseEl = q("[data-factory-phase]");
+    const bar = q("[data-factory-progress]");
+    const skip = q<HTMLButtonElement>("[data-factory-skip]");
+    const pad = q("[data-factory-pad]");
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+
+    const PHASE_LABEL: Record<FactoryState["phase"], string> = {
+      grab: "Step 1 · Claw machine",
+      lever: "Step 2 · Switch",
+      popping: "Step 2 · Switch",
+      scroll: "Scroll to continue",
+      "drive-fp": "Step 17 · Cockpit",
+      "drive-tp": "Step 18 · Free play",
+    };
+
+    const handle = createFactoryScene({
+      canvas,
+      section: root,
+      onState(s) {
+        title.textContent = s.title;
+        hint.textContent = s.hint;
+        phaseEl.textContent = s.held ? PHASE_LABEL[s.phase] : s.phase === "scroll" ? "Scroll to continue" : s.phase === "grab" ? "Scroll into the factory" : "The factory";
+        bar.style.width = `${Math.round(s.progress * 100)}%`;
+        const drive = s.phase === "drive-fp" || s.phase === "drive-tp";
+        pad.dataset.mode = s.phase === "grab" ? "claw" : "drive";
+        pad.classList.toggle("is-visible", (s.phase === "grab" && s.held) || (coarse && drive));
+      },
+    });
+
+    const onSkip = () => handle.skip();
+    skip.addEventListener("click", onSkip);
+
+    const padHandlers: Array<() => void> = [];
+    pad.querySelectorAll<HTMLButtonElement>("[data-key]").forEach((btn) => {
+      const code = btn.dataset.key!;
+      const down = (e: Event) => { e.preventDefault(); handle.setKey(code, true); };
+      const up = () => handle.setKey(code, false);
+      btn.addEventListener("pointerdown", down);
+      btn.addEventListener("pointerup", up);
+      btn.addEventListener("pointercancel", up);
+      btn.addEventListener("pointerleave", up);
+      padHandlers.push(() => {
+        btn.removeEventListener("pointerdown", down);
+        btn.removeEventListener("pointerup", up);
+        btn.removeEventListener("pointercancel", up);
+        btn.removeEventListener("pointerleave", up);
+      });
+    });
+
+    (window as any).__factorySceneCleanup = () => {
+      skip.removeEventListener("click", onSkip);
+      padHandlers.forEach((f) => f());
+      handle.dispose();
+      (window as any).__factorySceneCleanup = undefined;
+    };
+  }
+
+  document.addEventListener("astro:page-load", initFactoryScene);
+  document.addEventListener("astro:before-swap", () => {
+    ((window as any).__factorySceneCleanup as (() => void) | undefined)?.();
+  });
+</script>
