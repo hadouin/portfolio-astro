@@ -48,6 +48,14 @@
   .factory-scene {
     background: var(--factory-bg);
   }
+  /* The layout pads the page down by the height of the fixed header, and the
+     hero cancels that pad so it sits flush. A gated hero is fixed, so it drops
+     out of flow and this section inherits the pad in its place: without the
+     same cancellation the scene opens 70px low, with its bottom edge under the
+     fold, and has to be scrolled to fill the screen. */
+  html[data-hero-gate] .factory-scene {
+    margin-top: -70px;
+  }
   html:has(body.factory-active) {
     background-color: var(--factory-bg) !important;
   }
